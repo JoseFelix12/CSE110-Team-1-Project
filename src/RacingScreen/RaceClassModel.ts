@@ -6,15 +6,19 @@ import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1 } from "../constants.ts";
 export class RaceClassModel {
     private correct_answers = 0;
     private incorrect_answers = 0;
-    private streak = 0;
-    
+    private correctAnswerStreak = 0;
+    private incorrectAnswerStreak = 0;
+    private health = 100;
+
     /**
      * Resets for new race
      */
     reset(): void {
         this.correct_answers = 0;
         this.incorrect_answers = 0;
-        this.streak = 0;
+        this.correctAnswerStreak = 0;
+        this.incorrectAnswerStreak = 0
+        this.health = 100;
     }
 
     /**
@@ -42,14 +46,37 @@ export class RaceClassModel {
      * Amount of correct answers in a row
      */
     incrementStreak(): void {
-        this.streak++;
+        this.correctAnswerStreak++;
     }
 
     /**
      * Resets streak if wrong answer
      */
-    resetStreak(): void {
-        this.streak = 0;
+    resetcorrectStreak(): void {
+        this.correctAnswerStreak = 0;
+    }
+
+    /**
+     * Resets streak if wrong answer
+     */
+    resetIncorrectStreak(): void {
+        this.incorrectAnswerStreak = 0;
+    }
+
+    /**
+     * Amount of incorrect answers in a row
+     */
+    incrementIncorrectStreak(): void {
+        this.incorrectAnswerStreak++;
+    }
+
+    /**
+     * Decrements health per wrong answer
+     */
+    decreasesHealth(): void {
+        if(this.incorrectAnswerStreak >= 3)
+        this.health = this.health / 10;
+        this.incorrectAnswerStreak = 0;
     }
 
     //Possibility of including placement?

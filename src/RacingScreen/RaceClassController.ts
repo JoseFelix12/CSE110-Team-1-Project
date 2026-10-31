@@ -1,9 +1,10 @@
 import { QUESTION_TIMER } from "../constants";
 import { RaceClassModel } from "./RaceClassModel";
+import type { screenSwitcher } from "../Game/Game";
 export class RaceClassController {
     private model: RaceClassModel;
     //private view: RaceClassView
-    //private screenSwitcher: ScreenSwitcher;
+    private screenSwitcher: screenSwitcher;
     private questionTimer: number | null = null;
     private countdownTimer: number | null = null;
 
@@ -23,8 +24,7 @@ export class RaceClassController {
      */
     startGame(): void {
         this.model.reset()
-        //Start Countdown timer to start game
-
+        //this.view.setCar() puts car in starting position
         this.startCountdown();
     }
 
@@ -86,37 +86,42 @@ export class RaceClassController {
      */
     private endGame(): void {
         //switches screen to result or menu for demo
+        //this.screenSwitcher.switchToScreen({
+			//switches to level screen
+
+		//});
     }
 
     /**
-     * When pause button is pressed
+     * View tells when pause button is pressed
      */
 
-    /**
-     * Resume button
-     */
 
-    /**
-     * Quit button
-     */
+        /**
+         * View tells when Resume button is pressed
+         */
 
-    /**
-     * Possible audio button
-     */
+        /**
+         * View tells when Quit button is pressed
+         */
+
+        /**
+         * Possible audio button is pressed 
+         */
 
     /**
      * Detect user input
      */
 
-    /**
-     * Detect user backspace
-     */
+        /**
+         * Detect user backspace
+         */
 
-    /**
-     * Detect user enter
-     */
+        /**
+         * Detect user enter
+         */
 
-    /**
-     * Reject input that isn't a number
-     */
+        /**
+         * Reject input that isn't a number
+         */
 }
