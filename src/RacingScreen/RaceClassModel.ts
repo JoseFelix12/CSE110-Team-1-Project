@@ -14,6 +14,7 @@ export class RaceClassModel {
     reset(): void {
         this.correct_answers = 0;
         this.incorrect_answers = 0;
+        this.streak = 0;
     }
 
     /**
