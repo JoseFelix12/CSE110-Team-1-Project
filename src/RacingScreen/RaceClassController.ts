@@ -87,4 +87,36 @@ export class RaceClassController {
     private endGame(): void {
         //switches screen to result or menu for demo
     }
+
+    /**
+     * When pause button is pressed
+     */
+
+    /**
+     * Resume button
+     */
+
+    /**
+     * Quit button
+     */
+
+    /**
+     * Possible audio button
+     */
+
+    /**
+     * Detect user input
+     */
+
+    /**
+     * Detect user backspace
+     */
+
+    /**
+     * Detect user enter
+     */
+
+    /**
+     * Reject input that isn't a number
+     */
 }
