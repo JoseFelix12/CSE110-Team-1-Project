@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Racer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game">
+    <section id="start" class="screen active">
+      <img src="images/start.png" alt="Math Racer start screen">
+    </section>
+
+    <section id="garage" class="screen">
+      <img src="images/garage.png" alt="Math Racer garage">
+      <button class="hotspot garage-levels" onclick="showScreen('levels')" aria-label="Levels"></button>
+    </section>
+
+    <section id="levels" class="screen">
+      <img src="images/levels.png" alt="Math Racer levels">
+      <button class="hotspot levels-back" onclick="showScreen('garage')" aria-label="Back to garage"></button>
+      <button class="hotspot level-one" onclick="selectLevelOne()" aria-label="Level 1"></button>
+    </section>
+
+    <p id="message" aria-live="polite"></p>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
