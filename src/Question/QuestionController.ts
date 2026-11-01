@@ -30,7 +30,7 @@ export class QuestionController {
                 this.currentQuestion = new DivisionQuestion(a, b);
                 break;
             default:
-                throw new Error("Incorrect question type");
+                throw new Error("Invalid question type");
         }
         return this.currentQuestion;
     }  
@@ -68,7 +68,7 @@ export class QuestionController {
         }
         
         //compares user answer with actual answer
-        if (userAnswer === expectedAnswer) {
+        if (userAnswer === this.currentQuestion.answer) {
             return true;
         } else {
             return false;
