@@ -22,7 +22,7 @@ export class QuestionController {
                 return new MultiplicationQuestion(a, b);
             case 'division':
                 //Recalculates a to be divisible by b
-                a = b * Math.floor(Math.random() * 10) + 1; 
+                a = b * (Math.floor(Math.random() * 10) + 1); 
                 return new DivisionQuestion(a, b);
         
             default:

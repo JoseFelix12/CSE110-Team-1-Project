@@ -8,7 +8,13 @@ export interface Question {
     answer: number;
 }
 
-export class AdditionQuestion extends Question{
+export class AdditionQuestion implements Question{
+
+    text: string;
+    a: number;
+    b: number;
+    answer: number;
+
     constructor( a: number, b: number){
         this.text = "${a} + ${b}?";
         this.a = a;
@@ -17,7 +23,13 @@ export class AdditionQuestion extends Question{
     }
 }
 
-export class SubtractionQuestion extends Question{
+export class SubtractionQuestion implements Question{
+
+    text: string;
+    a: number;
+    b: number;
+    answer: number;
+
     constructor( a: number, b: number){
         this.text = "${a} - ${b}?";
         this.a = a;
@@ -26,7 +38,13 @@ export class SubtractionQuestion extends Question{
     }
 }
 
-export class MultiplicationQuestion extends Question{
+export class MultiplicationQuestion implements Question{
+
+    text: string;
+    a: number;
+    b: number;
+    answer: number;
+
     constructor( a: number, b: number){
         this.text = "${a} x ${b}?";
         this.a = a;
@@ -35,7 +53,13 @@ export class MultiplicationQuestion extends Question{
     }
 }
 
-export class DivisionQuestion extends Question{
+export class DivisionQuestion implements Question{
+
+    text: string;
+    a: number;
+    b: number;
+    answer: number;
+    
     constructor(a: number, b: number){
         this.text = "${a} ÷ ${b}?";
         this.a = a;
