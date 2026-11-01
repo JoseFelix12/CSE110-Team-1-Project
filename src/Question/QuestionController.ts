@@ -33,9 +33,32 @@ export class QuestionController {
         }
         return this.currentQuestion;
     }  
+    getCurrentQuestion(): Question | null {
+        return this.currentQuestion;
+    }
 
+    // Returns missed questions
+    getWrongQuestions(): Question[] {
+        return [...this.wrong_questions];
+    }
+    submitAnswer(answer: string): boolean {
+        if (this.currentQuestion === null) {
+            throw new Error("No current question to submit an answer for.");
+        }
+
+        const isCorrect = this.checkAnswer(this.currentQuestion, answer);
+
+        if (!isCorrect) {
+            this.wrong_questions.push(this.currentQuestion);
+        }
+
+        return isCorrect;
+    }
+
+
+    
     //Compares answer that will be entered by user from view with the correct answer.
-    function checkAnswer(question: Question, input: string): boolean {
+    checkAnswer(question: Question, input: string): boolean {
         const userAnswer = Number(input);
         
         //checks if input was not a number
