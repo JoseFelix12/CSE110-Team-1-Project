@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Math Racer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,12 +18,155 @@
     <section id="garage" class="screen">
       <img src="images/garage.png" alt="Math Racer garage">
       <button class="hotspot garage-levels" onclick="showScreen('levels')" aria-label="Levels"></button>
+      <button class="hotspot garage-minigames" onclick="showScreen('minigames')" aria-label="Mini games"></button>
+      <button class="hotspot garage-shop" onclick="showScreen('shop')" aria-label="Shop"></button>
     </section>
 
     <section id="levels" class="screen">
       <img src="images/levels.png" alt="Math Racer levels">
       <button class="hotspot levels-back" onclick="showScreen('garage')" aria-label="Back to garage"></button>
       <button class="hotspot level-one" onclick="selectLevelOne()" aria-label="Level 1"></button>
+    </section>
+
+    <section id="minigames" class="screen minigames-screen">
+      <img class="minigames-background" src="images/garage.png" alt="" aria-hidden="true">
+      <div class="minigames-content">
+        <header class="minigames-header">
+          <button class="back-button" onclick="showScreen('garage')">← BACK</button>
+          <h1><span>MINI</span> <strong>GAMES</strong></h1>
+          <span aria-hidden="true"></span>
+        </header>
+
+        <div class="minigame-options">
+          <button class="minigame-card answers-card" onclick="selectMinigame('answers')" aria-pressed="false">
+            <span class="minigame-title">CATCH THE ANSWERS</span>
+            <span class="game-preview answer-preview" aria-hidden="true">
+              <span class="preview-target">TARGET: 10</span>
+              <span class="answer-lanes">
+                <span>6 + 4</span>
+                <span>3 x 2</span>
+                <span>12 - 4</span>
+                <span>5 + 7</span>
+              </span>
+              <span class="preview-car">RACER</span>
+            </span>
+            <span class="minigame-description">Drive through the answer that matches the target.</span>
+          </button>
+
+          <button class="minigame-card solver-card" onclick="selectMinigame('solver')" aria-pressed="false">
+            <span class="minigame-title">PROBLEM SOLVER</span>
+            <span class="game-preview problem-preview" aria-hidden="true">
+              <span class="preview-question">4 wheels x 5 bolts<br>How many bolts?</span>
+              <span class="preview-choices">
+                <span>9</span>
+                <span>16</span>
+                <span>20</span>
+                <span>24</span>
+              </span>
+            </span>
+            <span class="minigame-description">Solve a quick math problem in the garage.</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="shop" class="screen shop-screen">
+      <img class="shop-background" src="images/garage.png" alt="" aria-hidden="true">
+      <div class="shop-interface">
+        <header class="shop-header">
+          <button class="shop-back" onclick="showScreen('garage')">← GARAGE</button>
+          <div class="shop-brand">
+            <img class="shop-logo" src="images/shop-logo.png" alt="">
+            <h1>SHOP</h1>
+          </div>
+          <div class="star-wallet" aria-label="12 stars">
+            <span aria-hidden="true">★</span>
+            <strong>12</strong>
+          </div>
+        </header>
+
+        <nav class="shop-tabs" aria-label="Shop categories">
+          <button class="shop-tab" onclick="selectShopTab(this)" aria-pressed="false">
+            <span aria-hidden="true">✎</span> CAR COLORS
+          </button>
+          <button class="shop-tab active" onclick="selectShopTab(this)" aria-pressed="true">
+            <span aria-hidden="true">⚙</span> UPGRADES
+          </button>
+          <button class="shop-tab" onclick="selectShopTab(this)" aria-pressed="false">
+            <span aria-hidden="true">🏆</span> COSMETICS
+          </button>
+        </nav>
+
+        <div class="shop-showcase">
+          <div class="upgrade-grid" aria-label="Available upgrades">
+            <article class="upgrade-card">
+              <h2>SPEED BOOST</h2>
+              <img src="images/speed-boost-turbo.png" alt="Turbo speed boost">
+              <p>Increases your max speed during races.</p>
+              <button class="upgrade-price" onclick="selectShopItem('Speed Boost')" aria-label="Speed boost, 20 stars">
+                <span aria-hidden="true">★</span> 20
+              </button>
+            </article>
+            <article class="upgrade-card featured-upgrade">
+              <h2>BETTER TIRES</h2>
+              <img src="images/better-tires.png" alt="Better tires">
+              <p>Improves acceleration and handling.</p>
+              <button class="upgrade-price" onclick="selectShopItem('Better Tires')" aria-label="Better tires, 15 stars">
+                <span aria-hidden="true">★</span> 15
+              </button>
+            </article>
+            <article class="upgrade-card">
+              <h2>SHIELD</h2>
+              <img src="images/shield.png" alt="Shield">
+              <p>Protects you from one slowdown.</p>
+              <button class="upgrade-price" onclick="selectShopItem('Shield')" aria-label="Shield, 25 stars">
+                <span aria-hidden="true">★</span> 25
+              </button>
+            </article>
+            <article class="upgrade-card">
+              <h2>EXTRA TIME</h2>
+              <img src="images/extra-time.png" alt="Extra time">
+              <p>Adds 5 seconds to each race.</p>
+              <button class="upgrade-price" onclick="selectShopItem('Extra Time')" aria-label="Extra time, 30 stars">
+                <span aria-hidden="true">★</span> 30
+              </button>
+            </article>
+          </div>
+
+          <aside class="shop-showroom" aria-label="Featured car">
+            <div class="showroom-sign">MATH<br>RACER</div>
+            <div class="showroom-platform"></div>
+            <img src="images/red-racer.png" alt="Red racer on display">
+          </aside>
+        </div>
+
+        <section class="owned-section" aria-labelledby="owned-title">
+          <h2 id="owned-title"><span></span> OWNED UPGRADES <span></span></h2>
+          <div class="owned-grid">
+            <article class="owned-item">
+              <img src="images/speed-boost-turbo.png" alt="">
+              <span class="owned-lock" aria-hidden="true">🔒</span>
+              <span class="owned-price">★ 20</span>
+            </article>
+            <article class="owned-item">
+              <img src="images/better-tires.png" alt="">
+              <span class="owned-lock" aria-hidden="true">🔒</span>
+              <span class="owned-price">★ 30</span>
+            </article>
+            <article class="owned-item">
+              <img src="images/shield.png" alt="">
+              <span class="owned-lock" aria-hidden="true">🔒</span>
+              <span class="owned-price">★ 30</span>
+            </article>
+            <article class="owned-item">
+              <img src="images/extra-time.png" alt="">
+              <span class="owned-lock" aria-hidden="true">🔒</span>
+              <span class="owned-price">★ 30</span>
+            </article>
+            <article class="owned-item empty-owned" aria-label="Empty upgrade slot"></article>
+          </div>
+        </section>
+      </div>
     </section>
 
     <p id="message" aria-live="polite"></p>
