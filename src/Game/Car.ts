@@ -1,7 +1,8 @@
 import type { SkinColor, Upgrade } from "./gameConfig";
+import { MAX_DAMAGE } from "./gameConfig";
 
 export interface CarData {
-    color: SkinColor;
+    skin: SkinColor;
     upgrades: Upgrade[];
     cosmetics: string[]; 
     damage: number;   
@@ -15,20 +16,42 @@ export class Car {
         this.data = data;
     }
 
-    public getColor(): SkinColor {
-        return this.data.color;
+    /* Getter functions */
+
+    public getSkin(): SkinColor {
+        return this.data.skin;
     }
 
     public getUpgrades(): Upgrade[] {
-        return this.data.upgrades;
+        return [...this.data.upgrades];
     }
 
     public getCosmetics(): string[] {
-        return this.data.cosmetics;
+        return [...this.data.cosmetics];
     }
 
     public getDamage(): number {
         return this.data.damage;
+    }
+
+    /* Setter functions */
+
+    public setColor(skin: SkinColor) {
+        this.data.skin = skin;
+    }
+
+    public setComsetics(cosmetics: string[]) {
+        this.data.cosmetics = cosmetics;
+    }
+
+    /* Do and undo damage */
+
+    public inflictDamage(amount: number) {
+        this.data.damage = Math.min(MAX_DAMAGE, this.getDamage() + amount);
+    }
+
+    public undoDamage(amount: number) {
+        this.data.damage = Math.max(0, this.getDamage() - amount);
     }
 
 }
