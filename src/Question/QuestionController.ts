@@ -4,7 +4,7 @@ import {wrong_questions, type Question, AdditionQuestion, SubtractionQuestion, M
 //import question view
 export class QuestionController {
     private currentQuestion: Question | null = null;
-    export const wrong_questions: Question[] = [];
+    private wrong_questions: Question[] = [];
     //private view: QuestionView
 
 
