@@ -1,3 +1,4 @@
+import type { CarData } from './Car.ts';
 import {
     COINS_PER_CORRECT_ANSWER,
     COINS_PER_STAR,
@@ -9,7 +10,7 @@ import {
     STARS_TO_UNLOCK_NEXT,
     STAR_THRESHOLDS,
 } from './gameConfig.ts';
-import type { LevelConfig, SkinColor } from './gameConfig.ts';
+import type { LevelConfig, SkinColor, Upgrade } from './gameConfig.ts';
 
 /** Minimal storage interface so tests can pass a fake instead of localStorage */
 export interface StorageLike {
@@ -26,6 +27,7 @@ export interface SaveData {
     engineLevel: number;
     ownedSkins: SkinColor[];
     selectedSkin: SkinColor;
+    car: CarData;
 }
 
 /** A level plus the player's progress on it, for LevelSelectScreen */

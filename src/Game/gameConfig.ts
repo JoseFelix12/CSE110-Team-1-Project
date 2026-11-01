@@ -62,6 +62,7 @@ export const COINS_PER_CORRECT_ANSWER = 5;
 export const COINS_PER_STAR = 10;
 
 export type SkinColor = 'red' | 'blue' | 'green' | 'purple';
+export type Upgrade = 'Speed Boost' | 'Better Tires' | 'Shield' | 'Extra Time';
 
 export const DEFAULT_SKIN: SkinColor = 'red';
 
