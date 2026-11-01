@@ -59,7 +59,7 @@ export class DivisionQuestion implements Question{
     a: number;
     b: number;
     answer: number;
-    
+
     constructor(a: number, b: number){
         this.text = "${a} ÷ ${b}?";
         this.a = a;
@@ -68,4 +68,3 @@ export class DivisionQuestion implements Question{
     }
 }
 
-export const wrong_questions: Question[] = [];

@@ -4,6 +4,7 @@ import {wrong_questions, type Question, AdditionQuestion, SubtractionQuestion, M
 //import question view
 export class QuestionController {
     private currentQuestion: Question | null = null;
+    export const wrong_questions: Question[] = [];
     //private view: QuestionView
 
 
@@ -66,7 +67,7 @@ export class QuestionController {
         }
         else{
             //reset streak, add to wrong_questions
-            wrong_questions.push(this.currentQuestion)
+            this.wrong_questions.push(this.currentQuestion)
         }
         //this.view.feedback.text(isCorrect ? '✓ Correct!' : '✗ Wrong, try again');
         //this.view.feedback.fill(isCorrect ? 'green' : 'crimson');
