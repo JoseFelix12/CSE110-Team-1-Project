@@ -15,28 +15,31 @@ export class QuestionController {
         //Generates question object based upon chosen type
         switch (q_type) {
             case 'addition':
-                return new AdditionQuestion(a, b);
+                this.currentQuestion = new AdditionQuestion(a, b);
+                break;
             case 'subtraction':
-                return new SubtractionQuestion(a, b);
+                this.currentQuestion = new SubtractionQuestion(a, b);
+                break;
             case 'multiplication':
-                return new MultiplicationQuestion(a, b);
+                this.currentQuestion = new MultiplicationQuestion(a, b);
+                break;
             case 'division':
                 //Recalculates a to be divisible by b
                 a = b * (Math.floor(Math.random() * 10) + 1); 
-                return new DivisionQuestion(a, b);
-        
+                this.currentQuestion = new DivisionQuestion(a, b);
+                break;
             default:
                 throw new Error("Incorrect question type");
         }
+        return this.currentQuestion;
     }  
 
     //Compares answer that will be entered by user from view with the correct answer.
-    export function checkAnswer(question: Question, input: string): boolean {
+    function checkAnswer(question: Question, input: string): boolean {
         const userAnswer = Number(input);
-        const expectedAnswer = computeCorrectAnswer(question);
         
         //checks if input was not a number
-        if (Number.isNaN(userAnswer)) {
+        if (Number.isNaN(userAnswer) || input.trim() === "") {
             return false;
         }
         
@@ -51,6 +54,11 @@ export class QuestionController {
     // Fuction to handle answer submission event
         //Check input with answer from question object
     private checkAnswerInput(answer: string): void{
+
+        if (this.currentQuestion === null){
+            return
+        }
+
         const isCorrect = this.checkAnswer(this.currentQuestion, answer);
         
         if (isCorrect) {
