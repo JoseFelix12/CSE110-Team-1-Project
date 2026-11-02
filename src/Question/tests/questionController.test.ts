@@ -117,7 +117,7 @@ describe("QuestionController", () => {
         });
         it("accepts a valid numeric answer surrounded by whitespace", () => {
             questionController.generateQuestion("multiplication");
-            expect(questionController.submitAnswer("   123   ")).toBe(true);
+            expect(questionController.submitAnswer(`   ${questionController.getCurrentQuestion()!.answer}   `)).toBe(true);
         });
         it("throws an error if no question has been generated", () => {
             expect(() => {
