@@ -88,7 +88,7 @@ The racing system is being developed using separate model, view, and controller 
 
 ---
 
-## 🚧 Current Development Status
+## Current Development Status
 
 
 ## Current Development Status
