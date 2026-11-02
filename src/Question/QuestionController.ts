@@ -13,7 +13,8 @@ export class QuestionController {
         let a = Math.floor(Math.random() *  10) + 1;  
         let b = Math.floor(Math.random() *  10) + 1; 
 
-        //Generates question object based upon chosen type
+        //Generates question object based upon chosen type and makes the 
+        //current question the new object
         switch (q_type) {
             case 'addition':
                 this.currentQuestion = new AdditionQuestion(a, b);
@@ -34,6 +35,7 @@ export class QuestionController {
         }
         return this.currentQuestion;
     }  
+    //Access recently generated question
     getCurrentQuestion(): Question | null {
         return this.currentQuestion;
     }
@@ -42,6 +44,7 @@ export class QuestionController {
     getWrongQuestions(): Question[] {
         return [...this.wrong_questions];
     }
+    //Simple version of checkAnswerInput that checks answer input for tests
     submitAnswer(answer: string): boolean {
         if (this.currentQuestion === null) {
             throw new Error("No current question to submit an answer for.");
@@ -78,7 +81,7 @@ export class QuestionController {
     // Fuction to handle answer submission event
         //Check input with answer from question object
     private checkAnswerInput(answer: string): void{
-
+        //Checks if the current question was never generated
         if (this.currentQuestion === null){
             return
         }

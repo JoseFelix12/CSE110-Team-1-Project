@@ -1,5 +1,5 @@
 
-
+//Skeleton for questions
 export interface Question {
   //type: "plain" | "word";
   text: string;
@@ -55,11 +55,6 @@ export class DivisionQuestion implements Question {
   a: number;
   b: number;
   answer: number;
-
-    text: string;
-    a: number;
-    b: number;
-    answer: number;
 
     constructor(a: number, b: number){
         this.text = `${a} ÷ ${b}?`;
