@@ -444,10 +444,6 @@ https://github.com/JoseFelix12/CSE110-Team-1-Project
 **GitHub Actions:**  
 https://github.com/JoseFelix12/CSE110-Team-1-Project/actions
 
-**UI Implementation Pull Request:**  
-1. https://github.com/JoseFelix12/CSE110-Team-1-Project/pull/37
-
-
 ---
 
 ## Future Development
@@ -472,16 +468,16 @@ Our goal is to develop Math Racer into a fully integrated educational racing gam
 
 ## Development Team
 
-**UC San Diego — CSE 110, Team 1**
+**UC San Diego - CSE 110, Team 1**
 
 Math Racer is a collaborative software engineering project developed by:
 
 - Ashley Malaxechevarria
-- Geer
-- Bradley
-- Jose
-- Mateo
-- Eric
-- Saaketh
+- Geer Ai 
+- Bradley Chen
+- Jose Felix
+- Mateo Kalafatovich
+- Eric Murphy
+- Saaketh Raghava
 
 Additional project details and development progress can be found in our GitHub repository.
