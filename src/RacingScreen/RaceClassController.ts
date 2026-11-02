@@ -72,8 +72,8 @@ export class RaceClassController implements Scene {
             },
             {
                 theme: options.theme,
-                skin: gameState.getSelectedSkin(),
-                speedMultiplier: gameState.getSpeedMultiplier(),
+                skin: gameState.getCar().getSkin(),
+                speedMultiplier: gameState.getCar().getSpeedMultiplier(),
             },
         );
     }

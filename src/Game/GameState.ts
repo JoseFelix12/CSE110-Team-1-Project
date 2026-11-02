@@ -1,8 +1,9 @@
+import { Car } from './Car.ts';
+import type { CarData, ReadonlyCar } from './Car.ts';
 import {
     COINS_PER_CORRECT_ANSWER,
     COINS_PER_STAR,
     DEFAULT_SKIN,
-    ENGINE_SPEED_BONUS_PER_LEVEL,
     ENGINE_UPGRADE_PRICES,
     LEVELS,
     SKIN_PRICES,
@@ -19,13 +20,21 @@ export interface StorageLike {
 }
 
 /** Everything that gets saved between sessions */
-export interface SaveData {
+interface Progress {
     coins: number;
     /** Best stars earned per level id */
     stars: Record<number, number>;
-    engineLevel: number;
     ownedSkins: SkinColor[];
-    selectedSkin: SkinColor;
+}
+
+/* Fields that older saves keep, even if there is no car object yet */
+interface LegacySaveFields {
+    engineLevel?: number;
+    selectedSkin?: SkinColor;
+}
+
+export interface SaveData extends Progress {
+    car: CarData;
 }
 
 /** A level plus the player's progress on it, for LevelSelectScreen */
@@ -47,13 +56,11 @@ export type GameStateListener = (state: GameState) => void;
 
 export const SAVE_KEY = 'mathRacer.save';
 
-function defaultSaveData(): SaveData {
+function defaultProgress(): Progress {
     return {
         coins: 0,
         stars: {},
-        engineLevel: 0,
-        ownedSkins: [DEFAULT_SKIN],
-        selectedSkin: DEFAULT_SKIN,
+        ownedSkins: [DEFAULT_SKIN]
     };
 }
 
@@ -82,13 +89,20 @@ export function calculateStars(correct: number, total: number): number {
  * Saves automatically after every change.
  */
 export class GameState {
-    private data: SaveData;
+    private data: Progress;
     private storage: StorageLike | null;
     private listeners = new Set<GameStateListener>();
+    private car: Car;
 
     constructor(storage: StorageLike | null = getDefaultStorage()) {
         this.storage = storage;
-        this.data = this.load();
+        const { car, ...progress } = this.load();
+        this.data = progress;
+        this.car = new Car(car);
+    }
+
+    getCar(): ReadonlyCar {
+        return this.car;
     }
 
     // ---------- Levels ----------
@@ -208,15 +222,11 @@ export class GameState {
 
     // ---------- Shop: engine ----------
 
-    getEngineLevel(): number {
-        return this.data.engineLevel;
-    }
-
     /**
      * Gets the price of the next engine upgrade, or null when maxed out
      */
     getNextEngineUpgradePrice(): number | null {
-        return ENGINE_UPGRADE_PRICES[this.data.engineLevel] ?? null;
+        return ENGINE_UPGRADE_PRICES[this.car.getEngineLevel()] ?? null;
     }
 
     /**
@@ -228,26 +238,16 @@ export class GameState {
             return false;
         }
         this.data.coins -= price;
-        this.data.engineLevel++;
+        this.car.upgradeEngine();
+        this.car.updateSpeedMultiplier();
         this.changed();
         return true;
-    }
-
-    /**
-     * Speed multiplier for the car (1 = no upgrades)
-     */
-    getSpeedMultiplier(): number {
-        return 1 + this.data.engineLevel * ENGINE_SPEED_BONUS_PER_LEVEL;
     }
 
     // ---------- Shop: skins ----------
 
     getOwnedSkins(): SkinColor[] {
         return [...this.data.ownedSkins];
-    }
-
-    getSelectedSkin(): SkinColor {
-        return this.data.selectedSkin;
     }
 
     ownsSkin(skin: SkinColor): boolean {
@@ -264,7 +264,7 @@ export class GameState {
         }
         this.data.coins -= price;
         this.data.ownedSkins.push(skin);
-        this.data.selectedSkin = skin;
+        this.car.setColor(skin);
         this.changed();
         return true;
     }
@@ -276,7 +276,7 @@ export class GameState {
         if (!this.ownsSkin(skin)) {
             return false;
         }
-        this.data.selectedSkin = skin;
+        this.car.setColor(skin);
         this.changed();
         return true;
     }
@@ -297,7 +297,8 @@ export class GameState {
      * Wipes all progress
      */
     reset(): void {
-        this.data = defaultSaveData();
+        this.data = defaultProgress();
+        this.car = new Car();
         this.changed();
     }
 
@@ -305,7 +306,7 @@ export class GameState {
      * Gets a copy of the save data (for debugging or tests)
      */
     toJSON(): SaveData {
-        return structuredClone(this.data);
+        return { ...structuredClone(this.data), car: this.car.toJSON() };
     }
 
     private changed(): void {
@@ -315,14 +316,14 @@ export class GameState {
 
     private save(): void {
         try {
-            this.storage?.setItem(SAVE_KEY, JSON.stringify(this.data));
+            this.storage?.setItem(SAVE_KEY, JSON.stringify(this.toJSON()));
         } catch {
             // Storage full or blocked; progress still lives in memory
         }
     }
 
     private load(): SaveData {
-        const fallback = defaultSaveData();
+        const fallback: SaveData = { ...defaultProgress(), car: Car.defaultData() };
         let raw: string | null = null;
         try {
             raw = this.storage?.getItem(SAVE_KEY) ?? null;
@@ -333,21 +334,23 @@ export class GameState {
             return fallback;
         }
         try {
-            const parsed = JSON.parse(raw) as Partial<SaveData>;
+            const parsed = JSON.parse(raw) as Partial<SaveData> & LegacySaveFields;
             const ownedSkins = Array.isArray(parsed.ownedSkins)
                 ? parsed.ownedSkins.filter((s): s is SkinColor => s in SKIN_PRICES)
                 : fallback.ownedSkins;
             if (!ownedSkins.includes(DEFAULT_SKIN)) {
                 ownedSkins.unshift(DEFAULT_SKIN);
             }
+
+            const car = Car.fromSave(parsed.car ?? {
+                skin: parsed.selectedSkin,
+                engineLevel: parsed.engineLevel,
+            });
             return {
                 coins: typeof parsed.coins === 'number' ? parsed.coins : fallback.coins,
                 stars: parsed.stars && typeof parsed.stars === 'object' ? parsed.stars : fallback.stars,
-                engineLevel: typeof parsed.engineLevel === 'number' ? parsed.engineLevel : fallback.engineLevel,
                 ownedSkins,
-                selectedSkin: parsed.selectedSkin && ownedSkins.includes(parsed.selectedSkin)
-                    ? parsed.selectedSkin
-                    : DEFAULT_SKIN,
+                car: car.toJSON()
             };
         } catch {
             return fallback;
