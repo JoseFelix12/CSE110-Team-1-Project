@@ -73,11 +73,11 @@ export class RaceClassModel {
     /**
      * Decrements health per wrong answer
      */
-    decreasesHealth(): void {
+    /*decreasesHealth(): void {
         if(this.incorrectAnswerStreak >= 3)
         this.health = this.health / 10;
         this.incorrectAnswerStreak = 0;
-    }
+    }*/
 
     //Possibility of including placement?
 }
