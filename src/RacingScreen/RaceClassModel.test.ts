@@ -44,7 +44,7 @@ describe('RaceClassModel', () => {
         });
 
         it('reaches exactly 1 after the last question', () => {
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 10; i++) {
                 model.incrementCorrect_Answers();
             }
             expect(model.currentProgess()).toBe(1);
