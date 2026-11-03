@@ -109,13 +109,6 @@ export class Car implements ReadonlyCar {
         this.data.skin = skin;
     }
 
-    /**
-     * Set the cosmetics of the car
-     */
-    public setCosmetics(cosmetics: string[]): void {
-        this.data.cosmetics = cosmetics;
-    }
-
     public upgradeEngine(): void {
         this.data.engineLevel++;
     }
