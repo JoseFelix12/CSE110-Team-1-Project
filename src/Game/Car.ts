@@ -109,13 +109,6 @@ export class Car implements ReadonlyCar {
         this.data.skin = skin;
     }
 
-    /**
-     * Set the cosmetics of the car
-     */
-    public setCosmetics(cosmetics: string[]): void {
-        this.data.cosmetics = cosmetics;
-    }
-
     public upgradeEngine(): void {
         this.data.engineLevel++;
     }
@@ -130,12 +123,28 @@ export class Car implements ReadonlyCar {
 
     /* Do and undo damage */
 
+    /**
+     * Add damage to the car, capped at MAX_DAMAGE.
+     * Throws if amount is negative or NaN.
+     */
     public inflictDamage(amount: number): void {
+        Car.assertValidAmount(amount);
         this.data.damage = Math.min(MAX_DAMAGE, this.getDamage() + amount);
     }
 
+    /**
+     * Remove damage from the car, floored at 0.
+     * Throws if amount is negative or NaN.
+     */
     public undoDamage(amount: number): void {
+        Car.assertValidAmount(amount);
         this.data.damage = Math.max(0, this.getDamage() - amount);
+    }
+
+    private static assertValidAmount(amount: number): void {
+        if (Number.isNaN(amount) || amount < 0) {
+            throw new RangeError(`Damage amount must be a non-negative number, got ${amount}`);
+        }
     }
 
     public toJSON(): CarData {
