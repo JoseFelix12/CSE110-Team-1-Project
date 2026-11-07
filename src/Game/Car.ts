@@ -1,5 +1,5 @@
 import type { SkinColor, Upgrade } from "./gameConfig.ts";
-import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_DAMAGE, SKIN_PRICES } from './gameConfig.ts';
+import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_HEALTH, SKIN_PRICES } from './gameConfig.ts';
 
 export interface CarData {
     skin: SkinColor;
@@ -7,7 +7,7 @@ export interface CarData {
     speedMultiplier: number;
     upgrades: Upgrade[];
     cosmetics: string[]; 
-    damage: number;   
+    health: number;   
 }
 
 export interface ReadonlyCar {
@@ -16,7 +16,7 @@ export interface ReadonlyCar {
     getSpeedMultiplier(): number;
     getUpgrades(): Upgrade[];
     getCosmetics(): string[];
-    getDamage(): number;
+    getHealth(): number;
 }
 
 export class Car implements ReadonlyCar {
@@ -37,7 +37,7 @@ export class Car implements ReadonlyCar {
             speedMultiplier: 1,
             upgrades: [],
             cosmetics: [],
-            damage: 0
+            health: 100
         }
     }
 
@@ -52,7 +52,7 @@ export class Car implements ReadonlyCar {
             speedMultiplier: typeof raw?.speedMultiplier === 'number' ? raw.speedMultiplier : defaultCar.speedMultiplier,
             upgrades: Array.isArray(raw?.upgrades) ? raw.upgrades : defaultCar.upgrades,
             cosmetics: Array.isArray(raw?.cosmetics) ? raw.cosmetics : defaultCar.cosmetics,
-            damage: typeof raw?.damage === 'number' ? raw.damage : defaultCar.damage
+            health: typeof raw?.health === 'number' ? raw.health : defaultCar.health
         });
     }
 
@@ -94,10 +94,10 @@ export class Car implements ReadonlyCar {
     }
 
     /**
-     * Get the damage inflicted on the car
+     * Get the health inflicted on the car
      */
-    public getDamage(): number {
-        return this.data.damage;
+    public getHealth(): number {
+        return this.data.health;
     }
 
     /* Setter functions */
@@ -124,21 +124,21 @@ export class Car implements ReadonlyCar {
     /* Do and undo damage */
 
     /**
-     * Add damage to the car, capped at MAX_DAMAGE.
+     * Add damage to the car, floored at 0.
      * Throws if amount is negative or NaN.
      */
     public inflictDamage(amount: number): void {
         Car.assertValidAmount(amount);
-        this.data.damage = Math.min(MAX_DAMAGE, this.getDamage() + amount);
+        this.data.health = Math.max(0, this.getHealth() - amount);
     }
 
     /**
-     * Remove damage from the car, floored at 0.
+     * Remove damage from the car, capped at MAX_HEALTH.
      * Throws if amount is negative or NaN.
      */
     public undoDamage(amount: number): void {
         Car.assertValidAmount(amount);
-        this.data.damage = Math.max(0, this.getDamage() - amount);
+        this.data.health = Math.min(MAX_HEALTH, this.getHealth() + amount);
     }
 
     private static assertValidAmount(amount: number): void {
