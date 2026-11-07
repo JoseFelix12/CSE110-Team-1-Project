@@ -37,7 +37,7 @@ export class Car implements ReadonlyCar {
             speedMultiplier: 1,
             upgrades: [],
             cosmetics: [],
-            health: 100
+            health: MAX_HEALTH
         }
     }
 
