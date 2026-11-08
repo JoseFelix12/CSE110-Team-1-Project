@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main id="game">
@@ -17,28 +16,28 @@
 
     <section id="garage" class="screen">
       <img src="images/garage.png" alt="Math Racer garage">
-      <button class="hotspot garage-levels" onclick="showScreen('levels')" aria-label="Levels"></button>
-      <button class="hotspot garage-minigames" onclick="showScreen('minigames')" aria-label="Mini games"></button>
-      <button class="hotspot garage-shop" onclick="showScreen('shop')" aria-label="Shop"></button>
+      <button class="hotspot garage-levels" data-screen="levels" aria-label="Levels"></button>
+      <button class="hotspot garage-minigames" data-screen="minigames" aria-label="Mini games"></button>
+      <button class="hotspot garage-shop" data-screen="shop" aria-label="Shop"></button>
     </section>
 
     <section id="levels" class="screen">
       <img src="images/levels.png" alt="Math Racer levels">
-      <button class="hotspot levels-back" onclick="showScreen('garage')" aria-label="Back to garage"></button>
-      <button class="hotspot level-one" onclick="selectLevelOne()" aria-label="Level 1"></button>
+      <button class="hotspot levels-back" data-screen="garage" aria-label="Back to garage"></button>
+      <button class="hotspot level-one" data-level-action="select" aria-label="Level 1"></button>
     </section>
 
     <section id="minigames" class="screen minigames-screen">
       <img class="minigames-background" src="images/garage.png" alt="" aria-hidden="true">
       <div class="minigames-content">
         <header class="minigames-header">
-          <button class="back-button" onclick="showScreen('garage')">← BACK</button>
+          <button class="back-button" data-screen="garage">← BACK</button>
           <h1><span>MINI</span> <strong>GAMES</strong></h1>
           <span aria-hidden="true"></span>
         </header>
 
         <div class="minigame-options">
-          <button class="minigame-card answers-card" onclick="selectMinigame('answers')" aria-pressed="false">
+          <button class="minigame-card answers-card" data-minigame="answers" aria-pressed="false">
             <span class="minigame-title">CATCH THE ANSWERS</span>
             <span class="game-preview answer-preview" aria-hidden="true">
               <span class="preview-target">TARGET: 10</span>
@@ -53,7 +52,7 @@
             <span class="minigame-description">Drive through the answer that matches the target.</span>
           </button>
 
-          <button class="minigame-card solver-card" onclick="selectMinigame('solver')" aria-pressed="false">
+          <button class="minigame-card solver-card" data-minigame="solver" aria-pressed="false">
             <span class="minigame-title">PROBLEM SOLVER</span>
             <span class="game-preview problem-preview" aria-hidden="true">
               <span class="preview-question">4 wheels x 5 bolts<br>How many bolts?</span>
@@ -74,7 +73,7 @@
       <img class="shop-background" src="images/garage.png" alt="" aria-hidden="true">
       <div class="shop-interface">
         <header class="shop-header">
-          <button class="shop-back" onclick="showScreen('garage')">← GARAGE</button>
+          <button class="shop-back" data-screen="garage">← GARAGE</button>
           <div class="shop-brand">
             <img class="shop-logo" src="images/shop-logo.png" alt="">
             <h1>SHOP</h1>
@@ -86,13 +85,13 @@
         </header>
 
         <nav class="shop-tabs" aria-label="Shop categories">
-          <button class="shop-tab" onclick="selectShopTab(this)" aria-pressed="false">
+          <button class="shop-tab" data-shop-tab="car-colors" aria-pressed="false">
             <span aria-hidden="true">✎</span> CAR COLORS
           </button>
-          <button class="shop-tab active" onclick="selectShopTab(this)" aria-pressed="true">
+          <button class="shop-tab active" data-shop-tab="upgrades" aria-pressed="true">
             <span aria-hidden="true">⚙</span> UPGRADES
           </button>
-          <button class="shop-tab" onclick="selectShopTab(this)" aria-pressed="false">
+          <button class="shop-tab" data-shop-tab="cosmetics" aria-pressed="false">
             <span aria-hidden="true">🏆</span> COSMETICS
           </button>
         </nav>
@@ -103,7 +102,7 @@
               <h2>SPEED BOOST</h2>
               <img src="images/speed-boost-turbo.png" alt="Turbo speed boost">
               <p>Increases your max speed during races.</p>
-              <button class="upgrade-price" onclick="selectShopItem('Speed Boost')" aria-label="Speed boost, 20 stars">
+              <button class="upgrade-price" data-shop-item="Speed Boost" aria-label="Speed boost, 20 stars">
                 <span aria-hidden="true">★</span> 20
               </button>
             </article>
@@ -111,7 +110,7 @@
               <h2>BETTER TIRES</h2>
               <img src="images/better-tires.png" alt="Better tires">
               <p>Improves acceleration and handling.</p>
-              <button class="upgrade-price" onclick="selectShopItem('Better Tires')" aria-label="Better tires, 15 stars">
+              <button class="upgrade-price" data-shop-item="Better Tires" aria-label="Better tires, 15 stars">
                 <span aria-hidden="true">★</span> 15
               </button>
             </article>
@@ -119,7 +118,7 @@
               <h2>SHIELD</h2>
               <img src="images/shield.png" alt="Shield">
               <p>Protects you from one slowdown.</p>
-              <button class="upgrade-price" onclick="selectShopItem('Shield')" aria-label="Shield, 25 stars">
+              <button class="upgrade-price" data-shop-item="Shield" aria-label="Shield, 25 stars">
                 <span aria-hidden="true">★</span> 25
               </button>
             </article>
@@ -127,7 +126,7 @@
               <h2>EXTRA TIME</h2>
               <img src="images/extra-time.png" alt="Extra time">
               <p>Adds 5 seconds to each race.</p>
-              <button class="upgrade-price" onclick="selectShopItem('Extra Time')" aria-label="Extra time, 30 stars">
+              <button class="upgrade-price" data-shop-item="Extra Time" aria-label="Extra time, 30 stars">
                 <span aria-hidden="true">★</span> 30
               </button>
             </article>
@@ -171,6 +170,6 @@
 
     <p id="message" aria-live="polite"></p>
   </main>
-  <script src="script.js"></script>
+  <script type="module" src="./script.ts"></script>
 </body>
 </html>
