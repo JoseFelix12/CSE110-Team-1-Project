@@ -1,8 +1,7 @@
 import {
     COUNTDOWN_SECONDS,
+    DAMAGE_PER_STREAK,
     FINISH_SCREEN_MS,
-    NITRO_PER_CORRECT_ANSWER,
-    NITRO_SECONDS,
     QUESTION_TIMER,
 } from "../constants.ts";
 import { checkAnswer } from "../answerChecker.ts";
@@ -47,8 +46,8 @@ export class RaceClassController implements Scene {
     private countdownRemaining = 0;
     private currentQuestion: Question | null = null;
     private paused = false;
-    private nitroLevel = 0;
-    private nitroTimeRemaining = 0;
+    private lastNitroLevel = -1;
+    private lastNitroActive = false;
 
     //Add carSound, correctAnswer and wrongAnswer here once we have audio files
     private sounds: HTMLAudioElement[] = [];
@@ -63,7 +62,7 @@ export class RaceClassController implements Scene {
         this.view = new RaceClassView(
             {
                 onAnswerSubmit: (answer) => this.handleAnswer(answer),
-                onNitro: () => this.handleNitro(),
+                onNitro: () => this.handleNitroButton(),
                 onPause: () => this.handlePause(),
                 onResume: () => this.handleResume(),
                 onMuteToggle: (muted) => this.handleMuteToggle(muted),
@@ -95,7 +94,8 @@ export class RaceClassController implements Scene {
     update(dt: number): void {
         this.view.update(dt);
         if (!this.paused) {
-            this.updateNitro(dt);
+            this.model.updateNitro(dt);
+            this.syncNitroView();
         }
     }
 
@@ -108,10 +108,11 @@ export class RaceClassController implements Scene {
         this.stopAllTimers();
         this.model.reset();
         this.view.setCar();
+        this.lastNitroActive = false;
+        this.lastNitroLevel = -1;
+        this.syncNitroView();
         this.currentQuestion = null;
         this.paused = false;
-        this.nitroLevel = 0;
-        this.nitroTimeRemaining = 0;
         this.startCountdown();
     }
 
@@ -185,6 +186,16 @@ export class RaceClassController implements Scene {
     }
 
     /**
+     * Decrements health per wrong answer
+     */
+    private decreasesHealth(): void {
+        if(this.model.shouldDamageCar()){
+            this.gameState.getMutableCar().inflictDamage(DAMAGE_PER_STREAK);
+            this.model.resetIncorrectStreak();
+        }
+    }
+    
+    /**
      * Handles answer checking. The view only lets digits through.
      */
     private handleAnswer(answer: string): void {
@@ -193,6 +204,34 @@ export class RaceClassController implements Scene {
         }
     }
 
+    /**
+     * Considers the question correct if nitro is used. Will later implement
+     * storing the question in the question bank.
+     */
+    private handleNitroButton(): void{
+        if(this.currentQuestion == null){
+            return;
+        }
+        if(this.model.handleNitro()){
+            this.finishQuestion(true);
+        }
+        this.syncNitroView();
+    }
+
+    private syncNitroView(): void {
+        const level = this.model.getNitroLevel();
+        const active = this.model.isNitroActive();
+        if(level !== this.lastNitroLevel){
+            this.view.setNitroLevel(level);
+            this.lastNitroLevel = level;
+        }
+        if(active !== this.lastNitroActive){
+            this.view.setNitroActive(active);
+            this.lastNitroActive = active;
+        }
+    }
+
+    
     /**
      * Records an answered or timed out question, then moves the race on
      */
@@ -204,12 +243,12 @@ export class RaceClassController implements Scene {
             this.model.incrementCorrect_Answers();
             this.model.incrementStreak();
             this.model.resetIncorrectStreak();
-            this.chargeNitro();
+            this.model.chargeNitro();
         } else {
             this.model.incrementIncorrect_Answers();
             this.model.incrementIncorrectStreak();
             this.model.resetcorrectStreak();
-            this.model.decreasesHealth();
+            this.decreasesHealth();
         }
         this.view.showAnswerFeedback(correct);
 
@@ -237,36 +276,6 @@ export class RaceClassController implements Scene {
         if (this.finishTimeout != null) {
             clearTimeout(this.finishTimeout);
             this.finishTimeout = null;
-        }
-    }
-
-    // ---------- Nitro ----------
-
-    private chargeNitro(): void {
-        if (this.nitroTimeRemaining <= 0) {
-            this.nitroLevel = Math.min(1, this.nitroLevel + NITRO_PER_CORRECT_ANSWER);
-            this.view.setNitroLevel(this.nitroLevel);
-        }
-    }
-
-    private handleNitro(): void {
-        if (this.nitroLevel >= 1 && this.nitroTimeRemaining <= 0) {
-            this.nitroTimeRemaining = NITRO_SECONDS;
-            this.view.setNitroActive(true);
-        }
-    }
-
-    private updateNitro(dt: number): void {
-        if (this.nitroTimeRemaining <= 0) {
-            return;
-        }
-        this.nitroTimeRemaining -= dt;
-        if (this.nitroTimeRemaining > 0) {
-            this.view.setNitroLevel(this.nitroTimeRemaining / NITRO_SECONDS);
-        } else {
-            this.nitroLevel = 0;
-            this.view.setNitroActive(false);
-            this.view.setNitroLevel(0);
         }
     }
 
