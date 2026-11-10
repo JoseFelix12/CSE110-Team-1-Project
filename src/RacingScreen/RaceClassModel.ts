@@ -6,7 +6,6 @@ import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1, NITRO_PER_CORRECT_ANSWER, NITRO_SECONDS
 export class RaceClassModel {
     private correct_answers = 0;
     private incorrect_answers = 0;
-    private correctAnswerStreak = 0;
     private incorrectAnswerStreak = 0;
     private nitroLevel = 0;
     private nitroTimeRemaining = 0;
@@ -19,7 +18,6 @@ export class RaceClassModel {
     reset(): void {
         this.correct_answers = 0;
         this.incorrect_answers = 0;
-        this.correctAnswerStreak = 0;
         this.incorrectAnswerStreak = 0;
         this.nitroLevel = 0;
         this.nitroTimeRemaining = 0;
@@ -45,20 +43,6 @@ export class RaceClassModel {
      */
     currentProgess(): number {
         return (this.correct_answers + this.incorrect_answers)/AMOUNT_OF_QUESTIONS_IN_LEVEL_1;
-    }
-
-    /**
-     * Amount of correct answers in a row
-     */
-    incrementStreak(): void {
-        this.correctAnswerStreak++;
-    }
-
-    /**
-     * Resets streak if wrong answer
-     */
-    resetcorrectStreak(): void {
-        this.correctAnswerStreak = 0;
     }
 
     /**
@@ -88,10 +72,17 @@ export class RaceClassModel {
         return false;
     }
 
+    /**
+     * Updates nitro amount by constant variable NITRO_PER_CORRECT_ANSWER
+     */
     chargeNitro(): void {
         if (this.nitroTimeRemaining <= 0) {
             this.nitroLevel = Math.min(1, this.nitroLevel + NITRO_PER_CORRECT_ANSWER);
         }
+    }
+
+    resetNitro(): void {
+        this.nitroLevel = 0;
     }
 
     handleNitro(): boolean {

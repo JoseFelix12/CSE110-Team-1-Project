@@ -241,13 +241,12 @@ export class RaceClassController implements Scene {
 
         if (correct) {
             this.model.incrementCorrect_Answers();
-            this.model.incrementStreak();
             this.model.resetIncorrectStreak();
             this.model.chargeNitro();
         } else {
             this.model.incrementIncorrect_Answers();
             this.model.incrementIncorrectStreak();
-            this.model.resetcorrectStreak();
+            this.model.resetNitro();
             this.decreasesHealth();
         }
         this.view.showAnswerFeedback(correct);
