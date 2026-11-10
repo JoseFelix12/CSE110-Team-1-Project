@@ -35,11 +35,18 @@ export class Game {
     }
 
     /**
-     * Switches to a scene, exiting the current one first
+     * Switches to a scene, exiting the current one first. Going to a scene
+     * already in the history returns to it and drops everything after it, so
+     * Back never loops (e.g. Level Select -> Race -> Level Select -> Back
+     * goes Home, not into the race again).
      */
     goTo(id: SceneId, params: SceneParams = {}): void {
-        // Push first so a scene that calls goTo() inside enter() keeps history in order
+        // Update history first so a scene that calls goTo() inside enter() keeps it in order
         this.getFactory(id);
+        const earlier = this.history.indexOf(id);
+        if (earlier !== -1) {
+            this.history.length = earlier;
+        }
         this.history.push(id);
         this.switchTo(id, params);
     }

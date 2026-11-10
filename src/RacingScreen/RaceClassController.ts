@@ -47,6 +47,8 @@ export class RaceClassController implements Scene {
     private countdownRemaining = 0;
     private currentQuestion: Question | null = null;
     private paused = false;
+    /** True from GO until the scene exits; the bots only move while this is set */
+    private racing = false;
     private nitroLevel = 0;
     private nitroTimeRemaining = 0;
 
@@ -74,6 +76,7 @@ export class RaceClassController implements Scene {
                 theme: options.theme,
                 skin: gameState.getCar().getSkin(),
                 speedMultiplier: gameState.getCar().getSpeedMultiplier(),
+                opponentColors: this.model.getOpponents().map((opponent) => opponent.profile.color),
             },
         );
     }
@@ -88,6 +91,7 @@ export class RaceClassController implements Scene {
     }
 
     exit(): void {
+        this.racing = false;
         this.stopAllTimers();
         this.view.destroy();
     }
@@ -96,6 +100,7 @@ export class RaceClassController implements Scene {
         this.view.update(dt);
         if (!this.paused) {
             this.updateNitro(dt);
+            this.updateOpponents(dt);
         }
     }
 
@@ -110,6 +115,7 @@ export class RaceClassController implements Scene {
         this.view.setCar();
         this.currentQuestion = null;
         this.paused = false;
+        this.racing = false;
         this.nitroLevel = 0;
         this.nitroTimeRemaining = 0;
         this.startCountdown();
@@ -132,6 +138,7 @@ export class RaceClassController implements Scene {
             } else {
                 this.stopCountdownTimer();
                 this.view.startRace();
+                this.racing = true;
                 this.nextQuestion();
             }
         }, 1000);
@@ -217,8 +224,25 @@ export class RaceClassController implements Scene {
         this.view.setProgress(progress);
         if (progress < 1) {
             this.nextQuestion();
+        } else {
+            this.model.recordFinish();
+            this.view.setPlacement(this.model.getPlacement());
         }
         //At 1 the view drives to the finish line, then calls endGame
+    }
+
+    // ---------- Opponents ----------
+
+    /**
+     * Moves the bots and updates where the player is placed
+     */
+    private updateOpponents(dt: number): void {
+        if (!this.racing) {
+            return;
+        }
+        this.model.updateOpponents(dt);
+        this.view.setOpponentProgress(this.model.getOpponents().map((opponent) => opponent.getProgress()));
+        this.view.setPlacement(this.model.getPlacement());
     }
 
     /**

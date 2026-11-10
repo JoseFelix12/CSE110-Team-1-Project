@@ -1,7 +1,9 @@
 import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1 } from "../constants.ts";
+import { createOpponents } from "./Opponent.ts";
+import type { Opponent } from "./Opponent.ts";
 
 /**
- * RaceClassModel - Manages game state 
+ * RaceClassModel - Manages game state
  */
 export class RaceClassModel {
     private correct_answers = 0;
@@ -9,6 +11,12 @@ export class RaceClassModel {
     private correctAnswerStreak = 0;
     private incorrectAnswerStreak = 0;
     private health = 100;
+    private opponents: Opponent[];
+    private finishPlace: number | null = null;
+
+    constructor(random: () => number = Math.random) {
+        this.opponents = createOpponents(AMOUNT_OF_QUESTIONS_IN_LEVEL_1, random);
+    }
 
     /**
      * Resets for new race
@@ -19,6 +27,8 @@ export class RaceClassModel {
         this.correctAnswerStreak = 0;
         this.incorrectAnswerStreak = 0
         this.health = 100;
+        this.finishPlace = null;
+        this.opponents.forEach((opponent) => opponent.reset());
     }
 
     /**
@@ -79,5 +89,41 @@ export class RaceClassModel {
         this.incorrectAnswerStreak = 0;
     }
 
-    //Possibility of including placement?
+    // ---------- Opponents ----------
+
+    /**
+     * Moves every bot along by dt seconds
+     */
+    updateOpponents(dt: number): void {
+        this.opponents.forEach((opponent) => opponent.update(dt));
+    }
+
+    getOpponents(): readonly Opponent[] {
+        return this.opponents;
+    }
+
+    /**
+     * Locks in the player's place once they answer the last question.
+     * Bots that finished first are ahead.
+     */
+    recordFinish(): void {
+        if (this.finishPlace === null) {
+            this.finishPlace = 1 + this.opponents.filter((opponent) => opponent.isFinished()).length;
+        }
+    }
+
+    /**
+     * The player's place, 1 = first. During the race, ties go to the player.
+     */
+    getPlacement(): number {
+        if (this.finishPlace !== null) {
+            return this.finishPlace;
+        }
+        const progress = this.currentProgess();
+        return 1 + this.opponents.filter((opponent) => opponent.getProgress() > progress).length;
+    }
+
+    getRacerCount(): number {
+        return this.opponents.length + 1;
+    }
 }

@@ -3,15 +3,20 @@ import type { SkinColor } from '../../Game/gameConfig.ts';
 const WOBBLE_SECONDS = 0.6;
 const WHEEL_RADIUS = 7;
 
-const SKIN_COLORS: Record<SkinColor, { body: string; dark: string }> = {
+/** Shop skins, plus yellow, which only the bots use */
+export type CarColor = SkinColor | 'yellow';
+
+const CAR_COLORS: Record<CarColor, { body: string; dark: string }> = {
     red: { body: '#d3302f', dark: '#8e1c1b' },
     blue: { body: '#2f6fd3', dark: '#1b448a' },
     green: { body: '#2f9d4a', dark: '#1b6330' },
     purple: { body: '#8a3fd3', dark: '#58238e' },
+    yellow: { body: '#e8c21d', dark: '#9a7d0e' },
 };
 
 /**
- * CarSprite - The player's car, drawn from side-on and facing right.
+ * CarSprite - A race car, drawn from side-on and facing right. The player and
+ * the bots all use this sprite in different colors.
  */
 export class CarSprite {
     static readonly WIDTH = 72;
@@ -21,8 +26,12 @@ export class CarSprite {
     private wobbleLeft = 0;
     private time = 0;
 
-    constructor(skin: SkinColor) {
-        this.colors = SKIN_COLORS[skin];
+    constructor(color: CarColor) {
+        this.colors = CAR_COLORS[color];
+    }
+
+    getBodyColor(): string {
+        return this.colors.body;
     }
 
     /**

@@ -81,6 +81,49 @@ describe('RaceClassModel', () => {
         });
     });
 
+    describe('opponents', () => {
+        it('has an easy, a medium and a hard bot', () => {
+            expect(model.getOpponents().map((opponent) => opponent.profile.difficulty)).toEqual(['easy', 'medium', 'hard']);
+            expect(model.getRacerCount()).toBe(4);
+        });
+
+        it('puts the player first while tied at the start', () => {
+            expect(model.getPlacement()).toBe(1);
+        });
+
+        it('drops the player back as bots pull ahead', () => {
+            // Far longer than any bot needs to finish
+            model.updateOpponents(1000);
+            expect(model.getPlacement()).toBe(4);
+        });
+
+        it('locks the place in when the player finishes', () => {
+            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+                model.incrementCorrect_Answers();
+            }
+            model.recordFinish();
+            model.updateOpponents(1000);
+            expect(model.getPlacement()).toBe(1);
+        });
+
+        it('counts bots that finished first as ahead', () => {
+            model.updateOpponents(1000);
+            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+                model.incrementCorrect_Answers();
+            }
+            model.recordFinish();
+            expect(model.getPlacement()).toBe(4);
+        });
+
+        it('reset sends the bots back to the start', () => {
+            model.updateOpponents(1000);
+            model.recordFinish();
+            model.reset();
+            expect(model.getOpponents().every((opponent) => opponent.getProgress() === 0)).toBe(true);
+            expect(model.getPlacement()).toBe(1);
+        });
+    });
+
     describe('reset', () => {
         it('returns every value to its starting state', () => {
             model.incrementCorrect_Answers();
