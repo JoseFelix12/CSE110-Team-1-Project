@@ -1,4 +1,4 @@
-import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1, NITRO_PER_CORRECT_ANSWER, NITRO_SECONDS } from "../constants.ts";
+import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1, CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
 
 /**
  * RaceClassModel - Manages game state 
@@ -73,34 +73,43 @@ export class RaceClassModel {
     }
 
     /**
-     * Updates nitro amount by constant variable NITRO_PER_CORRECT_ANSWER
+     * Updates nitro amount by constant variable CORRECT_ANSWERS_FOR_NITRO at 
+     * all times
      */
     chargeNitro(): void {
-        if (this.nitroTimeRemaining <= 0) {
-            this.nitroLevel = Math.min(1, this.nitroLevel + NITRO_PER_CORRECT_ANSWER);
-        }
+        this.nitroLevel = Math.min(1, this.nitroLevel + 1 / CORRECT_ANSWERS_FOR_NITRO);
     }
-
+    /**
+     * Resets the nitrolevel
+     */
     resetNitro(): void {
         this.nitroLevel = 0;
     }
 
+    /**
+     * Updates values when nitro is used
+     * @returns true if nitro is used, false if not
+     */
     handleNitro(): boolean {
         if (this.nitroLevel >= 1 && this.nitroTimeRemaining <= 0) {
             this.nitroTimeRemaining = NITRO_SECONDS;
             this.nitroActive = true;
+            this.nitroLevel = 0;
             return true;
         }
         return false;
     }
 
+    /**
+     * Is the timer for how long the nitro is being used when pressed
+     * @param dt is by how much the time decreases each update
+     */
     updateNitro(dt: number): void {
         if (this.nitroTimeRemaining <= 0) {
             return;
         }
         this.nitroTimeRemaining -= dt;
         if (this.nitroTimeRemaining <= 0) {
-            this.nitroLevel = 0;
             this.nitroActive = false;
         }
     }

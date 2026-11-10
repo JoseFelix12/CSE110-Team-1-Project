@@ -213,7 +213,7 @@ export class RaceClassController implements Scene {
             return;
         }
         if(this.model.handleNitro()){
-            this.finishQuestion(true);
+            this.finishQuestion(true, true);
         }
         this.syncNitroView();
     }
@@ -235,14 +235,16 @@ export class RaceClassController implements Scene {
     /**
      * Records an answered or timed out question, then moves the race on
      */
-    private finishQuestion(correct: boolean): void {
+    private finishQuestion(correct: boolean, usedNitro = false): void {
         this.stopQuestionTimer();
         this.currentQuestion = null;
 
         if (correct) {
             this.model.incrementCorrect_Answers();
             this.model.resetIncorrectStreak();
-            this.model.chargeNitro();
+            if(!usedNitro){
+                this.model.chargeNitro();
+            }
         } else {
             this.model.incrementIncorrect_Answers();
             this.model.incrementIncorrectStreak();
