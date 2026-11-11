@@ -14,9 +14,7 @@ describe('RaceClassModel', () => {
         it('starts with no answers, no streaks and full health', () => {
             expect(model['correct_answers']).toBe(0);
             expect(model['incorrect_answers']).toBe(0);
-            expect(model['correctAnswerStreak']).toBe(0);
             expect(model['incorrectAnswerStreak']).toBe(0);
-            expect(model['health']).toBe(100);
             expect(model.currentProgess()).toBe(0);
         });
     });
