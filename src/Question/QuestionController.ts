@@ -1,6 +1,6 @@
 
 
-import {wrong_questions, type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
+import {type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
 //import question view
 export class QuestionController {
     private currentQuestion: Question | null = null;
