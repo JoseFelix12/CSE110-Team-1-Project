@@ -110,7 +110,7 @@ export class QuestionController {
   }
 }
 
-class WordProblemAdapter extends QuestionController {
+export class WordProblemAdapter extends QuestionController {
 
   private adaptee: QuestionController;
 
@@ -122,8 +122,7 @@ class WordProblemAdapter extends QuestionController {
   public generateWordProblem(q_type?: string): Question {
     // Generate a random question type
     const q_types = ["addition", "subtraction", "multiplication", "division"];
-    const target_type =
-      q_type || q_types[Math.floor(Math.random() * q_types.length)];
+    const target_type = q_type || q_types[Math.floor(Math.random() * q_types.length)];
 
     const baseQuestion = this.adaptee.generateQuestion(target_type);
     const a = (baseQuestion as any).a;
@@ -143,7 +142,7 @@ class WordProblemAdapter extends QuestionController {
 
     baseQuestion.text = wordProblemText;
 
-    return this.adaptee.generateQuestion(target_type);
+    return baseQuestion;
   }
 
   public generateMultipleWordProblems(
