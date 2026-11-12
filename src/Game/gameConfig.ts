@@ -4,7 +4,7 @@
  * is defined in one place.
  */
 
-export type Operator = '*' | '/';
+export type Operator = '*' | '/' | '+' | '-';
 
 /** Road and scenery a level is raced on: dirt = desert, raceTrack = stadium, street = city */
 export type LevelTheme = 'dirt' | 'raceTrack' | 'street';
@@ -17,6 +17,7 @@ export interface LevelConfig {
     /** Operators the question generator should use for this level */
     operators: Operator[];
     /** Largest factor used when building questions (e.g. 10 -> up to 10 x 10) */
+    minFactor: number;
     maxFactor: number;
     questionCount: number;
 }
@@ -26,28 +27,53 @@ export const LEVELS: LevelConfig[] = [
     {
         id: 1,
         name: 'Desert Dash',
-        description: 'Multiplication with factors up to 5.',
+        description: 'Addition and Subtraction (2 digit numbers).',
         theme: 'dirt',
-        operators: ['*'],
-        maxFactor: 5,
+        operators: ['+', '-'],
+        minFactor: 10,
+        maxFactor: 99,
         questionCount: 15,
     },
     {
         id: 2,
         name: 'Rookie Raceway',
-        description: 'Multiplication with factors up to 5.',
+        description: 'Multiplication with factors up to 6.',
         theme: 'raceTrack',
         operators: ['*'],
-        maxFactor: 5,
+        minFactor: 1,
+        maxFactor: 6,
         questionCount: 15,
     },
     {
         id: 3,
         name: 'City Streets',
-        description: 'Multiplication with factors up to 5.',
+        description: 'Multiplication with factors up to 12.',
         theme: 'street',
         operators: ['*'],
-        maxFactor: 5,
+        minFactor: 1,
+        maxFactor: 12,
+        questionCount: 15,
+    },
+
+    {
+        id: 4,
+        name: 'Nascar Runway',
+        description: 'Division with factors up to 6',
+        theme: 'raceTrack',
+        operators: ['/'],
+        minFactor: 1,
+        maxFactor: 6,
+        questionCount: 15,
+    },
+
+    {
+        id: 5,
+        name: 'Downtown Dash',
+        description: 'Division with factors up to 12',
+        theme: 'street',
+        operators: ['/'],
+        minFactor: 1,
+        maxFactor: 12,
         questionCount: 15,
     },
 ];

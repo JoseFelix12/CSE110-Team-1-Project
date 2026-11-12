@@ -18,6 +18,14 @@ export function computeCorrectAnswer(question: Answerable): number {
         throw new Error("Non-integer division");
       }
       return a / b;
+
+    case "+":
+      return a + b;
+
+    case "-":
+      return a - b;
+
+  
     default:
       throw new Error("Invalid operator");
   }

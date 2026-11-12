@@ -32,7 +32,7 @@ export class QuestionGenerator {
             throw new Error('At least one operator must be specified');
         }
         for (const operators of config.operators) {
-            if (operators != '*' && operators != '/') {
+            if (operators != '*' && operators != '/' && operators != '+' && operators != '-') {
                 throw new Error(`Invalid operator: ${operators}`);
             }
             
@@ -80,21 +80,44 @@ export class QuestionGenerator {
         if (operator === '*') {
             a = randomInt(min, max);
             b = randomInt(min, max);
-        } else if (operator === '/') {
+        } 
+        else if (operator === '/') {
             b = randomInt(Math.max(min, 1), max);
             const answer = randomInt(min,max);
 
             a = b * answer; 
-        } else {
+        } 
+        else if (operator === '+') {
+            a = randomInt(min, max);
+            b = randomInt(min, max);
+        }
+
+        else if (operator === '-') {
+            a = randomInt(min, max);
+            b = randomInt(min, a); // ensure a >= b to avoid negative results
+        }
+
+        else {
             throw new Error(`Invalid operator: ${operator}`);
         }
 
         let symbol;
         if (operator == '*') {
             symbol = '×';
-        } else if (operator == '/') {
+        } 
+        else if (operator == '/') {
             symbol = '÷';
-        } else {
+        } 
+        
+        else if (operator == '+') {
+            symbol = '+';
+        }
+
+        else if (operator == '-') {
+            symbol = '-';
+        }
+        
+        else {
             throw new Error(`Invalid operator: ${operator}`);
         }
 

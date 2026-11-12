@@ -166,7 +166,7 @@ export class RaceClassController implements Scene {
 
     private createGenerator(levelId: number): QuestionGenerator {
         const level = this.gameState.getLevel(levelId);
-        return createQuestionGenerator({ operators: level.operators, min: 1, max: level.maxFactor });
+        return createQuestionGenerator({ operators: level.operators, min: level.minFactor, max: level.maxFactor });
     }
 
     /**
