@@ -28,8 +28,12 @@ vi.mock('./RaceClassView.ts', () => ({
         showAnswerFeedback = vi.fn();
         setNitroLevel = vi.fn();
         setNitroActive = vi.fn();
-        constructor(handlers: unknown) {
+        setOpponentProgress = vi.fn();
+        setPlacement = vi.fn();
+        options: unknown;
+        constructor(handlers: unknown, options: unknown) {
             this.handlers = handlers;
+            this.options = options;
             fake.view = this as never;
         }
     },
@@ -240,6 +244,53 @@ describe('RaceClassController', () => {
             startRacing();
             vi.advanceTimersByTime(30000); // three questions time out
             expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
+    });
+
+    describe('opponents', () => {
+        it('gives the view a yellow, blue and green bot', () => {
+            expect(view().options).toMatchObject({ opponentColors: ['yellow', 'blue', 'green'] });
+        });
+
+        it('keeps the bots at the start until GO', () => {
+            controller.enter({ levelId: 1 });
+            controller.update(0.1);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(3000);
+            controller.update(0.1);
+            expect(view().setOpponentProgress).toHaveBeenCalledWith([0, 0, 0]);
+        });
+
+        it('moves the bots forward as time passes, but not while paused', () => {
+            startRacing();
+            // 40 seconds is far longer than even the easy bot needs for 4 questions
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setOpponentProgress).toHaveBeenLastCalledWith([1, 1, 1]);
+            expect(view().setPlacement).toHaveBeenLastCalledWith(4);
+
+            controller.enter({ levelId: 1 });
+            vi.advanceTimersByTime(3000);
+            view().handlers.onPause();
+            view().setOpponentProgress.mockClear();
+            controller.update(5);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+        });
+
+        it('places the player first when they finish before the bots', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) {
+                answerCorrectly();
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
+
+            // The place stays locked while the bots catch up
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
         });
     });
 
