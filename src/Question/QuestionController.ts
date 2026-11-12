@@ -1,6 +1,11 @@
-
-
-import {type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
+import {
+  type Question,
+  AdditionQuestion,
+  SubtractionQuestion,
+  MultiplicationQuestion,
+  DivisionQuestion,
+} from "./QuestionModel.ts";
+import { WORD_PROBLEM_TEMPLATES } from "../constants.ts";
 //import question view
 export class QuestionController {
   private currentQuestion: Question | null = null;
@@ -102,5 +107,53 @@ export class QuestionController {
     }
     //this.view.feedback.text(isCorrect ? '✓ Correct!' : '✗ Wrong, try again');
     //this.view.feedback.fill(isCorrect ? 'green' : 'crimson');
+  }
+}
+
+class WordProblemAdapter extends QuestionController {
+
+  private adaptee: QuestionController;
+
+  constructor(adaptee: QuestionController) {
+    super();
+    this.adaptee = adaptee;
+  }
+
+  public generateWordProblem(q_type?: string): Question {
+    // Generate a random question type
+    const q_types = ["addition", "subtraction", "multiplication", "division"];
+    const target_type =
+      q_type || q_types[Math.floor(Math.random() * q_types.length)];
+
+    const baseQuestion = this.adaptee.generateQuestion(target_type);
+    const a = (baseQuestion as any).a;
+    const b = (baseQuestion as any).b;
+
+    const templates = WORD_PROBLEM_TEMPLATES[target_type];
+    if (!templates || templates.length === 0) {
+      throw new Error(
+        `No templates available for question type: ${target_type}`,
+      );
+    }
+    const randomTemplate =
+      templates[Math.floor(Math.random() * templates.length)];
+    const wordProblemText = randomTemplate
+      .replace("{a}", a.toString())
+      .replace("{b}", b.toString());
+
+    baseQuestion.text = wordProblemText;
+
+    return this.adaptee.generateQuestion(target_type);
+  }
+
+  public generateMultipleWordProblems(
+    q_type: string,
+    count: number,
+  ): Question[] {
+    const questions: Question[] = [];
+    for (let i = 0; i < count; i++) {
+      questions.push(this.generateWordProblem(q_type));
+    }
+    return questions;
   }
 }
