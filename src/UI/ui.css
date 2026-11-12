@@ -45,11 +45,87 @@ body {
   height: 9%;
 }
 
-.level-one {
-  left: 28%;
-  top: 30%;
-  width: 44%;
-  height: 49%;
+/* Level select: positions are % of levels.png (1440 x 1024). Text sizes use
+   cqw (1% of the screen's width) so they scale with the picture. */
+#level-select-screen {
+  container-type: inline-size;
+}
+
+.level-play {
+  left: 28.1%;
+  top: 31.3%;
+  width: 45.4%;
+  height: 44.9%;
+}
+
+.level-prev,
+.level-next {
+  top: 47.2%;
+  width: 4.7%;
+  height: 13.3%;
+}
+
+.level-prev {
+  left: 21.9%;
+}
+
+.level-next {
+  left: 76.1%;
+}
+
+.level-title,
+.level-name,
+.level-description {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Covers the "LEVEL 1" drawn on the panel */
+.level-title {
+  left: 30.6%;
+  top: 33.7%;
+  width: 40.1%;
+  height: 4.7%;
+  background: #000000;
+  font-size: 4.1cqw;
+}
+
+/* Covers the thumbnail drawn on the panel */
+.level-preview {
+  position: absolute;
+  left: 33.9%;
+  top: 42.4%;
+  width: 34.9%;
+  height: 22.6%;
+  border: 0.25cqw solid white;
+  background: #000000;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.level-name {
+  left: 30.6%;
+  top: 66.9%;
+  width: 40.1%;
+  height: 6.8%;
+  font-size: 2.6cqw;
+}
+
+/* Covers the description between the red bars at the bottom */
+.level-description {
+  left: 27.4%;
+  top: 91.8%;
+  width: 47.9%;
+  height: 3.5%;
+  background: #1b1b1b;
+  font-size: 1.8cqw;
 }
 
 .hotspot:focus-visible {

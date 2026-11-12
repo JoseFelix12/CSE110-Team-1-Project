@@ -6,10 +6,14 @@
 
 export type Operator = '*' | '/';
 
+/** Road and scenery a level is raced on: dirt = desert, raceTrack = stadium, street = city */
+export type LevelTheme = 'dirt' | 'raceTrack' | 'street';
+
 export interface LevelConfig {
     id: number;
     name: string;
     description: string;
+    theme: LevelTheme;
     /** Operators the question generator should use for this level */
     operators: Operator[];
     /** Largest factor used when building questions (e.g. 10 -> up to 10 x 10) */
@@ -17,38 +21,34 @@ export interface LevelConfig {
     questionCount: number;
 }
 
+// Every level uses Level 1's math for now; each level's own math comes later
 export const LEVELS: LevelConfig[] = [
     {
         id: 1,
-        name: 'Rookie Raceway',
+        name: 'Desert Dash',
         description: 'Multiplication with factors up to 5.',
+        theme: 'dirt',
         operators: ['*'],
         maxFactor: 5,
         questionCount: 15,
     },
     {
         id: 2,
-        name: 'Times Table Track',
-        description: 'Multiplication with factors up to 10.',
+        name: 'Rookie Raceway',
+        description: 'Multiplication with factors up to 5.',
+        theme: 'raceTrack',
         operators: ['*'],
-        maxFactor: 10,
+        maxFactor: 5,
         questionCount: 15,
     },
     {
         id: 3,
-        name: 'Division Drift',
-        description: 'Division facts up to 10.',
-        operators: ['/'],
-        maxFactor: 10,
+        name: 'City Streets',
+        description: 'Multiplication with factors up to 5.',
+        theme: 'street',
+        operators: ['*'],
+        maxFactor: 5,
         questionCount: 15,
-    },
-    {
-        id: 4,
-        name: 'Grand Prix',
-        description: 'Mixed multiplication and division up to 12.',
-        operators: ['*', '/'],
-        maxFactor: 12,
-        questionCount: 20,
     },
 ];
 

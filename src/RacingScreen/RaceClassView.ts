@@ -1,4 +1,4 @@
-import type { SkinColor } from '../Game/gameConfig.ts';
+import type { LevelTheme, SkinColor } from '../Game/gameConfig.ts';
 import { Background, CityBackground, DesertBackground, StadiumBackground } from './view/Background.ts';
 import { CarSprite } from './view/CarSprite.ts';
 import type { CarColor } from './view/CarSprite.ts';
@@ -34,7 +34,8 @@ const FINISH_DISTANCE = 800;
 const GO_MESSAGE_SECONDS = 0.9;
 const PROGRESS_EASING = 5;
 
-export type RaceTheme = 'dirt' | 'raceTrack' | 'street';
+/** Each level picks one of these in gameConfig */
+export type RaceTheme = LevelTheme;
 
 /** Pairs each road type with its scenery. Add new themes here. */
 const RACE_THEMES: Record<RaceTheme, () => { road: Road; background: Background }> = {
@@ -42,6 +43,27 @@ const RACE_THEMES: Record<RaceTheme, () => { road: Road; background: Background 
     raceTrack: () => ({ road: new RaceTrackRoad(), background: new StadiumBackground() }),
     street: () => ({ road: new StreetRoad(), background: new CityBackground() }),
 };
+
+/** Slightly taller than the race so it fills the level select thumbnail box */
+const PREVIEW_HEIGHT = 295;
+
+/**
+ * Draws a still frame of a theme (scenery, road and a parked car), such as the
+ * thumbnail on the level select screen
+ */
+export function drawThemePreview(canvas: HTMLCanvasElement, theme: RaceTheme, skin: CarColor = 'red'): void {
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = PREVIEW_HEIGHT;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return;
+    }
+    const { road, background } = RACE_THEMES[theme]();
+    background.draw(ctx, 0, CANVAS_WIDTH, HORIZON_Y);
+    road.draw(ctx, 0, CANVAS_WIDTH, HORIZON_Y, PREVIEW_HEIGHT - HORIZON_Y);
+    const car = new CarSprite(skin);
+    car.draw(ctx, (CANVAS_WIDTH - CarSprite.WIDTH) / 2, HORIZON_Y + 104, false, false);
+}
 
 /** What the view tells the controller about */
 export interface RaceViewHandlers {
@@ -215,6 +237,16 @@ export class RaceClassView {
     }
 
     // ---------- Called by the controller ----------
+
+    /**
+     * Switches the road and scenery, e.g. to the theme of the level being raced
+     */
+    setTheme(theme: RaceTheme): void {
+        const { road, background } = RACE_THEMES[theme]();
+        this.road = road;
+        this.background = background;
+        this.render();
+    }
 
     /**
      * Puts the car back at the start line, stopped, and clears the last race

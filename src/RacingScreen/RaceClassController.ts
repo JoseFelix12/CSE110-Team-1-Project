@@ -37,6 +37,8 @@ export class RaceClassController implements Scene {
     private screenSwitcher: screenSwitcher;
     private gameState: GameState;
     private parent: HTMLElement | null;
+    /** Forces one theme for every level (the demo uses this); otherwise each level picks its own */
+    private themeOverride: RaceTheme | undefined;
     private generator: QuestionGenerator;
 
     private questionTimer: ReturnType<typeof setInterval> | null = null;
@@ -58,6 +60,7 @@ export class RaceClassController implements Scene {
         this.screenSwitcher = screenSwitcher;
         this.gameState = gameState;
         this.parent = options.parent ?? null;
+        this.themeOverride = options.theme;
         this.generator = this.createGenerator(1);
 
         this.model = new RaceClassModel();
@@ -72,7 +75,6 @@ export class RaceClassController implements Scene {
                 onFinishLineCrossed: () => this.endGame(),
             },
             {
-                theme: options.theme,
                 skin: gameState.getCar().getSkin(),
                 speedMultiplier: gameState.getCar().getSpeedMultiplier(),
                 opponentColors: this.model.getOpponents().map((opponent) => opponent.profile.color),
@@ -85,6 +87,7 @@ export class RaceClassController implements Scene {
     enter(params: SceneParams): void {
         const levelId = typeof params.levelId === "number" ? params.levelId : 1;
         this.generator = this.createGenerator(levelId);
+        this.view.setTheme(this.themeOverride ?? this.gameState.getLevel(levelId).theme);
         this.view.mount(this.parent ?? document.body);
         this.startGame();
     }

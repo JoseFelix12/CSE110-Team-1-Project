@@ -28,6 +28,7 @@ vi.mock('./RaceClassView.ts', () => ({
         showAnswerFeedback = vi.fn();
         setNitroLevel = vi.fn();
         setNitroActive = vi.fn();
+        setTheme = vi.fn();
         setOpponentProgress = vi.fn();
         setPlacement = vi.fn();
         options: unknown;
@@ -292,6 +293,24 @@ describe('RaceClassController', () => {
             }
             expect(view().setPlacement).toHaveBeenLastCalledWith(1);
         });
+    });
+
+    it.each([
+        [1, 'dirt'],
+        [2, 'raceTrack'],
+        [3, 'street'],
+    ])('races level %i on the %s theme', (levelId, theme) => {
+        controller.enter({ levelId });
+        expect(view().setTheme).toHaveBeenCalledWith(theme);
+    });
+
+    it('uses the theme option over the level theme when one is given', () => {
+        controller = new RaceClassController({ switchToScreen }, gameState, {
+            parent: {} as HTMLElement,
+            theme: 'street',
+        });
+        controller.enter({ levelId: 1 });
+        expect(view().setTheme).toHaveBeenCalledWith('street');
     });
 
     it('quits to the level screen', () => {

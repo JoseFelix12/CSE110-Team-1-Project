@@ -30,6 +30,10 @@ describe("Math Racer UI navigation", () => {
       </main>
     `;
 
+    // jsdom has no canvas, so skip drawing the level preview
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(null);
+
     // Use a fresh game for every test.
     game = new Game(new GameState(null));
 
@@ -134,14 +138,17 @@ describe("Math Racer UI navigation", () => {
   it("opens Race with levelId 1 when LEVEL 1 is clicked", () => {
     game.goTo(SceneIds.LevelSelect);
 
-    const levelOneButton =
-      document.getElementById("level-one-button");
+    const playButton =
+      document.getElementById("level-play-button");
 
-    expect(levelOneButton).not.toBeNull();
+    expect(playButton).not.toBeNull();
+    expect(
+      document.getElementById("level-title")!.textContent
+    ).toBe("LEVEL 1");
 
     const goToSpy = vi.spyOn(game, "goTo");
 
-    levelOneButton!.click();
+    playButton!.click();
 
     expect(goToSpy).toHaveBeenCalledWith(
       SceneIds.Race,
@@ -151,5 +158,76 @@ describe("Math Racer UI navigation", () => {
     expect(game.getCurrentSceneId()).toBe(
       SceneIds.Race
     );
+  });
+
+  describe("level arrows", () => {
+    const title = () =>
+      document.getElementById("level-title")!.textContent;
+    const click = (id: string) =>
+      document.getElementById(id)!.click();
+
+    beforeEach(() => {
+      game.goTo(SceneIds.LevelSelect);
+    });
+
+    it("the right arrow steps through every level and wraps to the first", () => {
+      click("level-next-button");
+      expect(title()).toBe("LEVEL 2");
+      click("level-next-button");
+      expect(title()).toBe("LEVEL 3");
+      click("level-next-button");
+      expect(title()).toBe("LEVEL 1");
+    });
+
+    it("the left arrow wraps from the first level to the last", () => {
+      click("level-prev-button");
+      expect(title()).toBe("LEVEL 3");
+      click("level-prev-button");
+      expect(title()).toBe("LEVEL 2");
+    });
+
+    it("shows each level's name and description", () => {
+      click("level-next-button");
+      expect(
+        document.getElementById("level-name")!.textContent
+      ).toBe("ROOKIE RACEWAY");
+      expect(
+        document.getElementById("level-description")!.textContent
+      ).toBe("MULTIPLICATION WITH FACTORS UP TO 5.");
+    });
+
+    it("the arrow keys also change level", () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight" })
+      );
+      expect(title()).toBe("LEVEL 2");
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft" })
+      );
+      expect(title()).toBe("LEVEL 1");
+    });
+
+    it("clicking the panel races the level being shown", () => {
+      click("level-next-button");
+      click("level-next-button");
+      const goToSpy = vi.spyOn(game, "goTo");
+
+      click("level-play-button");
+
+      expect(goToSpy).toHaveBeenCalledWith(
+        SceneIds.Race,
+        { levelId: 3 }
+      );
+    });
+
+    it("stops listening for arrow keys after leaving", () => {
+      click("level-play-button");
+      expect(() =>
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowRight" })
+        )
+      ).not.toThrow();
+      expect(game.getCurrentSceneId()).toBe(SceneIds.Race);
+    });
   });
 });

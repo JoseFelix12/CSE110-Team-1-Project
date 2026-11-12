@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Race View Demo</title>
+    <style>
+        body { margin: 0; padding: 16px; background: #2b2d36; color: #ffffff; font-family: "Courier New", monospace; }
+        nav { max-width: 960px; margin: 0 auto 12px; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+        a { color: #ffd60a; }
+        #result { max-width: 960px; margin: 12px auto 0; font-size: 18px; min-height: 24px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="?theme=raceTrack&skin=red">Race track</a>
+        <a href="?theme=dirt&skin=blue">Dirt road</a>
+        <a href="?theme=street&skin=purple">Street</a>
+    </nav>
+    <div id="race"></div>
+    <div id="result" aria-live="polite"></div>
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>
