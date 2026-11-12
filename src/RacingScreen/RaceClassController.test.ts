@@ -3,6 +3,8 @@ import type { Mock } from 'vitest';
 import { GameState } from '../Game/GameState.ts';
 import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
+import { MAX_HEALTH } from '../Game/gameConfig.ts';
+import { DAMAGE_PER_STREAK } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
 
@@ -33,14 +35,17 @@ vi.mock('./RaceClassView.ts', () => ({
     },
 }));
 
-// Long enough to answer several questions before the race ends
+// Long enough to answer several questions, and a small nitro requirement so
+// the bar can be filled within one race
 vi.mock('../constants.ts', async (original) => ({
     ...(await original<typeof import('../constants.ts')>()),
     AMOUNT_OF_QUESTIONS_IN_LEVEL_1: 4,
+    CORRECT_ANSWERS_FOR_NITRO: 2,
 }));
 
 describe('RaceClassController', () => {
     let switchToScreen: Mock<(id: SceneId) => void>;
+    let gameState: GameState;
     let controller: RaceClassController;
 
     const view = () => fake.view!;
@@ -53,11 +58,20 @@ describe('RaceClassController', () => {
         controller.enter({ levelId: 1 });
         vi.advanceTimersByTime(3000);
     };
+    const answerCorrectly = () => view().handlers.onAnswerSubmit(lastAnswer());
+    const answerWrong = () => view().handlers.onAnswerSubmit('99999');
+    /** Fills the nitro bar, then simulates one frame so the view hears about it */
+    const fillNitro = () => {
+        answerCorrectly();
+        answerCorrectly();
+        controller.update(0);
+    };
 
     beforeEach(() => {
         vi.useFakeTimers();
         switchToScreen = vi.fn<(id: SceneId) => void>();
-        controller = new RaceClassController({ switchToScreen }, new GameState(null), {
+        gameState = new GameState(null);
+        controller = new RaceClassController({ switchToScreen }, gameState, {
             parent: {} as HTMLElement,
         });
     });
@@ -82,7 +96,7 @@ describe('RaceClassController', () => {
 
     it('moves on after a correct answer', () => {
         startRacing();
-        view().handlers.onAnswerSubmit(lastAnswer());
+        answerCorrectly();
         expect(view().showAnswerFeedback).toHaveBeenCalledWith(true);
         expect(view().setProgress).toHaveBeenCalledWith(0.25);
         expect(view().setQuestion).toHaveBeenCalledTimes(2);
@@ -90,7 +104,7 @@ describe('RaceClassController', () => {
 
     it('marks a wrong answer as wrong', () => {
         startRacing();
-        view().handlers.onAnswerSubmit('99999');
+        answerWrong();
         expect(view().showAnswerFeedback).toHaveBeenCalledWith(false);
     });
 
@@ -129,7 +143,7 @@ describe('RaceClassController', () => {
     it('stops asking at full progress and leaves after the finish line', () => {
         startRacing();
         for (let i = 0; i < 4; i++) {
-            view().handlers.onAnswerSubmit(lastAnswer());
+            answerCorrectly();
         }
         expect(view().setProgress).toHaveBeenLastCalledWith(1);
         expect(view().setQuestion).toHaveBeenCalledTimes(4);
@@ -144,33 +158,89 @@ describe('RaceClassController', () => {
         expect(switchToScreen).toHaveBeenCalledWith(SceneIds.LevelSelect);
     });
 
-    it('fills nitro from correct answers, then burns it off', () => {
-        startRacing();
-        view().handlers.onNitro();
-        expect(view().setNitroActive).not.toHaveBeenCalled();
+    describe('nitro', () => {
+        it('ignores the nitro button until the bar is full', () => {
+            startRacing();
+            view().handlers.onNitro();
+            expect(view().setNitroActive).not.toHaveBeenCalled();
+            expect(view().showAnswerFeedback).not.toHaveBeenCalled();
+        });
 
-        view().handlers.onAnswerSubmit(lastAnswer());
-        view().handlers.onAnswerSubmit(lastAnswer());
-        expect(view().setNitroLevel).toHaveBeenLastCalledWith(1);
+        it('fills nitro from correct answers, then burns it off', () => {
+            startRacing();
+            fillNitro();
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(1);
 
-        view().handlers.onNitro();
-        expect(view().setNitroActive).toHaveBeenLastCalledWith(true);
+            view().handlers.onNitro();
+            expect(view().setNitroActive).toHaveBeenLastCalledWith(true);
 
-        controller.update(1);
-        expect(view().setNitroLevel).toHaveBeenLastCalledWith(0.5);
-        controller.update(1);
-        expect(view().setNitroActive).toHaveBeenLastCalledWith(false);
-        expect(view().setNitroLevel).toHaveBeenLastCalledWith(0);
+            controller.update(1);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(0.5);
+            controller.update(1);
+            expect(view().setNitroActive).toHaveBeenLastCalledWith(false);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(0);
+        });
+
+        it('counts a nitro press as a correct answer and moves to the next question', () => {
+            startRacing();
+            fillNitro();
+            view().handlers.onNitro();
+            expect(view().showAnswerFeedback).toHaveBeenLastCalledWith(true);
+            expect(view().setProgress).toHaveBeenLastCalledWith(0.75);
+            expect(view().setQuestion).toHaveBeenCalledTimes(4);
+        });
+
+        it('a wrong answer empties the nitro bar', () => {
+            startRacing();
+            answerCorrectly();
+            controller.update(0);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(0.5);
+
+            answerWrong();
+            controller.update(0);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(0);
+        });
+
+        it('does not burn nitro while paused', () => {
+            startRacing();
+            fillNitro();
+            view().handlers.onNitro();
+            view().handlers.onPause();
+            controller.update(5);
+            expect(view().setNitroActive).toHaveBeenCalledTimes(1);
+        });
     });
 
-    it('does not burn nitro while paused', () => {
-        startRacing();
-        view().handlers.onAnswerSubmit(lastAnswer());
-        view().handlers.onAnswerSubmit(lastAnswer());
-        view().handlers.onNitro();
-        view().handlers.onPause();
-        controller.update(5);
-        expect(view().setNitroActive).toHaveBeenCalledTimes(1);
+    describe('health', () => {
+        it('does not damage the car before 3 wrong answers in a row', () => {
+            startRacing();
+            answerWrong();
+            answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH);
+        });
+
+        it('damages the car after 3 wrong answers in a row', () => {
+            startRacing();
+            answerWrong();
+            answerWrong();
+            answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
+
+        it('a correct answer breaks the streak', () => {
+            startRacing();
+            answerWrong();
+            answerWrong();
+            answerCorrectly();
+            answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH);
+        });
+
+        it('counts timed out questions toward the streak', () => {
+            startRacing();
+            vi.advanceTimersByTime(30000); // three questions time out
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
     });
 
     it('quits to the level screen', () => {
