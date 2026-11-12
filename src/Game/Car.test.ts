@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Car } from './Car.ts';
 import type { CarData, ReadonlyCar } from './Car.ts';
-import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_DAMAGE, SKIN_PRICES } from './gameConfig.ts';
+import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_HEALTH, SKIN_PRICES } from './gameConfig.ts';
 import type { SkinColor } from './gameConfig.ts';
 
 /** fromSave receives untrusted data, so tests need to pass values outside its declared type */
@@ -16,7 +16,7 @@ const validSave = (): CarData => ({
     speedMultiplier: 1.2,
     upgrades: ['Speed Boost', 'Shield'],
     cosmetics: ['spoiler', 'flames'],
-    damage: 35,
+    health: 35,
 });
 
 describe("Car", () => {
@@ -34,7 +34,7 @@ describe("Car", () => {
                 speedMultiplier: 1,
                 upgrades: [],
                 cosmetics: [],
-                damage: 0,
+                health: MAX_HEALTH,
             });
         });
     });
@@ -55,13 +55,13 @@ describe("Car", () => {
             expect(custom.getSpeedMultiplier()).toBe(1.2);
             expect(custom.getUpgrades()).toEqual(['Speed Boost', 'Shield']);
             expect(custom.getCosmetics()).toEqual(['spoiler', 'flames']);
-            expect(custom.getDamage()).toBe(35);
+            expect(custom.getHealth()).toBe(35);
         });
 
         it("can be used through the ReadonlyCar interface", () => {
             const readonly: ReadonlyCar = new Car(validSave());
             expect(readonly.getSkin()).toBe('purple');
-            expect(readonly.getDamage()).toBe(35);
+            expect(readonly.getHealth()).toBe(35);
         });
     });
 
@@ -99,7 +99,6 @@ describe("Car", () => {
             car.setColor('green');
             expect(car.getSkin()).toBe('green');
         });
-
     });
 
     describe("upgradeEngine: raises the engine level by exactly one", () => {
@@ -132,101 +131,99 @@ describe("Car", () => {
             car.updateSpeedMultiplier();
             expect(car.getSpeedMultiplier()).toBeCloseTo(1 + level * ENGINE_SPEED_BONUS_PER_LEVEL);
         });
-
     });
 
-    describe("inflictDamage: adds damage, capped at MAX_DAMAGE", () => {
-        it("adds the amount to the current damage", () => {
+    describe("inflictDamage: lowers health, floored at 0", () => {
+        it("subtracts the amount from current health", () => {
             car.inflictDamage(10);
-            expect(car.getDamage()).toBe(10);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 10);
         });
 
         it("accumulates across multiple hits", () => {
             car.inflictDamage(10);
             car.inflictDamage(25);
-            expect(car.getDamage()).toBe(35);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 35);
         });
 
         it("does nothing when the amount is 0", () => {
             car.inflictDamage(0);
-            expect(car.getDamage()).toBe(0);
+            expect(car.getHealth()).toBe(MAX_HEALTH);
         });
 
-        it("can reach exactly MAX_DAMAGE", () => {
-            car.inflictDamage(MAX_DAMAGE);
-            expect(car.getDamage()).toBe(MAX_DAMAGE);
+        it("can reach exactly 0", () => {
+            car.inflictDamage(MAX_HEALTH);
+            expect(car.getHealth()).toBe(0);
         });
 
-        it("caps at MAX_DAMAGE when a single hit is too large", () => {
-            car.inflictDamage(MAX_DAMAGE + 50);
-            expect(car.getDamage()).toBe(MAX_DAMAGE);
+        it("floors at 0 when a single hit is too large", () => {
+            car.inflictDamage(MAX_HEALTH + 50);
+            expect(car.getHealth()).toBe(0);
         });
 
-        it("caps at MAX_DAMAGE when hits add up past it", () => {
-            car.inflictDamage(MAX_DAMAGE - 5);
+        it("floors at 0 when hits add up past it", () => {
+            car.inflictDamage(MAX_HEALTH - 5);
             car.inflictDamage(10);
-            expect(car.getDamage()).toBe(MAX_DAMAGE);
+            expect(car.getHealth()).toBe(0);
         });
 
-        it("stays at MAX_DAMAGE when already fully damaged", () => {
-            car.inflictDamage(MAX_DAMAGE);
+        it("stays at 0 when already wrecked", () => {
+            car.inflictDamage(MAX_HEALTH);
             car.inflictDamage(1);
-            expect(car.getDamage()).toBe(MAX_DAMAGE);
+            expect(car.getHealth()).toBe(0);
         });
 
-
-        it.each([-10, -Infinity, NaN])("throws for an invalid amount (%s) and leaves damage unchanged", (amount) => {
+        it.each([-10, -Infinity, NaN])("throws for an invalid amount (%s) and leaves health unchanged", (amount) => {
             car.inflictDamage(20);
             expect(() => car.inflictDamage(amount)).toThrow(RangeError);
-            expect(car.getDamage()).toBe(20);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 20);
         });
     });
 
-    describe("undoDamage: removes damage, floored at 0", () => {
+    describe("undoDamage: restores health, capped at MAX_HEALTH", () => {
         beforeEach(() => {
             car.inflictDamage(50);
         });
 
-        it("subtracts the amount from the current damage", () => {
+        it("adds the amount to current health", () => {
             car.undoDamage(20);
-            expect(car.getDamage()).toBe(30);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 30);
         });
 
         it("accumulates across multiple repairs", () => {
             car.undoDamage(10);
             car.undoDamage(15);
-            expect(car.getDamage()).toBe(25);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 25);
         });
 
         it("does nothing when the amount is 0", () => {
             car.undoDamage(0);
-            expect(car.getDamage()).toBe(50);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 50);
         });
 
-        it("can reach exactly 0", () => {
+        it("can reach exactly MAX_HEALTH", () => {
             car.undoDamage(50);
-            expect(car.getDamage()).toBe(0);
+            expect(car.getHealth()).toBe(MAX_HEALTH);
         });
 
-        it("floors at 0 when the repair is larger than the damage", () => {
+        it("caps at MAX_HEALTH when the repair is larger than the damage", () => {
             car.undoDamage(80);
-            expect(car.getDamage()).toBe(0);
+            expect(car.getHealth()).toBe(MAX_HEALTH);
         });
 
-        it("stays at 0 when repairing an undamaged car", () => {
+        it("stays at MAX_HEALTH when repairing an undamaged car", () => {
             const fresh = new Car();
             fresh.undoDamage(10);
-            expect(fresh.getDamage()).toBe(0);
+            expect(fresh.getHealth()).toBe(MAX_HEALTH);
         });
 
-        it("floors at 0 for an amount of Infinity", () => {
+        it("caps at MAX_HEALTH for an amount of Infinity", () => {
             car.undoDamage(Infinity);
-            expect(car.getDamage()).toBe(0);
+            expect(car.getHealth()).toBe(MAX_HEALTH);
         });
 
-        it.each([-10, -Infinity, NaN])("throws for an invalid amount (%s) and leaves damage unchanged", (amount) => {
+        it.each([-10, -Infinity, NaN])("throws for an invalid amount (%s) and leaves health unchanged", (amount) => {
             expect(() => car.undoDamage(amount)).toThrow(RangeError);
-            expect(car.getDamage()).toBe(50);
+            expect(car.getHealth()).toBe(MAX_HEALTH - 50);
         });
     });
 
@@ -247,7 +244,7 @@ describe("Car", () => {
             expect(json.engineLevel).toBe(1);
             expect(json.speedMultiplier).toBeCloseTo(1 + ENGINE_SPEED_BONUS_PER_LEVEL);
             expect(json.upgrades).toEqual([]);
-            expect(json.damage).toBe(40);
+            expect(json.health).toBe(MAX_HEALTH - 40);
         });
 
         it("mutating the returned object does not change the car", () => {
@@ -257,7 +254,7 @@ describe("Car", () => {
             json.engineLevel = 0;
             json.upgrades.length = 0;
             json.cosmetics.push('decal');
-            json.damage = 0;
+            json.health = 0;
             expect(custom.toJSON()).toEqual(validSave());
         });
 
@@ -285,7 +282,7 @@ describe("Car", () => {
             it("save where every field is null", () => {
                 const allNull = {
                     skin: null, engineLevel: null, speedMultiplier: null,
-                    upgrades: null, cosmetics: null, damage: null,
+                    upgrades: null, cosmetics: null, health: null,
                 };
                 expect(fromRaw(allNull).toJSON()).toEqual(Car.defaultData());
             });
@@ -293,7 +290,7 @@ describe("Car", () => {
             it("save where every field is undefined", () => {
                 const allUndefined = {
                     skin: undefined, engineLevel: undefined, speedMultiplier: undefined,
-                    upgrades: undefined, cosmetics: undefined, damage: undefined,
+                    upgrades: undefined, cosmetics: undefined, health: undefined,
                 };
                 expect(fromRaw(allUndefined).toJSON()).toEqual(Car.defaultData());
             });
@@ -305,10 +302,10 @@ describe("Car", () => {
             });
 
             it("keeps falsy-but-valid values like 0 instead of replacing them", () => {
-                const loaded = Car.fromSave({ engineLevel: 0, speedMultiplier: 0, damage: 0 });
+                const loaded = Car.fromSave({ engineLevel: 0, speedMultiplier: 0, health: 0 });
                 expect(loaded.getEngineLevel()).toBe(0);
                 expect(loaded.getSpeedMultiplier()).toBe(0);
-                expect(loaded.getDamage()).toBe(0);
+                expect(loaded.getHealth()).toBe(0);
             });
 
             it("keeps empty arrays", () => {
@@ -318,8 +315,8 @@ describe("Car", () => {
             });
 
             it("fills only the missing fields of a partial save with defaults", () => {
-                const loaded = Car.fromSave({ skin: 'blue', damage: 20 });
-                expect(loaded.toJSON()).toEqual({ ...Car.defaultData(), skin: 'blue', damage: 20 });
+                const loaded = Car.fromSave({ skin: 'blue', health: 20 });
+                expect(loaded.toJSON()).toEqual({ ...Car.defaultData(), skin: 'blue', health: 20 });
             });
 
             it("ignores unknown extra fields", () => {
@@ -332,7 +329,7 @@ describe("Car", () => {
                 const loaded = Car.fromSave(save);
                 save.upgrades.push('Extra Time');
                 save.cosmetics.length = 0;
-                save.damage = 99;
+                save.health = 99;
                 expect(loaded.toJSON()).toEqual(validSave());
             });
         });
