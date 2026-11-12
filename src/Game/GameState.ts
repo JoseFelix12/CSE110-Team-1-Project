@@ -100,8 +100,18 @@ export class GameState {
         this.data = progress;
         this.car = new Car(car);
     }
-
+    /**
+     *  Does not allow modification of the car
+     * @returns a read-only view of the car
+     */
     getCar(): ReadonlyCar {
+        return this.car;
+    }
+    /**
+     * Allows for modification of the car class
+     * @returns a modifiable view of the car
+     */
+    getMutableCar(): Car {
         return this.car;
     }
 

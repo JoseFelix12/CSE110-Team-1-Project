@@ -64,7 +64,7 @@ export const COINS_PER_STAR = 10;
 /* Car config */
 export type SkinColor = 'red' | 'blue' | 'green' | 'purple';
 export type Upgrade = 'Speed Boost' | 'Better Tires' | 'Shield' | 'Extra Time';
-export const MAX_DAMAGE = 100;
+export const MAX_HEALTH = 100;
 
 export const DEFAULT_SKIN: SkinColor = 'red';
 
