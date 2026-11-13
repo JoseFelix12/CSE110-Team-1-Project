@@ -5,8 +5,7 @@ export const COUNTDOWN_SECONDS = 3;
 export const CORRECT_ANSWERS_FOR_NITRO = 5; //Full after 2 correct answers
 export const NITRO_SECONDS = 2;
 export const FINISH_SCREEN_MS = 1500; //How long FINISH! shows before leaving the race
-
-
+export const HEALTH_REPAIR = 10; /** Health repaired per question answered in MG2 */
 export const WORD_PROBLEM_TEMPLATES: Record<string, string[]> = {
     "addition": [
         "If you have {a} apples and your friend gives you {b} more, how many apples do you have in total?", 
