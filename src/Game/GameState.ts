@@ -9,8 +9,9 @@ import {
     SKIN_PRICES,
     STARS_TO_UNLOCK_NEXT,
     STAR_THRESHOLDS,
+    UPGRADE_PRICES,
 } from './gameConfig.ts';
-import type { LevelConfig, SkinColor } from './gameConfig.ts';
+import type { LevelConfig, SkinColor, Upgrade } from './gameConfig.ts';
 
 /** Minimal storage interface so tests can pass a fake instead of localStorage */
 export interface StorageLike {
@@ -243,8 +244,8 @@ export class GameState {
      * Buys the next engine upgrade. Returns whether it worked.
      */
     buyEngineUpgrade(): boolean {
-        const price = this.getNextEngineUpgradePrice();
-        if (price === null || price > this.data.coins) {
+        const price = ENGINE_UPGRADE_PRICES[this.car.getEngineLevel()];
+        if (price === undefined || price > this.data.coins) {
             return false;
         }
         this.data.coins -= price;
@@ -264,9 +265,10 @@ export class GameState {
         return this.data.ownedSkins.includes(skin);
     }
 
-    /**
-     * Buys a skin and equips it. Returns whether it worked.
-     */
+    ownsUpgrade(upgrade: Upgrade): boolean {
+        return this.car.getUpgrades().includes(upgrade);
+    }
+
     buySkin(skin: SkinColor): boolean {
         const price = SKIN_PRICES[skin];
         if (price === undefined || this.ownsSkin(skin) || price > this.data.coins) {
@@ -277,7 +279,24 @@ export class GameState {
         this.car.setColor(skin);
         this.changed();
         return true;
+
     }
+
+    buyUpgrade(upgrade: Upgrade): boolean {
+        const price = UPGRADE_PRICES[upgrade];
+        if (
+            price === undefined ||
+            this.ownsUpgrade(upgrade) ||
+            price > this.data.coins
+        ) {
+            return false;
+        }
+        this.data.coins -= price;
+        this.car.addUpgrade(upgrade);
+        this.changed();
+        return true;
+    }
+    
 
     /**
      * Equips a skin the player already owns. Returns whether it worked.
@@ -290,6 +309,11 @@ export class GameState {
         this.changed();
         return true;
     }
+
+
+    
+
+    
 
     // ---------- Listeners / saving ----------
 

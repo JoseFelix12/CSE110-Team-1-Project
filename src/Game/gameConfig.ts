@@ -80,3 +80,13 @@ export const ENGINE_UPGRADE_PRICES = [40, 80, 150];
 
 /** Extra speed per engine level (0.1 = +10%) */
 export const ENGINE_SPEED_BONUS_PER_LEVEL = 0.1;
+
+//These are placeholder prices.
+// Price of each one time upgrade
+export const UPGRADE_PRICES: Record<Upgrade, number> = {
+  "Speed Boost": 60,
+  "Better Tires": 60,
+  "Shield": 80,
+  "Extra Time": 80,
+};
+

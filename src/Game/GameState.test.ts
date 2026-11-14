@@ -73,12 +73,32 @@ describe("GameState", () => {
 
     it("buys engine upgrades until maxed out", () => {
         state.addCoins(1000);
+
         for (let i = 0; i < ENGINE_UPGRADE_PRICES.length; i++) {
-            expect(state.buyEngineUpgrade()).toBe(true);
+        expect(state.buyEngineUpgrade()).toBe(true);
         }
+
         expect(state.getNextEngineUpgradePrice()).toBeNull();
+
+        const remainingCoins = state.getCoins();
+
         expect(state.buyEngineUpgrade()).toBe(false);
+        expect(state.getCoins()).toBe(remainingCoins);
+
         expect(car.getSpeedMultiplier()).toBeGreaterThan(1);
+    });
+
+    it("buys upgrades", () => {
+        state.addCoins(100);
+
+        expect(state.buyUpgrade("Shield")).toBe(true);
+        expect(state.ownsUpgrade("Shield")).toBe(true);
+
+        const remainingCoins = state.getCoins();
+
+        // Cannot buy the same upgrade twice.
+        expect(state.buyUpgrade("Shield")).toBe(false);
+        expect(state.getCoins()).toBe(remainingCoins);
     });
 
     it("refuses purchases without enough coins", () => {
@@ -111,8 +131,14 @@ describe("GameState", () => {
     it("saves and reloads progress", () => {
         state.recordRaceResult(1, 15, 15);
         state.buySkin("blue");
+
+        state.addCoins(100);
+        state.buyUpgrade("Shield");
+
         const reloaded = new GameState(storage);
+
         expect(reloaded.toJSON()).toEqual(state.toJSON());
+        expect(reloaded.ownsUpgrade("Shield")).toBe(true);
     });
 
     it("falls back to defaults on a corrupted save", () => {
