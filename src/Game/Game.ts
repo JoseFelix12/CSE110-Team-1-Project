@@ -118,3 +118,6 @@ export class Game {
         this.current.enter(params);
     }
 }
+export interface screenSwitcher {
+    switchToScreen(id: SceneId): void;
+}

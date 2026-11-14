@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GameState, SAVE_KEY, calculateStars } from "./GameState.ts";
 import type { StorageLike } from "./GameState.ts";
 import { ENGINE_UPGRADE_PRICES, LEVELS, SKIN_PRICES } from "./gameConfig.ts";
+import type { ReadonlyCar } from "./Car.ts";
 
 class MemoryStorage implements StorageLike {
     items = new Map<string, string>();
@@ -23,10 +24,12 @@ describe("calculateStars", () => {
 describe("GameState", () => {
     let storage: MemoryStorage;
     let state: GameState;
+    let car: ReadonlyCar;
 
     beforeEach(() => {
         storage = new MemoryStorage();
         state = new GameState(storage);
+        car = state.getCar();
     });
 
     it("starts with only level 1 unlocked", () => {
@@ -75,7 +78,7 @@ describe("GameState", () => {
         }
         expect(state.getNextEngineUpgradePrice()).toBeNull();
         expect(state.buyEngineUpgrade()).toBe(false);
-        expect(state.getSpeedMultiplier()).toBeGreaterThan(1);
+        expect(car.getSpeedMultiplier()).toBeGreaterThan(1);
     });
 
     it("refuses purchases without enough coins", () => {
@@ -88,11 +91,11 @@ describe("GameState", () => {
     it("buys, equips and switches skins", () => {
         state.addCoins(SKIN_PRICES.blue);
         expect(state.buySkin("blue")).toBe(true);
-        expect(state.getSelectedSkin()).toBe("blue");
+        expect(car.getSkin()).toBe("blue");
         expect(state.buySkin("blue")).toBe(false);
         expect(state.selectSkin("red")).toBe(true);
         expect(state.selectSkin("purple")).toBe(false);
-        expect(state.getSelectedSkin()).toBe("red");
+        expect(car.getSkin()).toBe("red");
     });
 
     it("notifies subscribers until they unsubscribe", () => {
@@ -120,7 +123,7 @@ describe("GameState", () => {
         const loaded = new GameState(storage);
         expect(loaded.getCoins()).toBe(20);
         expect(loaded.getOwnedSkins()).toEqual(["red"]);
-        expect(loaded.getSelectedSkin()).toBe("red");
+        expect(loaded.getCar().getSkin()).toBe("red");
     });
 
     it("reset wipes progress", () => {
