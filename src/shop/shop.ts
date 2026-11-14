@@ -111,39 +111,16 @@ export class Shop {
     purchase(id: string): boolean {
         // Engine upgrade
         if (id === 'engine') {
-            const engineLevel = this.game.getCar().getEngineLevel();
-            const price = ENGINE_UPGRADE_PRICES[engineLevel];
-
-            if (price === undefined) {
-                return false;
-            }
-
-            return this.game.purchaseShopItem(price, () => {
-                const car = this.game.getMutableCar();
-
-                car.upgradeEngine();
-                car.updateSpeedMultiplier();
-            });
+            return this.game.buyEngineUpgrade();
         }
 
         // Skin purchase
         if (id.startsWith('skin:')) {
             const skin = id.substring(5);
-
             if (!SKINS.includes(skin as SkinColor)) {
                 return false;
             }
-
-            const selectedSkin = skin as SkinColor;
-            const price = SKIN_PRICES[selectedSkin];
-
-            if (this.game.ownsSkin(selectedSkin)) {
-                return false;
-            }
-
-            return this.game.purchaseShopItem(price, () => {
-                this.game.unlockSkin(selectedSkin);
-            });
+            return this.game.buySkin(skin as SkinColor);
         }
 
         // Upgrade purchase
@@ -153,17 +130,7 @@ export class Shop {
             if (!UPGRADES.includes(upgrade as Upgrade)) {
                 return false;
             }
-
-            const selectedUpgrade = upgrade as Upgrade;
-            const price = UPGRADE_PRICES[selectedUpgrade];
-
-            if (this.game.ownsUpgrade(selectedUpgrade)) {
-                return false;
-            }
-
-            return this.game.purchaseShopItem(price, () => {
-                this.game.unlockUpgrade(selectedUpgrade);
-            });
+            return this.game.buyUpgrade(upgrade as Upgrade);
         }
 
         return false;
