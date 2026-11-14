@@ -52,7 +52,7 @@ export class Shop {
         return this.game.getCoins();
     }
 
-  // Return every shop item, or only the items in one category.
+  // Return every item available in the shop
     getCatalog(): ShopItem[] {
         const items: ShopItem[] = [];
         const balance = this.getBalance();
