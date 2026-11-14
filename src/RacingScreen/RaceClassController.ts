@@ -14,12 +14,21 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
+import { vi } from "vitest";
 
 export interface RaceControllerOptions {
     /** Where the view is added to the page. Defaults to document.body */
     parent?: HTMLElement;
     theme?: RaceTheme;
 }
+
+vi.stubGlobal('Audio', class {
+    loop = false;
+    muted = false;
+    currentTime = 0;
+    play = vi.fn().mockResolvedValue(undefined);
+    pause = vi.fn();
+});
 
 /**
  * RaceClassController - Runs a race: the countdown, questions, answers, nitro
