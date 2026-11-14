@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { QuestionController } from "../QuestionController";
-import { MultiplicationQuestion, DivisionQuestion, AdditionQuestion, SubtractionQuestion } from "../QuestionModel";
+import {
+  MultiplicationQuestion,
+  DivisionQuestion,
+  AdditionQuestion,
+  SubtractionQuestion,
+} from "../QuestionModel";
 
 describe("QuestionController", () => {
-    let questionController: QuestionController;
+  let questionController: QuestionController;
 
-    beforeEach(() => {
-        questionController = new QuestionController();
-    });
+  beforeEach(() => {
+    questionController = new QuestionController();
+  });
 
   //Question Generation Tests
     describe("generateQuestion", () => {
@@ -223,4 +228,66 @@ describe("QuestionController", () => {
         });
     });
 
+    it("generates the requested number of subtraction questions", () => {
+      const questions = questionController.generateMultipleQuestions(
+        "subtraction",
+        3,
+      );
+
+      expect(questions).toHaveLength(3);
+
+      questions.forEach((question) => {
+        expect(question.text).toBe(
+          `${(question as any).a} - ${(question as any).b}?`,
+        );
+      });
+    });
+
+    it("generates the requested number of multiplication questions", () => {
+      const questions = questionController.generateMultipleQuestions(
+        "multiplication",
+        3,
+      );
+
+      expect(questions).toHaveLength(3);
+
+      questions.forEach((question) => {
+        expect(question.text).toBe(
+          `${(question as any).a} x ${(question as any).b}?`,
+        );
+      });
+    });
+
+    it("generates the requested number of division questions", () => {
+      const questions = questionController.generateMultipleQuestions(
+        "division",
+        3,
+      );
+
+      expect(questions).toHaveLength(3);
+
+      questions.forEach((question) => {
+        const a = (question as any).a;
+        const b = (question as any).b;
+
+        expect(question.text).toBe(`${a} ÷ ${b}?`);
+        expect(a % b).toBe(0);
+      });
+    });
+
+    it("returns an empty array when count is zero", () => {
+      const questions = questionController.generateMultipleQuestions(
+        "addition",
+        0,
+      );
+
+      expect(questions).toEqual([]);
+    });
+
+    it("throws an error when an invalid question type is provided", () => {
+      expect(() => {
+        questionController.generateMultipleQuestions("invalid", 3);
+      }).toThrow("Invalid question type");
+    });
+  });
 });
