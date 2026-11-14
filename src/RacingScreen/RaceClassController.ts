@@ -38,7 +38,6 @@ export class RaceClassController implements Scene {
     private gameState: GameState;
     private parent: HTMLElement | null;
     private generator: QuestionGenerator;
-
     private questionTimer: ReturnType<typeof setInterval> | null = null;
     private countdownTimer: ReturnType<typeof setInterval> | null = null;
     private finishTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -50,13 +49,22 @@ export class RaceClassController implements Scene {
     private lastNitroActive = false;
 
     //Add carSound, correctAnswer and wrongAnswer here once we have audio files
-    private sounds: HTMLAudioElement[] = [];
+    private lightCountDown = new Audio("/sounds/Light_countdown.mp3")
+    private correct = new Audio("/sounds/Correct.mp3")
+    private incorrect = new Audio("/sounds/Incorrect.mp3")
+    private engine = new Audio("/sounds/car-engine-running.mp3")
+    private rev = new Audio("/sounds/enginerev.mp3")
+    private nitroUse = new Audio("/sounds/nitro.mp3")
+    private engineFailure = new Audio("/sounds/Car Screech.mp3")
+    private sounds: HTMLAudioElement[] = [this.lightCountDown, this.correct, 
+                    this.incorrect, this.engine, this.rev, this.nitroUse, this.engineFailure];
 
     constructor(screenSwitcher: screenSwitcher, gameState: GameState, options: RaceControllerOptions = {}) {
         this.screenSwitcher = screenSwitcher;
         this.gameState = gameState;
         this.parent = options.parent ?? null;
         this.generator = this.createGenerator(1);
+        this.engine.loop = true;
 
         this.model = new RaceClassModel();
         this.view = new RaceClassView(
@@ -105,6 +113,7 @@ export class RaceClassController implements Scene {
      * Starts Game
      */
     startGame(): void {
+        this.engine.pause();
         this.stopAllTimers();
         this.model.reset();
         this.view.setCar();
@@ -114,6 +123,7 @@ export class RaceClassController implements Scene {
         this.currentQuestion = null;
         this.paused = false;
         this.startCountdown();
+        this.engine.play();
     }
 
     /**
@@ -121,6 +131,8 @@ export class RaceClassController implements Scene {
      */
     private startCountdown(): void {
         this.countdownRemaining = COUNTDOWN_SECONDS;
+        this.lightCountDown.play();
+        this.rev.play();
         this.view.showCountdown(this.countdownRemaining as 3 | 2 | 1);
         this.runCountdownTimer();
     }
@@ -213,6 +225,7 @@ export class RaceClassController implements Scene {
             return;
         }
         if(this.model.handleNitro()){
+            this.nitroUse.play();
             this.finishQuestion(true, true);
         }
         this.syncNitroView();
@@ -240,12 +253,17 @@ export class RaceClassController implements Scene {
         this.currentQuestion = null;
 
         if (correct) {
+            this.correct.currentTime = 0;
+            this.correct.play();
             this.model.incrementCorrect_Answers();
             this.model.resetIncorrectStreak();
             if(!usedNitro){
                 this.model.chargeNitro();
             }
         } else {
+            this.incorrect.currentTime = 0;
+            this.incorrect.play();
+            this.engineFailure.play();
             this.model.incrementIncorrect_Answers();
             this.model.incrementIncorrectStreak();
             this.model.resetNitro();
@@ -265,6 +283,7 @@ export class RaceClassController implements Scene {
      * End race. The car has crossed the line, so show FINISH! before leaving.
      */
     private endGame(): void {
+        this.engine.pause();
         this.finishTimeout = setTimeout(() => {
             this.finishTimeout = null;
             this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
@@ -287,6 +306,7 @@ export class RaceClassController implements Scene {
      */
     private handlePause(): void {
         this.paused = true;
+        this.engine.pause();
         this.stopCountdownTimer();
         this.stopQuestionTimer();
     }
@@ -299,6 +319,7 @@ export class RaceClassController implements Scene {
         if (this.countdownRemaining > 0) {
             this.runCountdownTimer();
         } else if (this.currentQuestion !== null) {
+            this.engine.play();
             this.runQuestionTimer();
         }
     }
