@@ -1,4 +1,4 @@
-import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1, CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
+import { CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
 
 /**
  * RaceClassModel - Manages game state 
@@ -10,18 +10,20 @@ export class RaceClassModel {
     private nitroLevel = 0;
     private nitroTimeRemaining = 0;
     private nitroActive = false;
+    private questionCount = 1;
 
 
     /**
      * Resets for new race
      */
-    reset(): void {
+    reset(questionCount: number): void {
         this.correct_answers = 0;
         this.incorrect_answers = 0;
         this.incorrectAnswerStreak = 0;
         this.nitroLevel = 0;
         this.nitroTimeRemaining = 0;
         this.nitroActive = false;
+        this.questionCount = questionCount;
     }
 
     /**
@@ -29,6 +31,20 @@ export class RaceClassModel {
      */
     incrementCorrect_Answers(): void {
         this.correct_answers++;
+    }
+
+    /**
+     * Gets the amount of correct_answers
+     */
+    getCorrect_Answers(): number {
+        return this.correct_answers;
+    }
+
+    /**
+     * Gets the amount of questions for the current level
+     */
+    getQuestionCount(): number {
+        return this.questionCount;
     }
 
     /**
@@ -42,7 +58,7 @@ export class RaceClassModel {
      * Gets current progress
      */
     currentProgess(): number {
-        return (this.correct_answers + this.incorrect_answers)/AMOUNT_OF_QUESTIONS_IN_LEVEL_1;
+        return (this.correct_answers + this.incorrect_answers)/this.questionCount;
     }
 
     /**

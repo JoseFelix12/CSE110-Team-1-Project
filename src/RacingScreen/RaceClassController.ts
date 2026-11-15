@@ -14,7 +14,6 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
-//import { LEVELS } from "../Game/gameConfig.ts";
 
 export interface RaceControllerOptions {
     /** Where the view is added to the page. Defaults to document.body */
@@ -48,6 +47,7 @@ export class RaceClassController implements Scene {
     private paused = false;
     private lastNitroLevel = -1;
     private lastNitroActive = false;
+    private levelId = 1;
 
     //Add carSound, correctAnswer and wrongAnswer here once we have audio files
     private lightCountDown = new Audio("/sounds/Light_countdown.mp3")
@@ -66,6 +66,11 @@ export class RaceClassController implements Scene {
         this.parent = options.parent ?? null;
         this.generator = this.createGenerator(1);
         this.engine.loop = true;
+        this.lightCountDown.volume = .1;
+        this.rev.volume = .2;
+        this.correct.volume = .2;
+        this.incorrect.volume = .2;
+        this.engineFailure.volume = .2;
 
         this.model = new RaceClassModel();
         this.view = new RaceClassView(
@@ -89,8 +94,8 @@ export class RaceClassController implements Scene {
     // ---------- Scene ----------
 
     enter(params: SceneParams): void {
-        const levelId = typeof params.levelId === "number" ? params.levelId : 1;
-        this.generator = this.createGenerator(levelId);
+        this.levelId = typeof params.levelId === "number" ? params.levelId : 1;
+        this.generator = this.createGenerator(this.levelId);
         this.view.mount(this.parent ?? document.body);
         this.startGame();
     }
@@ -116,7 +121,7 @@ export class RaceClassController implements Scene {
     startGame(): void {
         this.engine.pause();
         this.stopAllTimers();
-        this.model.reset();
+        this.model.reset(this.gameState.getLevel(this.levelId).questionCount);
         this.view.setCar();
         this.lastNitroActive = false;
         this.lastNitroLevel = -1;
@@ -285,6 +290,10 @@ export class RaceClassController implements Scene {
      */
     private endGame(): void {
         this.engine.pause();
+        this.gameState.recordRaceResult(
+            this.levelId, 
+            this.model.getCorrect_Answers(), 
+            this.model.getQuestionCount());
         this.finishTimeout = setTimeout(() => {
             this.finishTimeout = null;
             this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
@@ -341,11 +350,4 @@ export class RaceClassController implements Scene {
             sound.muted = muted;
         });
     }
-
-    /**
-     * Updates amount of coins based on correct answers
-     *
-    private coinUpdate(): void {
-        if(this.model.getCorrect_Answers() < this.gameState.getLevel(this.levelId).questionCount)
-    }*/
 }
