@@ -13,6 +13,7 @@ import {
 
 import { Game } from "../Game/Game.ts";
 import { GameState } from "../Game/GameState.ts";
+import { LEVELS } from "../Game/gameConfig.ts";
 import { SceneIds } from "../Game/Scene.ts";
 
 import { StartScreen } from "./StartScreen.ts";
@@ -171,29 +172,31 @@ describe("Math Racer UI navigation", () => {
     });
 
     it("the right arrow steps through every level and wraps to the first", () => {
-      click("level-next-button");
-      expect(title()).toBe("LEVEL 2");
-      click("level-next-button");
-      expect(title()).toBe("LEVEL 3");
+      for (const level of LEVELS.slice(1)) {
+        click("level-next-button");
+        expect(title()).toBe(`LEVEL ${level.id}`);
+      }
       click("level-next-button");
       expect(title()).toBe("LEVEL 1");
     });
 
     it("the left arrow wraps from the first level to the last", () => {
       click("level-prev-button");
-      expect(title()).toBe("LEVEL 3");
+      expect(title()).toBe(`LEVEL ${LEVELS.at(-1)!.id}`);
       click("level-prev-button");
-      expect(title()).toBe("LEVEL 2");
+      expect(title()).toBe(`LEVEL ${LEVELS.at(-2)!.id}`);
     });
 
     it("shows each level's name and description", () => {
-      click("level-next-button");
-      expect(
-        document.getElementById("level-name")!.textContent
-      ).toBe("ROOKIE RACEWAY");
-      expect(
-        document.getElementById("level-description")!.textContent
-      ).toBe("MULTIPLICATION WITH FACTORS UP TO 5.");
+      for (const level of LEVELS) {
+        expect(
+          document.getElementById("level-name")!.textContent
+        ).toBe(level.name.toUpperCase());
+        expect(
+          document.getElementById("level-description")!.textContent
+        ).toBe(level.description.toUpperCase());
+        click("level-next-button");
+      }
     });
 
     it("the arrow keys also change level", () => {

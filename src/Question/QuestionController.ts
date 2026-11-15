@@ -1,6 +1,13 @@
 
 
-import {wrong_questions, type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
+import {type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
+
+export type QuestionType = 'addition' | 'subtraction' | 'multiplication' | 'division';
+
+function randomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 //import question view
 export class QuestionController {
     private currentQuestion: Question | null = null;
@@ -8,33 +15,36 @@ export class QuestionController {
     //private view: QuestionView
 
 
-    //Question generation factory  
-    generateQuestion(q_type: string) : Question{
-        let a = Math.floor(Math.random() *  10) + 1;  
-        let b = Math.floor(Math.random() *  10) + 1; 
+    //Question generation factory. min and max are the smallest and largest
+    //numbers used (e.g. 10 and 99 for 2 digit numbers)
+    generateQuestion(q_type: string, min = 1, max = 10) : Question{
+        let a = randomInt(min, max);
+        let b = randomInt(min, max);
 
-        //Generates question object based upon chosen type and makes the 
+        //Generates question object based upon chosen type and makes the
         //current question the new object
         switch (q_type) {
             case 'addition':
                 this.currentQuestion = new AdditionQuestion(a, b);
                 break;
             case 'subtraction':
-                this.currentQuestion = new SubtractionQuestion(a, b);
+                //Bigger number first so the answer is never negative
+                this.currentQuestion = new SubtractionQuestion(Math.max(a, b), Math.min(a, b));
                 break;
             case 'multiplication':
                 this.currentQuestion = new MultiplicationQuestion(a, b);
                 break;
             case 'division':
                 //Recalculates a to be divisible by b
-                a = b * (Math.floor(Math.random() * 10) + 1); 
+                b = randomInt(Math.max(min, 1), max);
+                a = b * randomInt(min, max);
                 this.currentQuestion = new DivisionQuestion(a, b);
                 break;
             default:
                 throw new Error("Invalid question type");
         }
         return this.currentQuestion;
-    }  
+    }
     //Access recently generated question
     getCurrentQuestion(): Question | null {
         return this.currentQuestion;
@@ -44,7 +54,7 @@ export class QuestionController {
     getWrongQuestions(): Question[] {
         return [...this.wrong_questions];
     }
-    //Simple version of checkAnswerInput that checks answer input for tests
+    //Checks the answer to the current question and records it if it was wrong
     submitAnswer(answer: string): boolean {
         if (this.currentQuestion === null) {
             throw new Error("No current question to submit an answer for.");
@@ -59,43 +69,29 @@ export class QuestionController {
         return isCorrect;
     }
 
+    //Records the current question as missed without an answer, e.g. when the
+    //timer runs out
+    markWrong(): void {
+        if (this.currentQuestion !== null) {
+            this.wrong_questions.push(this.currentQuestion);
+        }
+    }
 
-    
+
     //Compares answer that will be entered by user from view with the correct answer.
     checkAnswer(question: Question, input: string): boolean {
         const userAnswer = Number(input);
-        
+
         //checks if input was not a number
         if (Number.isNaN(userAnswer) || input.trim() === "") {
             return false;
         }
-        
+
         //compares user answer with actual answer
-        if (userAnswer === this.currentQuestion.answer) {
+        if (userAnswer === question.answer) {
             return true;
         } else {
             return false;
         }
     }
-
-    // Fuction to handle answer submission event
-        //Check input with answer from question object
-    private checkAnswerInput(answer: string): void{
-        //Checks if the current question was never generated
-        if (this.currentQuestion === null){
-            return
-        }
-
-        const isCorrect = this.checkAnswer(this.currentQuestion, answer);
-        
-        if (isCorrect) {
-            //update streak, questions correct
-        }
-        else{
-            //reset streak, add to wrong_questions
-            this.wrong_questions.push(this.currentQuestion)
-        }
-        //this.view.feedback.text(isCorrect ? '✓ Correct!' : '✗ Wrong, try again');
-        //this.view.feedback.fill(isCorrect ? 'green' : 'crimson');
-    } 
 }

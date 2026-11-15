@@ -4,9 +4,10 @@ import {
     FINISH_SCREEN_MS,
     QUESTION_TIMER,
 } from "../constants.ts";
-import { checkAnswer } from "../answerChecker.ts";
-import { createQuestionGenerator } from "../questionGenerator.ts";
-import type { Question, QuestionGenerator } from "../questionGenerator.ts";
+import { QuestionController } from "../Question/QuestionController.ts";
+import type { QuestionType } from "../Question/QuestionController.ts";
+import type { Question } from "../Question/QuestionModel.ts";
+import type { LevelConfig, Operator } from "../Game/gameConfig.ts";
 import type { screenSwitcher } from "../Game/Game.ts";
 import type { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
@@ -14,6 +15,14 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
+
+/** Which QuestionController question type each level operator asks */
+const QUESTION_TYPES: Record<Operator, QuestionType> = {
+    '+': 'addition',
+    '-': 'subtraction',
+    '*': 'multiplication',
+    '/': 'division',
+};
 
 export interface RaceControllerOptions {
     /** Where the view is added to the page. Defaults to document.body */
@@ -39,7 +48,9 @@ export class RaceClassController implements Scene {
     private parent: HTMLElement | null;
     /** Forces one theme for every level (the demo uses this); otherwise each level picks its own */
     private themeOverride: RaceTheme | undefined;
-    private generator: QuestionGenerator;
+    /** Makes and checks questions, and keeps the ones missed this race */
+    private questions = new QuestionController();
+    private level: LevelConfig;
 
     private questionTimer: ReturnType<typeof setInterval> | null = null;
     private countdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -61,7 +72,7 @@ export class RaceClassController implements Scene {
         this.gameState = gameState;
         this.parent = options.parent ?? null;
         this.themeOverride = options.theme;
-        this.generator = this.createGenerator(1);
+        this.level = gameState.getLevel(1);
 
         this.model = new RaceClassModel();
         this.view = new RaceClassView(
@@ -86,8 +97,8 @@ export class RaceClassController implements Scene {
 
     enter(params: SceneParams): void {
         const levelId = typeof params.levelId === "number" ? params.levelId : 1;
-        this.generator = this.createGenerator(levelId);
-        this.view.setTheme(this.themeOverride ?? this.gameState.getLevel(levelId).theme);
+        this.level = this.gameState.getLevel(levelId);
+        this.view.setTheme(this.themeOverride ?? this.level.theme);
         this.view.mount(this.parent ?? document.body);
         this.startGame();
     }
@@ -115,6 +126,7 @@ export class RaceClassController implements Scene {
     startGame(): void {
         this.stopAllTimers();
         this.model.reset();
+        this.questions = new QuestionController();
         this.view.setCar();
         this.lastNitroActive = false;
         this.lastNitroLevel = -1;
@@ -159,14 +171,18 @@ export class RaceClassController implements Scene {
      * Handles question generation
      */
     private nextQuestion(): void {
-        this.currentQuestion = this.generator.nextQuestion();
+        const { operators, minFactor, maxFactor } = this.level;
+        const operator = operators[Math.floor(Math.random() * operators.length)];
+        this.currentQuestion = this.questions.generateQuestion(QUESTION_TYPES[operator], minFactor, maxFactor);
         this.view.setQuestion(this.currentQuestion.text);
         this.startQuestionTimer();
     }
 
-    private createGenerator(levelId: number): QuestionGenerator {
-        const level = this.gameState.getLevel(levelId);
-        return createQuestionGenerator({ operators: level.operators, min: level.minFactor, max: level.maxFactor });
+    /**
+     * Questions answered wrong or timed out this race, for a review screen later
+     */
+    getWrongQuestions(): Question[] {
+        return this.questions.getWrongQuestions();
     }
 
     /**
@@ -183,6 +199,7 @@ export class RaceClassController implements Scene {
             this.questionTimeRemaining -= 1;
             this.view.updateTimer(this.questionTimeRemaining);
             if (this.questionTimeRemaining <= 0) {
+                this.questions.markWrong();
                 this.finishQuestion(false);
             }
         }, 1000);
@@ -210,7 +227,7 @@ export class RaceClassController implements Scene {
      */
     private handleAnswer(answer: string): void {
         if (this.currentQuestion !== null) {
-            this.finishQuestion(checkAnswer(this.currentQuestion, answer));
+            this.finishQuestion(this.questions.submitAnswer(answer));
         }
     }
 

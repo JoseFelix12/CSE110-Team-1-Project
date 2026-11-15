@@ -65,6 +65,40 @@ describe("QuestionController", () => {
             }).toThrow("No current question to submit an answer for.");
         });
 
+        it("uses the given number range, e.g. 2 digit numbers", () => {
+            for (const type of ["addition", "subtraction", "multiplication"]) {
+                for (let i = 0; i < 50; i++) {
+                    const question = questionController.generateQuestion(type, 10, 99);
+                    for (const n of [question.a, question.b]) {
+                        expect(n).toBeGreaterThanOrEqual(10);
+                        expect(n).toBeLessThanOrEqual(99);
+                    }
+                }
+            }
+        });
+
+        it("never makes a subtraction question with a negative answer", () => {
+            for (let i = 0; i < 50; i++) {
+                const question = questionController.generateQuestion("subtraction", 10, 99);
+                expect(question.answer).toBeGreaterThanOrEqual(0);
+            }
+        });
+
+        it("keeps division answers whole with a custom range", () => {
+            for (let i = 0; i < 50; i++) {
+                const question = questionController.generateQuestion("division", 1, 12);
+                expect(Number.isInteger(question.answer)).toBe(true);
+                expect(question.b).toBeGreaterThanOrEqual(1);
+            }
+        });
+
+        it("writes question text the way the race shows it", () => {
+            expect(new AdditionQuestion(12, 34).text).toBe("12 + 34 = ?");
+            expect(new SubtractionQuestion(34, 12).text).toBe("34 − 12 = ?");
+            expect(new MultiplicationQuestion(3, 4).text).toBe("3 × 4 = ?");
+            expect(new DivisionQuestion(12, 4).text).toBe("12 ÷ 4 = ?");
+        });
+
         it("throws an error for an invalid question type", () => {
             expect (() => {
                 questionController.generateQuestion("invalidType");
@@ -164,6 +198,20 @@ describe("QuestionController", () => {
             expect(questionController.getWrongQuestions()).toContain(
               firstQuestion,
             );
+        });
+
+        it("markWrong records the current question without an answer", () => {
+            const question = questionController.generateQuestion("addition");
+
+            questionController.markWrong();
+
+            expect(questionController.getWrongQuestions()).toEqual([question]);
+        });
+
+        it("checkAnswer checks the question it is given", () => {
+            questionController.generateQuestion("addition");
+
+            expect(questionController.checkAnswer(new AdditionQuestion(2, 3), "5")).toBe(true);
         });
 
         it("returns a copy of the wrong questions list", () => {

@@ -56,8 +56,10 @@ describe('RaceClassController', () => {
     const view = () => fake.view!;
     const lastAnswer = (): string => {
         const text = view().setQuestion.mock.lastCall![0] as string;
-        const [a, b] = text.split(' = ')[0].split(' × ').map(Number);
-        return String(a * b);
+        const [a, symbol, b] = text.split(' = ')[0].split(' ');
+        const [x, y] = [Number(a), Number(b)];
+        const answers: Record<string, number> = { '+': x + y, '−': x - y, '×': x * y, '÷': x / y };
+        return String(answers[symbol]);
     };
     const startRacing = () => {
         controller.enter({ levelId: 1 });
@@ -302,6 +304,54 @@ describe('RaceClassController', () => {
     ])('races level %i on the %s theme', (levelId, theme) => {
         controller.enter({ levelId });
         expect(view().setTheme).toHaveBeenCalledWith(theme);
+    });
+
+    describe('questions', () => {
+        const questionParts = () => {
+            const text = view().setQuestion.mock.lastCall![0] as string;
+            const [a, symbol, b] = text.split(' = ')[0].split(' ');
+            return { a: Number(a), symbol, b: Number(b) };
+        };
+
+        it('asks level 1 2 digit addition and subtraction, never below 0', () => {
+            startRacing();
+            for (let i = 0; i < 3; i++) {
+                const { a, symbol, b } = questionParts();
+                expect(['+', '−']).toContain(symbol);
+                for (const n of [a, b]) {
+                    expect(n).toBeGreaterThanOrEqual(10);
+                    expect(n).toBeLessThanOrEqual(99);
+                }
+                if (symbol === '−') {
+                    expect(a).toBeGreaterThanOrEqual(b);
+                }
+                answerCorrectly();
+            }
+        });
+
+        it('asks the operators of the level being raced', () => {
+            controller.enter({ levelId: 4 });
+            vi.advanceTimersByTime(3000);
+            expect(questionParts().symbol).toBe('÷');
+        });
+
+        it('keeps wrong and timed out questions, but not right ones', () => {
+            startRacing();
+            answerCorrectly();
+            const wrong = view().setQuestion.mock.lastCall![0];
+            answerWrong();
+            const timedOut = view().setQuestion.mock.lastCall![0];
+            vi.advanceTimersByTime(10000);
+
+            expect(controller.getWrongQuestions().map((question) => question.text)).toEqual([wrong, timedOut]);
+        });
+
+        it('starts each race with no missed questions', () => {
+            startRacing();
+            answerWrong();
+            controller.enter({ levelId: 1 });
+            expect(controller.getWrongQuestions()).toEqual([]);
+        });
     });
 
     it('uses the theme option over the level theme when one is given', () => {
