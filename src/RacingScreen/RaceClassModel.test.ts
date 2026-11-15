@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RaceClassModel } from './RaceClassModel.ts';
 import {
-    AMOUNT_OF_QUESTIONS_IN_LEVEL_1,
     CORRECT_ANSWERS_FOR_NITRO,
     NITRO_SECONDS,
 } from '../constants.ts';
@@ -13,11 +12,14 @@ function fillNitro(model: RaceClassModel): void {
     }
 }
 
+const QUESTION_COUNT = 4;
+
 describe('RaceClassModel', () => {
     let model: RaceClassModel;
 
     beforeEach(() => {
         model = new RaceClassModel();
+        model.reset(QUESTION_COUNT);
     });
 
     describe('initial state', () => {
@@ -50,11 +52,11 @@ describe('RaceClassModel', () => {
         it('counts correct and incorrect answers together', () => {
             model.incrementCorrect_Answers();
             model.incrementIncorrect_Answers();
-            expect(model.currentProgess()).toBe(2 / AMOUNT_OF_QUESTIONS_IN_LEVEL_1);
+            expect(model.currentProgess()).toBe(2 / QUESTION_COUNT);
         });
 
         it('reaches exactly 1 after the last question', () => {
-            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+            for (let i = 0; i < QUESTION_COUNT; i++) {
                 model.incrementCorrect_Answers();
             }
             expect(model.currentProgess()).toBe(1);
@@ -194,7 +196,7 @@ describe('RaceClassModel', () => {
             fillNitro(model);
             model.handleNitro();
 
-            model.reset();
+            model.reset(QUESTION_COUNT);
 
             expect(model['correct_answers']).toBe(0);
             expect(model['incorrect_answers']).toBe(0);
@@ -202,6 +204,11 @@ describe('RaceClassModel', () => {
             expect(model.currentProgess()).toBe(0);
             expect(model.getNitroLevel()).toBe(0);
             expect(model.isNitroActive()).toBe(false);
+        });
+
+        it('stores the question count given to reset', () => {
+            model.reset(15);
+            expect(model.getQuestionCount()).toBe(15);
         });
     });
 });
