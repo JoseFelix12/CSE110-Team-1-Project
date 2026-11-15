@@ -1,7 +1,8 @@
 
 
 import {type Question, AdditionQuestion, SubtractionQuestion, MultiplicationQuestion, DivisionQuestion} from "./QuestionModel.ts"
-//import question view
+import { WORD_PROBLEM_TEMPLATES } from "../constants.ts";
+ 
 export class QuestionController {
     private currentQuestion: Question | null = null;
     private wrong_questions: Question[] = [];
@@ -71,73 +72,65 @@ export class QuestionController {
                 throw new Error("Invalid Id");
         }
         return this.currentQuestion;
-    }  
+    }; 
+    
+    generateMultipleQuestions(ID: number, count: number): Question[] {
+        const questions: Question[] = [];
+        for (let i = 0; i < count; i++) {
+            questions.push(this.generateQuestion(ID));
+        }
+        return questions;
+    }
     //Access recently generated question
     getCurrentQuestion(): Question | null {
         return this.currentQuestion;
     }
 
-    return isCorrect;
-  }
-
-  //Compares answer that will be entered by user from view with the correct answer.
-  checkAnswer(question: Question, input: string): boolean {
-    const userAnswer = Number(input);
-
-    //checks if input was not a number
-    if (Number.isNaN(userAnswer) || input.trim() === "") {
-      return false;
+    // Returns missed questions
+    getWrongQuestions(): Question[] {
+        return [...this.wrong_questions];
     }
+    //Simple version of checkAnswerInput that checks answer input for tests
+    submitAnswer(answer: string): boolean {
+        if (this.currentQuestion === null) {
+        throw new Error("No current question to submit an answer for.");
+        }
 
-    //compares user answer with actual answer
-    if (userAnswer === this.currentQuestion.answer) {
-      return true;
-    } else {
-      return false;
+        const isCorrect = this.checkAnswer(this.currentQuestion, answer);
+
+        if (!isCorrect) {
+        this.wrong_questions.push(this.currentQuestion);
+        }
+
+        return isCorrect;
     }
-  }
+  
 
-  // Fuction to handle answer submission event
-  //Check input with answer from question object
-  private checkAnswerInput(answer: string): void {
-    //Checks if the current question was never generated
-    if (this.currentQuestion === null) {
-      return;
-    }
-
-    const isCorrect = this.checkAnswer(this.currentQuestion, answer);
-
-    if (isCorrect) {
-      //update streak, questions correct
-    } else {
-      //reset streak, add to wrong_questions
-      this.wrong_questions.push(this.currentQuestion);
-    }
-    //this.view.feedback.text(isCorrect ? '✓ Correct!' : '✗ Wrong, try again');
-    //this.view.feedback.fill(isCorrect ? 'green' : 'crimson');
-  }
-}
-
-export class WordProblemAdapter extends QuestionController {
-
-  private adaptee: QuestionController;
-
-    
     //Compares answer that will be entered by user from view with the correct answer.
     checkAnswer(question: Question, input: string): boolean {
         const userAnswer = Number(input);
-        
+
         //checks if input was not a number
         if (Number.isNaN(userAnswer) || input.trim() === "") {
             return false;
         }
-        
+
         //compares user answer with actual answer
         if (userAnswer === question.answer) {
             return true;
         } else {
             return false;
         }
+    }
+}
+
+export class WordProblemAdapter extends QuestionController {
+
+    private adaptee: QuestionController;
+
+    
+    //Compares answer that will be entered by user from view with the correct answer.
+    
   constructor(adaptee: QuestionController) {
     super();
     this.adaptee = adaptee;
@@ -145,17 +138,16 @@ export class WordProblemAdapter extends QuestionController {
 
   public generateWordProblem(q_type?: string): Question {
     // Generate a random question type
-    const q_types = ["addition", "subtraction", "multiplication", "division"];
-    const target_type = q_type || q_types[Math.floor(Math.random() * q_types.length)];
+    const target_ID = Math.floor(Math.random() * 5) + 1; // Assuming 5 question types
 
-    const baseQuestion = this.adaptee.generateQuestion(target_type);
+    const baseQuestion = this.adaptee.generateQuestion(target_ID);
     const a = (baseQuestion as any).a;
     const b = (baseQuestion as any).b;
 
-    const templates = WORD_PROBLEM_TEMPLATES[target_type];
+    const templates = WORD_PROBLEM_TEMPLATES[target_ID];
     if (!templates || templates.length === 0) {
       throw new Error(
-        `No templates available for question type: ${target_type}`,
+        `No templates available for question type: ${target_ID}`,
       );
     }
     const randomTemplate =

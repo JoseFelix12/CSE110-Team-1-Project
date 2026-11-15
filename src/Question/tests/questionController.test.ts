@@ -228,9 +228,9 @@ describe("QuestionController", () => {
         });
     });
 
-    it("generates the requested number of subtraction questions", () => {
+    it("generates the requested number of level one questions", () => {
       const questions = questionController.generateMultipleQuestions(
-        "subtraction",
+        1,
         3,
       );
 
@@ -243,9 +243,9 @@ describe("QuestionController", () => {
       });
     });
 
-    it("generates the requested number of multiplication questions", () => {
+    it("generates the requested number of level two questions", () => {
       const questions = questionController.generateMultipleQuestions(
-        "multiplication",
+        2,
         3,
       );
 
@@ -258,9 +258,9 @@ describe("QuestionController", () => {
       });
     });
 
-    it("generates the requested number of division questions", () => {
+    it("generates the requested number of level three questions", () => {
       const questions = questionController.generateMultipleQuestions(
-        "division",
+        3,
         3,
       );
 
@@ -277,7 +277,7 @@ describe("QuestionController", () => {
 
     it("returns an empty array when count is zero", () => {
       const questions = questionController.generateMultipleQuestions(
-        "addition",
+        1,
         0,
       );
 
@@ -286,8 +286,7 @@ describe("QuestionController", () => {
 
     it("throws an error when an invalid question type is provided", () => {
       expect(() => {
-        questionController.generateMultipleQuestions("invalid", 3);
-      }).toThrow("Invalid question type");
+        questionController.generateMultipleQuestions(10, 3);
+      }).toThrow("Invalid Id");
     });
-  });
 });
