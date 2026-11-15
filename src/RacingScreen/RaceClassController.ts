@@ -20,6 +20,7 @@ export interface RaceControllerOptions {
     /** Where the view is added to the page. Defaults to document.body */
     parent?: HTMLElement;
     theme?: RaceTheme;
+    onRaceComplete?: (params: SceneParams) => void;
 }
 
 /**
@@ -37,6 +38,9 @@ export class RaceClassController implements Scene {
     private view: RaceClassView;
     private screenSwitcher: screenSwitcher;
     private gameState: GameState;
+    private onRaceComplete?: (params: SceneParams) => void;
+    private currentLevelId = 1;
+    private raceFinished = false;
     private parent: HTMLElement | null;
     private generator: QuestionGenerator;
     private questionTimer: ReturnType<typeof setInterval> | null = null;
@@ -48,6 +52,7 @@ export class RaceClassController implements Scene {
     private paused = false;
     private lastNitroLevel = -1;
     private lastNitroActive = false;
+    
 
     //Add carSound, correctAnswer and wrongAnswer here once we have audio files
     private lightCountDown = new Audio("/sounds/Light_countdown.mp3")
@@ -57,12 +62,12 @@ export class RaceClassController implements Scene {
     private rev = new Audio("/sounds/enginerev.mp3")
     private nitroUse = new Audio("/sounds/nitro.mp3")
     private engineFailure = new Audio("/sounds/Car Screech.mp3")
-    private sounds: HTMLAudioElement[] = [this.lightCountDown, this.correct, 
-                    this.incorrect, this.engine, this.rev, this.nitroUse, this.engineFailure];
+    private sounds: HTMLAudioElement[] = [this.lightCountDown, this.correct, this.incorrect, this.engine, this.rev, this.nitroUse, this.engineFailure];
 
     constructor(screenSwitcher: screenSwitcher, gameState: GameState, options: RaceControllerOptions = {}) {
         this.screenSwitcher = screenSwitcher;
         this.gameState = gameState;
+        this.onRaceComplete = options.onRaceComplete;
         this.parent = options.parent ?? null;
         this.generator = this.createGenerator(1);
         this.engine.loop = true;
@@ -89,11 +94,15 @@ export class RaceClassController implements Scene {
     // ---------- Scene ----------
 
     enter(params: SceneParams): void {
-        const levelId = typeof params.levelId === "number" ? params.levelId : 1;
-        this.generator = this.createGenerator(levelId);
-        this.view.mount(this.parent ?? document.body);
-        this.startGame();
-    }
+    const levelId = typeof params.levelId === "number" ? params.levelId : 1;
+
+    this.currentLevelId = levelId;
+    this.raceFinished = false;
+
+    this.generator = this.createGenerator(levelId);
+    this.view.mount(this.parent ?? document.body);
+    this.startGame();
+}
 
     exit(): void {
         this.stopAllTimers();
@@ -283,13 +292,48 @@ export class RaceClassController implements Scene {
     /**
      * End race. The car has crossed the line, so show FINISH! before leaving.
      */
-    private endGame(): void {
-        this.engine.pause();
-        this.finishTimeout = setTimeout(() => {
-            this.finishTimeout = null;
+    /**
+ * End race. The car has crossed the line, so show FINISH! before leaving.
+ */
+private endGame(): void {
+    if (this.raceFinished) return;
+    this.raceFinished = true;
+
+    this.engine.pause();
+
+    const correct = this.model.getCorrectAnswers();
+    const total = this.gameState.getLevel(this.currentLevelId).questionCount;
+    const incorrect = total - correct;
+
+    const result = this.gameState.recordRaceResult(
+        this.currentLevelId,
+        correct,
+        total
+    );
+
+    this.finishTimeout = setTimeout(() => {
+        this.finishTimeout = null;
+
+        if (this.onRaceComplete) {
+            this.onRaceComplete({
+                mode: "race",
+                levelId: this.currentLevelId,
+                correct,
+                incorrect,
+                total,
+                accuracy: total > 0
+                    ? Math.round((correct / total) * 100)
+                    : 0,
+                stars: result.stars,
+                coinsEarned: result.coinsEarned,
+                newBest: result.newBest,
+                unlockedLevelId: result.unlockedLevelId
+            });
+        } else {
             this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
-        }, FINISH_SCREEN_MS);
-    }
+        }
+    }, FINISH_SCREEN_MS);
+}
 
     private stopAllTimers(): void {
         this.stopCountdownTimer();
