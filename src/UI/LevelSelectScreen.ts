@@ -7,7 +7,11 @@ export class LevelSelectScreen implements Scene {
   private screen: HTMLElement | null = null;
   private selectedIndex = 0;
 
-  constructor(private game: Game) {}
+  private game: Game;
+
+  constructor(game: Game) {
+    this.game = game;
+  }
 
   enter(_params: SceneParams): void {
     this.selectedIndex = 0;
@@ -17,7 +21,6 @@ export class LevelSelectScreen implements Scene {
     screen.id = "level-select-screen";
     this.screen = screen;
 
-    // Your new Levels artwork
     const image = document.createElement("img");
     image.src = "/images/LEVELS%20SCREEN.png";
     image.alt = "Math Racer Level Selection";
@@ -75,7 +78,6 @@ export class LevelSelectScreen implements Scene {
     const levels = this.game.state.getLevels();
 
     // Dynamic LEVEL 1, LEVEL 2, etc.
-    // Positioned over the blank title area in your artwork.
     const levelTitle = document.createElement("div");
 
     Object.assign(levelTitle.style, {

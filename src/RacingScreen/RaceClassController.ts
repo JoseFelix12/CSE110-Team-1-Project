@@ -279,8 +279,8 @@ export class RaceClassController implements Scene {
     this.raceFinished = true;
 
     const correct = this.model.getCorrectAnswers();
-    const incorrect = this.model.getIncorrectAnswers();
-    const total = correct + incorrect;
+    const total = this.gameState.getLevel(this.currentLevelId).questionCount;
+    const incorrect = total - correct;
 
     const result = this.gameState.recordRaceResult(
         this.currentLevelId,

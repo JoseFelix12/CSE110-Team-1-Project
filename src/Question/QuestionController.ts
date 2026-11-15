@@ -82,7 +82,7 @@ export class QuestionController {
     }
 
     //compares user answer with actual answer
-    if (userAnswer === this.currentQuestion.answer) {
+    if (userAnswer === question.answer) {
       return true;
     } else {
       return false;

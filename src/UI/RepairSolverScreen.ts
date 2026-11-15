@@ -15,7 +15,11 @@ export class RepairSolverScreen implements Scene {
   private screen: HTMLElement | null = null;
   private timeoutId: number | null = null;
 
-  constructor(private game: Game) {}
+  private game: Game;
+
+  constructor(game: Game) {
+    this.game = game;
+  }
 
   enter(_params: SceneParams): void {
     // Same pixel font used by Mini Game 1

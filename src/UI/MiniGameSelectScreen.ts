@@ -6,7 +6,11 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 export class MiniGameSelectScreen implements Scene {
   private screen: HTMLElement | null = null;
 
-  constructor(private game: Game) {}
+  private game: Game;
+
+  constructor(game: Game) {
+    this.game = game;
+  }
 
   enter(_params: SceneParams): void {
     const screen = document.createElement("section");
@@ -24,7 +28,6 @@ export class MiniGameSelectScreen implements Scene {
       backgroundColor: "#252525",
     });
 
-    // Your new Mini Games artwork
     const image = document.createElement("img");
     image.src = "/images/minigamescreen.png";
     image.alt = "Math Racer Mini Games";
@@ -41,7 +44,6 @@ export class MiniGameSelectScreen implements Scene {
 
     screen.appendChild(image);
 
-    // Invisible clickable areas over your artwork
     const hotspot = (
       label: string,
       left: string,

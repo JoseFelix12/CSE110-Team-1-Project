@@ -1,7 +1,6 @@
 
 import type { Game } from "../Game/Game.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
-// Update these two import paths if your teammates use a different folder.
 import { QuestionController } from "../Question/QuestionController.ts";
 import type { Question } from "../Question/QuestionModel.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
@@ -25,7 +24,6 @@ export class CatchTheAnswer implements Scene {
   private car: HTMLImageElement | null = null;
   private questionText: HTMLDivElement | null = null;
   private scoreText: HTMLDivElement | null = null;
-  private roadLines: HTMLDivElement | null = null;
   private movingDashes: HTMLDivElement[] = [];
 
   private answers: HTMLDivElement[] = [];
@@ -139,7 +137,6 @@ export class CatchTheAnswer implements Scene {
     }
 
     screen.appendChild(roadLines);
-    this.roadLines = roadLines;
 
     // Question display
     const question = document.createElement("div");
@@ -291,7 +288,6 @@ export class CatchTheAnswer implements Scene {
     }
 
     let question: Question;
-    // Reuse the teammate's generator, rejecting questions that exceed
     // the currently available difficulty. The limit is always reachable.
     do {
       question = this.questionController.generateQuestion(type);
@@ -629,7 +625,6 @@ export class CatchTheAnswer implements Scene {
     this.car = null;
     this.questionText = null;
     this.scoreText = null;
-    this.roadLines = null;
     this.movingDashes = [];
     this.answers = [];
     this.currentQuestion = null;

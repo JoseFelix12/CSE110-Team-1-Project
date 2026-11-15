@@ -1,9 +1,14 @@
 import type { Game } from "../Game/Game.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
+import { SceneIds } from "../Game/Scene.ts";
 
 export class StatsScreen implements Scene {
   private screen: HTMLElement | null = null;
-  constructor(private game: Game) {}
+  private game: Game;
+
+  constructor(game: Game) {
+    this.game = game;
+  }
 
   enter(params: SceneParams): void {
     this.exit();
@@ -33,7 +38,7 @@ export class StatsScreen implements Scene {
       color: "white", padding: "14px 20px", cursor: "pointer",
       fontFamily: "inherit", fontSize: "clamp(9px, 1.3vw, 17px)",
     });
-    back.onclick = () => this.game.back();
+    back.onclick = () => this.game.goTo(SceneIds.LevelSelect);
     screen.appendChild(back);
 
     const heading = document.createElement("h1");
