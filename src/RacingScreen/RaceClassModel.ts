@@ -150,4 +150,12 @@ export class RaceClassModel {
         return this.nitroActive;
     }
     //Possibility of including placement?
+
+    getCorrectAnswers(): number {
+    return this.correct_answers;
+}
+
+    getIncorrectAnswers(): number {
+    return this.incorrect_answers;
+    }
 }

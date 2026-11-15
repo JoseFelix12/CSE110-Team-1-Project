@@ -1,5 +1,6 @@
 import type { SkinColor, Upgrade } from "./gameConfig.ts";
 import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_HEALTH, SKIN_PRICES } from './gameConfig.ts';
+import { HEALTH_REPAIR } from "../constants.ts";
 
 export interface CarData {
     skin: SkinColor;
@@ -136,7 +137,7 @@ export class Car implements ReadonlyCar {
      * Remove damage from the car, capped at MAX_HEALTH.
      * Throws if amount is negative or NaN.
      */
-    public undoDamage(amount: number): void {
+    public undoDamage(amount: number = HEALTH_REPAIR): void {
         Car.assertValidAmount(amount);
         this.data.health = Math.min(MAX_HEALTH, this.getHealth() + amount);
     }

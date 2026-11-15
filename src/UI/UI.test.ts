@@ -49,8 +49,6 @@ describe("Math Racer UI navigation", () => {
       (g) => new LevelSelectScreen(g)
     );
 
-    // Register a fake Race scene so we can
-    // test Level 1 without changing teammates' code.
     game.register(SceneIds.Race, () => ({
       enter: () => {},
     }));
@@ -119,23 +117,23 @@ describe("Math Racer UI navigation", () => {
     game.goTo(SceneIds.Home);
     game.goTo(SceneIds.LevelSelect);
 
-    const backButton =
-      document.getElementById("back-button");
+    const backButton = document.querySelector<HTMLButtonElement>(
+      '#level-select-screen button[aria-label="Back"]'
+    );
 
     expect(backButton).not.toBeNull();
 
     backButton!.click();
 
-    expect(game.getCurrentSceneId()).toBe(
-      SceneIds.Home
-    );
+    expect(game.getCurrentSceneId()).toBe(SceneIds.Home);
   });
 
   it("opens Race with levelId 1 when LEVEL 1 is clicked", () => {
     game.goTo(SceneIds.LevelSelect);
 
-    const levelOneButton =
-      document.getElementById("level-one-button");
+    const levelOneButton = document.querySelector<HTMLButtonElement>(
+      '#level-select-screen button[aria-label="Play Level 1"]'
+    );
 
     expect(levelOneButton).not.toBeNull();
 
@@ -143,13 +141,10 @@ describe("Math Racer UI navigation", () => {
 
     levelOneButton!.click();
 
-    expect(goToSpy).toHaveBeenCalledWith(
-      SceneIds.Race,
-      { levelId: 1 }
-    );
+    expect(goToSpy).toHaveBeenCalledWith(SceneIds.Race, {
+     levelId: 1,
+    });
 
-    expect(game.getCurrentSceneId()).toBe(
-      SceneIds.Race
-    );
+   expect(game.getCurrentSceneId()).toBe(SceneIds.Race);
+    });
   });
-});
