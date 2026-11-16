@@ -5,6 +5,18 @@ export interface AnswerChoices {
     correctIndex: number;
 }
 
+export const OPERATIONS = {
+  '+': (a: number, b: number) => a + b,
+  '-': (a: number, b: number) => a - b,
+  '*': (a: number, b: number) => a * b,
+  '/': (a: number, b: number) => a / b,
+} as const;
+
+export type Operation = keyof typeof OPERATIONS;
+
+// The two operations that act as a "sign"
+export const SIGNS: readonly Operation[] = ['+', '-'];
+
 export type DistractorStrategy = (q: Question) => number[];
 export const wrongOperation: DistractorStrategy = q => [q.a + q.b, q.a - q.b, q.a * q.b, q.a / q.b];
 export const offByOne: DistractorStrategy = q => [q.answer+1, q.answer-1];
