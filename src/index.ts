@@ -9,6 +9,7 @@ import { MiniGameSelectScreen } from "./UI/MiniGameSelectScreen.ts";
 import { CatchTheAnswer } from "./UI/CatchTheAnswer.ts";
 import { StatsScreen } from "./UI/StatsScreen.ts";
 import { RepairSolverScreen } from "./UI/RepairSolverScreen.ts";
+import { ShopScreen } from "./UI/ShopScreen.ts";
 
 import "./UI/ui.css";
 import { RaceClassController } from "./RacingScreen/RaceClassController.ts";
@@ -32,6 +33,8 @@ game.register(SceneIds.MiniGame1, (g) =>
 game.register(SceneIds.MiniGame2, (g) => 
     new RepairSolverScreen(g)
 );
+
+game.register(SceneIds.Shop, (g) => new ShopScreen(g));
 
 game.register(SceneIds.Race, (g) => new RaceClassController(
     { switchToScreen: (id) => g.goTo(id) },

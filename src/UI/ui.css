@@ -61,3 +61,712 @@ body {
   text-align: center;
   font-family: monospace;
 }
+
+/* Shop styles are scoped so they cannot affect the other game scenes. */
+.shop-screen {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1440 / 1024;
+  color: #edf4ff;
+  background: #071426;
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(0.3rem, 0.8vw, 0.6rem);
+  image-rendering: pixelated;
+}
+
+.shop-screen .shop-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.48) saturate(0.88);
+}
+
+.shop-screen button {
+  color: inherit;
+  font: inherit;
+}
+
+.shop-screen .shop-interface {
+  position: absolute;
+  inset: 1.4%;
+  display: grid;
+  grid-template-rows: 11% 8% minmax(0, 1fr) 2.4em;
+  gap: 1.2%;
+  overflow: hidden;
+  padding: 1.2%;
+  border: 2px solid #6d8bab;
+  border-radius: 9px;
+  background: linear-gradient(110deg, rgba(6, 18, 38, 0.94), rgba(7, 22, 43, 0.76));
+  box-shadow: inset 0 0 0 2px #101c2a;
+}
+
+.shop-screen .shop-header {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  align-items: center;
+  gap: 2%;
+}
+
+.shop-screen .shop-back,
+.shop-screen .shop-wallet,
+.shop-screen .shop-tab {
+  border: 2px solid #7899bd;
+  border-radius: 7px;
+  background: linear-gradient(#12243b, #081323);
+}
+
+.shop-screen .shop-back {
+  justify-self: start;
+  padding: 0.85em 1em;
+  cursor: pointer;
+}
+
+.shop-screen .shop-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9em;
+}
+
+.shop-screen .shop-brand h1 {
+  margin: 0;
+  font-size: clamp(1rem, 3vw, 2rem);
+  text-shadow: 4px 4px #03070d;
+}
+
+.shop-screen .shop-checker {
+  width: 3.4em;
+  aspect-ratio: 1.8;
+  background:
+    conic-gradient(#f4f5f8 25%, transparent 0 50%, #f4f5f8 0 75%, transparent 0) 0 0 / 50% 100%;
+}
+
+.shop-screen .shop-wallet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  gap: 0.75em;
+  padding: 0.8em 1em;
+}
+
+.shop-screen .shop-coin-icon {
+  position: relative;
+  display: inline-block;
+  width: 1.65em;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border: 0.22em solid #9d5700;
+  border-radius: 50%;
+  background: #ffd52b;
+  box-shadow:
+    inset 0.18em 0.18em #fff17b,
+    inset -0.18em -0.18em #e98b00,
+    0.16em 0.16em #02070c;
+}
+
+.shop-screen .shop-coin-icon::after {
+  position: absolute;
+  inset: 25%;
+  border: 0.14em solid #d98200;
+  content: "";
+}
+
+.shop-screen .shop-coin-icon--small {
+  width: 1.25em;
+  border-width: 0.17em;
+  box-shadow:
+    inset 0.12em 0.12em #fff17b,
+    inset -0.12em -0.12em #e98b00,
+    0.1em 0.1em #02070c;
+}
+
+.shop-screen .shop-tabs {
+  display: flex;
+  width: 70%;
+}
+
+.shop-screen .shop-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55em 0.25em;
+  border-radius: 5px 5px 0 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.shop-screen .shop-tab.active {
+  border-color: #05dcfa;
+  color: #061629;
+  background: linear-gradient(#15cdf5, #087fc9);
+  box-shadow: 0 0 10px rgba(0, 204, 255, 0.52);
+}
+
+.shop-screen .shop-panel {
+  display: none;
+  min-height: 0;
+}
+
+.shop-screen .shop-panel.active {
+  display: grid;
+}
+
+.shop-screen .shop-panel[data-shop-panel="skin"] {
+  grid-template-rows: minmax(0, 1fr) 29%;
+  gap: 1.2%;
+}
+
+.shop-screen .color-shop-showcase {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 3fr 1.22fr;
+  gap: 1.2%;
+}
+
+.shop-screen .color-grid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 1.8%;
+}
+
+.shop-screen .color-card,
+.shop-screen .owned-color {
+  min-width: 0;
+  border: 2px solid #637f9d;
+  border-radius: 7px;
+  color: #edf4ff;
+  background: linear-gradient(155deg, rgba(9, 25, 45, 0.98), rgba(4, 12, 24, 0.98));
+  cursor: pointer;
+}
+
+.shop-screen .color-card {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 1.45em 2.2em;
+  gap: 0.4em;
+  padding: 5%;
+  box-shadow: inset 0 0 0 2px rgba(30, 55, 79, 0.8), 0 3px #02070c;
+}
+
+.shop-screen .color-card.equipped,
+.shop-screen .owned-color.equipped {
+  border-color: #00e5ff;
+  box-shadow: inset 0 0 0 2px #087ba2, 0 0 10px rgba(0, 229, 255, 0.7);
+}
+
+.shop-screen .color-card.previewing {
+  border-color: #ffd52b;
+  box-shadow: inset 0 0 0 2px #9c6800, 0 0 12px rgba(255, 213, 43, 0.72);
+}
+
+.shop-screen .paint-swatch,
+.shop-screen .owned-color-swatch {
+  --paint-color: #f20f19;
+  position: relative;
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  border: 4px solid #02060b;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0 28%, transparent 28% 61%, rgba(0, 0, 0, 0.13) 61%),
+    var(--paint-color);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.09), 3px 3px #010308;
+}
+
+.shop-screen .paint-highlight {
+  position: absolute;
+  top: 11%;
+  left: 9%;
+  width: 28%;
+  height: 10%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: -0.25em 0.55em rgba(255, 255, 255, 0.62);
+}
+
+.shop-screen .color-card-name,
+.shop-screen .owned-color-name {
+  display: flex;
+  min-height: 1.35em;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 0.6em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-screen .color-card-state,
+.shop-screen .owned-color-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding: 0.4em;
+  border: 2px solid #ed1741;
+  border-radius: 4px;
+  color: #ffd52b;
+  background: linear-gradient(90deg, #3d0813, #190811);
+}
+
+.shop-screen .color-card.owned .color-card-state {
+  border-color: #526b82;
+  color: #aab8c8;
+  background: #1a2a3a;
+}
+
+.shop-screen .color-card.equipped .color-card-state,
+.shop-screen .owned-color.equipped .owned-color-action {
+  border-color: #03dff5;
+  color: #061421;
+  background: #0ac4e4;
+}
+
+.shop-screen .color-showroom {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid #536f8d;
+  border-bottom: 4px solid #e8a51a;
+  border-radius: 7px;
+  background: rgba(5, 17, 31, 0.56);
+}
+
+.shop-screen .color-nameplate {
+  position: absolute;
+  top: 6%;
+  right: 5%;
+  z-index: 3;
+  padding: 0.65em 0.8em;
+  border: 2px solid #06ccef;
+  border-radius: 5px;
+  background: #0b1b2e;
+  box-shadow: 0 0 8px rgba(0, 204, 239, 0.45);
+}
+
+.shop-screen .showroom-platform-image {
+  position: absolute;
+  right: -8%;
+  bottom: -2%;
+  left: -8%;
+  z-index: 0;
+  width: 116%;
+  height: 48%;
+  object-fit: contain;
+}
+
+.shop-screen .showroom-car-image {
+  position: relative;
+  z-index: 1;
+  width: 112%;
+  margin-top: 12%;
+  object-fit: contain;
+}
+
+.shop-screen .owned-colors {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-top: 2px solid #596a7b;
+}
+
+.shop-screen .owned-colors h2 {
+  display: flex;
+  align-items: center;
+  gap: 2%;
+  margin: 0;
+  padding: 0.8% 0 1%;
+  color: #a7b6c8;
+  font-size: 0.82em;
+}
+
+.shop-screen .owned-colors h2 span {
+  height: 1px;
+  flex: 1;
+  background: #596a7b;
+}
+
+.shop-screen .owned-color-grid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2%;
+  flex: 1;
+  padding: 0.5% 2%;
+}
+
+.shop-screen .owned-color {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 1.35em 2em;
+  gap: 0.35em;
+  padding: 5%;
+}
+
+.shop-screen .owned-color-swatch {
+  border-width: 3px;
+  border-radius: 6px;
+}
+
+.shop-screen .owned-color-action {
+  border-color: #617a94;
+  color: #d7e4f2;
+  background: #1b2b3c;
+}
+
+.shop-screen .engine-panel {
+  min-height: 0;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 1.5%;
+}
+
+.shop-screen .engine-card,
+.shop-screen .engine-preview,
+.shop-screen .upgrade-card {
+  border: 2px solid #637f9d;
+  border-radius: 7px;
+  background: linear-gradient(155deg, rgba(9, 25, 45, 0.98), rgba(4, 12, 24, 0.98));
+  box-shadow: inset 0 0 0 2px rgba(30, 55, 79, 0.8), 0 3px #02070c;
+}
+
+.shop-screen .engine-card {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 0.82fr 1.18fr;
+  align-items: center;
+  gap: 5%;
+  padding: 7%;
+}
+
+.shop-screen .engine-visual {
+  position: relative;
+  display: grid;
+  width: min(100%, 17em);
+  aspect-ratio: 1;
+  place-items: center;
+  justify-self: center;
+  border: 0.8em solid #07101d;
+  background: repeating-linear-gradient(90deg, #435369 0 9%, #202c3b 9% 18%);
+  box-shadow:
+    inset 0 0 0 0.5em #758aa2,
+    0.7em 0.7em #02070c;
+  transform: rotate(45deg);
+}
+
+.shop-screen .engine-core {
+  display: grid;
+  width: 55%;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 0.45em solid #ffb000;
+  color: #fff3bc;
+  background: #a92417;
+  box-shadow: inset 0 0 0 0.35em #4c1010;
+  font-size: 1.5em;
+  transform: rotate(-45deg);
+}
+
+.shop-screen .engine-piston {
+  position: absolute;
+  width: 28%;
+  height: 48%;
+  border: 0.35em solid #0b111a;
+  background: #6f8298;
+  box-shadow: inset 0 0 0 0.3em #303d4d;
+}
+
+.shop-screen .engine-piston-left {
+  top: -16%;
+  left: 2%;
+}
+
+.shop-screen .engine-piston-right {
+  right: 2%;
+  bottom: -16%;
+}
+
+.shop-screen .engine-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.6em;
+}
+
+.shop-screen .shop-eyebrow {
+  margin: 0;
+  color: #08daf7;
+  font-size: 0.7em;
+}
+
+.shop-screen .engine-details h2,
+.shop-screen .upgrade-heading h2 {
+  margin: 0;
+  color: #f4f7fb;
+  font-size: 1.3em;
+}
+
+.shop-screen .engine-details > p:not(.shop-eyebrow) {
+  margin: 0;
+  color: #a9bdd2;
+  font-family: monospace;
+  font-size: 1.45em;
+  line-height: 1.35;
+}
+
+.shop-screen .engine-level-track {
+  display: flex;
+  width: 100%;
+  gap: 3%;
+}
+
+.shop-screen .engine-level-track span {
+  height: 1.8em;
+  flex: 1;
+  border: 2px solid #59748e;
+  background: #101e2d;
+  box-shadow: inset 0 0 0 2px #06101b;
+}
+
+.shop-screen .engine-level-track span.filled {
+  border-color: #04dcf8;
+  background: linear-gradient(#17d6f6, #087bb3);
+  box-shadow: 0 0 7px rgba(0, 220, 248, 0.58);
+}
+
+.shop-screen .shop-purchase-button {
+  display: flex;
+  min-width: 10em;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65em;
+  padding: 0.8em 1em;
+  border: 2px solid #ec2446;
+  border-radius: 5px;
+  color: #ffe36b;
+  background: linear-gradient(90deg, #56101a, #250a11);
+  box-shadow: inset 0 0 0 2px #23060d, 0 3px #02070c;
+  cursor: pointer;
+}
+
+.shop-screen .shop-purchase-button:disabled {
+  border-color: #61758a;
+  color: #a8b7c6;
+  background: #203042;
+  cursor: default;
+}
+
+.shop-screen .engine-preview {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 70%, rgba(255, 177, 0, 0.2), transparent 48%), rgba(4, 14, 26, 0.84);
+}
+
+.shop-screen .engine-preview img:first-child {
+  position: absolute;
+  right: -10%;
+  bottom: -4%;
+  width: 120%;
+}
+
+.shop-screen .engine-preview img:last-child {
+  position: absolute;
+  right: -8%;
+  bottom: 12%;
+  z-index: 1;
+  width: 116%;
+  filter: drop-shadow(0 7px 5px rgba(0, 0, 0, 0.85));
+}
+
+.shop-screen .upgrade-panel {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 2%;
+}
+
+.shop-screen .upgrade-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1%;
+}
+
+.shop-screen .upgrade-grid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5%;
+}
+
+.shop-screen .upgrade-card {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto minmax(3.8em, auto) auto;
+  gap: 0.9em;
+  padding: 6%;
+  text-align: center;
+}
+
+.shop-screen .upgrade-card.owned {
+  border-color: #04dff8;
+  box-shadow: inset 0 0 0 2px #087b9f, 0 0 10px rgba(0, 223, 248, 0.42);
+}
+
+.shop-screen .upgrade-icon {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 0.35em solid #07101b;
+  background: radial-gradient(circle, #183b58 0, #081522 68%);
+  box-shadow: inset 0 0 0 0.25em #274b67, 0.4em 0.4em #02070c;
+}
+
+.shop-screen .upgrade-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0.2em 0.3em 0 rgba(0, 0, 0, 0.75));
+  image-rendering: pixelated;
+}
+
+.shop-screen .upgrade-card h3 {
+  margin: 0;
+  font-size: 0.85em;
+}
+
+.shop-screen .upgrade-card p {
+  margin: 0;
+  overflow: hidden;
+  color: #a9bdd2;
+  font-family: monospace;
+  font-size: 1.25em;
+  line-height: 1.3;
+}
+
+.shop-screen .upgrade-card .shop-purchase-button {
+  width: 100%;
+  min-width: 0;
+}
+
+.shop-screen .shop-placeholder {
+  place-items: center;
+  border: 2px solid #566f89;
+  color: #9fb7d2;
+  background: rgba(5, 15, 27, 0.86);
+  text-align: center;
+}
+
+.shop-screen .shop-message {
+  min-height: 1.2em;
+  margin: 0;
+  color: #ffd52b;
+  text-align: center;
+}
+
+.shop-screen .shop-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(1, 5, 12, 0.78);
+  backdrop-filter: blur(2px);
+}
+
+.shop-screen .shop-confirm-overlay[hidden] {
+  display: none;
+}
+
+.shop-screen .shop-confirm-card {
+  display: grid;
+  width: min(38em, 72%);
+  place-items: center;
+  gap: 1.4em;
+  padding: 3em;
+  border: 3px solid #06daf5;
+  border-radius: 8px;
+  color: #edf4ff;
+  background: linear-gradient(145deg, #10243b, #06111f);
+  box-shadow:
+    inset 0 0 0 3px #183a54,
+    0 0 0 4px #02070d,
+    0 0 24px rgba(0, 218, 245, 0.45);
+  text-align: center;
+}
+
+.shop-screen .shop-confirm-card h2,
+.shop-screen .shop-confirm-card p {
+  margin: 0;
+}
+
+.shop-screen .shop-confirm-card h2 {
+  font-size: 1.35em;
+}
+
+.shop-screen .shop-confirm-card > p:not(.shop-eyebrow) {
+  color: #b4c7da;
+  font-family: monospace;
+  font-size: 1.4em;
+}
+
+.shop-screen .confirm-color-swatch {
+  --paint-color: #f20f19;
+  display: block;
+  width: 10em;
+  height: 5.5em;
+  border: 0.55em solid #02060b;
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0 30%, transparent 30% 62%, rgba(0, 0, 0, 0.13) 62%),
+    var(--paint-color);
+  box-shadow: inset 0 0 0 0.35em rgba(255, 255, 255, 0.1), 0.45em 0.45em #010308;
+}
+
+.shop-screen .confirm-price {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  color: #ffe36b;
+  font-size: 1.3em;
+}
+
+.shop-screen .confirm-balance {
+  color: #8fa9c3 !important;
+  font-size: 1.15em !important;
+}
+
+.shop-screen .confirm-actions {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.shop-screen .confirm-actions button {
+  padding: 1em;
+  border: 2px solid #718ca7;
+  border-radius: 5px;
+  background: #1b2d41;
+  box-shadow: 0 3px #02070c;
+  cursor: pointer;
+}
+
+.shop-screen .confirm-actions .confirm-buy {
+  border-color: #03dff5;
+  color: #061421;
+  background: linear-gradient(#18d8f2, #078bbd);
+}
+
+.shop-screen button:focus-visible {
+  outline: 2px solid #ffd52b;
+  outline-offset: 2px;
+}
