@@ -12,6 +12,9 @@ const CAR_COLORS: Record<CarColor, { body: string; dark: string }> = {
     green: { body: '#2f9d4a', dark: '#1b6330' },
     purple: { body: '#8a3fd3', dark: '#58238e' },
     yellow: { body: '#e8c21d', dark: '#9a7d0e' },
+    pink: { body: '#f43c9b', dark: '#a8226a' },
+    white: { body: '#e8edf2', dark: '#9aa3ad' },
+    black: { body: '#2a2d34', dark: '#111317' },
 };
 
 /**

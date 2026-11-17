@@ -41,7 +41,7 @@ describe("ShopScreen prototype", () => {
   });
 
   it("shows coins awarded after a completed race and updates while the shop is open", () => {
-    const result = game.state.recordRaceResult(1, 15, 15);
+    const result = game.state.recordRaceResult(1, 15, 3);
     game.goTo(SceneIds.Shop);
     expect(document.querySelector("[data-shop-balance]")?.textContent)
       .toBe(String(75 + result.coinsEarned));

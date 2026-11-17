@@ -17,7 +17,7 @@ export class RaceClassModel {
     private finishPlace: number | null = null;
 
     constructor(random: () => number = Math.random) {
-        this.opponents = createOpponents(AMOUNT_OF_QUESTIONS_IN_LEVEL_1, random);
+        this.opponents = createOpponents(this.questionCount, random);
     }
 
     /**
@@ -32,7 +32,7 @@ export class RaceClassModel {
         this.nitroActive = false;
         this.questionCount = questionCount;
         this.finishPlace = null;
-        this.opponents.forEach((opponent) => opponent.reset());
+        this.opponents.forEach((opponent) => opponent.reset(questionCount));
     }
 
     /**
@@ -203,11 +203,11 @@ export class RaceClassModel {
         return this.opponents.length + 1;
     }
 
-    getCorrectAnswers(): number {
-        return this.correct_answers;
+    /**
+     * How many bots the player is ahead of (3 when first, 0 when last)
+     */
+    getOpponentsBeaten(): number {
+        return this.getRacerCount() - this.getPlacement();
     }
 
-    getIncorrectAnswers(): number {
-        return this.incorrect_answers;
-    }
 }

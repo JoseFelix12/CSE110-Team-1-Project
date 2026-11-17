@@ -7,8 +7,8 @@ import {
     ENGINE_UPGRADE_PRICES,
     LEVELS,
     SKIN_PRICES,
+    MAX_STARS,
     STARS_TO_UNLOCK_NEXT,
-    STAR_THRESHOLDS,
     UPGRADE_PRICES,
 } from './gameConfig.ts';
 import type { LevelConfig, SkinColor, Upgrade } from './gameConfig.ts';
@@ -74,14 +74,10 @@ function getDefaultStorage(): StorageLike | null {
 }
 
 /**
- * Converts race accuracy into 0-3 stars
+ * 1 star for each opponent the player finished ahead of, from 0 to MAX_STARS
  */
-export function calculateStars(correct: number, total: number): number {
-    if (total <= 0) {
-        return 0;
-    }
-    const accuracy = correct / total;
-    return STAR_THRESHOLDS.filter((threshold) => accuracy >= threshold).length;
+export function calculateStars(opponentsBeaten: number): number {
+    return Math.max(0, Math.min(MAX_STARS, Math.floor(opponentsBeaten)));
 }
 
 /**
@@ -177,15 +173,16 @@ export class GameState {
     }
 
     /**
-     * Records a finished race: awards coins, keeps best stars, unlocks the next level
+     * Records a finished race: awards coins, keeps best stars, unlocks the next level.
+     * Stars come from how many opponents the player finished ahead of.
      */
-    recordRaceResult(levelId: number, correct: number, total: number): RaceResult {
+    recordRaceResult(levelId: number, correct: number, opponentsBeaten: number): RaceResult {
         this.getLevel(levelId);
         if (!this.isLevelUnlocked(levelId)) {
             throw new Error(`Level ${levelId} is locked`);
         }
 
-        const stars = calculateStars(correct, total);
+        const stars = calculateStars(opponentsBeaten);
         const previousStars = this.getStars(levelId);
         const lockedBefore = LEVELS.filter((l) => !this.isLevelUnlocked(l.id)).map((l) => l.id);
 

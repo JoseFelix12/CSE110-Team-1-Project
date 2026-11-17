@@ -78,8 +78,8 @@ export const LEVELS: LevelConfig[] = [
     },
 ];
 
-/** Minimum accuracy (0-1) needed for 1, 2 and 3 stars */
-export const STAR_THRESHOLDS = [0.5, 0.7, 0.9];
+/** Most stars a race can earn: 1 star for each opponent the player beats */
+export const MAX_STARS = 3;
 
 /** Stars needed on a level to unlock the next one */
 export const STARS_TO_UNLOCK_NEXT = 1;

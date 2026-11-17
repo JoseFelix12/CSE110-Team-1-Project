@@ -6,6 +6,7 @@ import type { SceneId } from '../Game/Scene.ts';
 import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
+import type { RaceClassModel } from './RaceClassModel.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
 
 const fake = vi.hoisted(() => ({
@@ -392,14 +393,37 @@ describe('RaceClassController', () => {
     });
 
     describe('coins', () => {
-        it('awards coins and stars when the race ends', () => {
+        it('awards coins and 3 stars for beating every opponent', () => {
             startRacing();
             for (let i = 0; i < 4; i++) answerCorrectly();
             view().handlers.onFinishLineCrossed();
             expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
             expect(gameState.getStars(1)).toBe(3);
         });
-    
+
+        it('gives no stars when every opponent finishes first', () => {
+            startRacing();
+            // Far longer than any bot needs to finish
+            controller.update(1000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getStars(1)).toBe(0);
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER);
+        });
+
+        it('gives 1 star per opponent beaten', () => {
+            startRacing();
+            // Only the hard bot finishes before the player
+            const model = (controller as unknown as { model: RaceClassModel }).model;
+            const [, , hard] = model.getOpponents();
+            expect(hard.profile.difficulty).toBe('hard');
+            hard.update(1000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getStars(1)).toBe(2);
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 2 * COINS_PER_STAR);
+        });
+
         it('only pays for correct answers', () => {
             startRacing();
             answerCorrectly();
@@ -407,8 +431,8 @@ describe('RaceClassController', () => {
             answerWrong();
             answerWrong();
             view().handlers.onFinishLineCrossed();
-            // 2 of 4 correct = 50% accuracy = 1 star
-            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 1 * COINS_PER_STAR);
+            // Bots never moved, so the player beat all 3
+            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
         });
     
         it('gives nothing if the player quits mid-race', () => {
@@ -472,14 +496,16 @@ describe('RaceClassController', () => {
                 incorrect: 2,
                 total: 4,
                 accuracy: 50,
-                stars: 1,
-                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 1 * COINS_PER_STAR,
+                placement: 1,
+                opponentsBeaten: 3,
+                stars: 3,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
             }));
             expect(switchToScreen).not.toHaveBeenCalled();
         });
     
         it('reports the level that was actually played', () => {
-            gameState.recordRaceResult(1, 4, 4); // earn a star so level 2 unlocks
+            gameState.recordRaceResult(1, 4, 3); // earn a star so level 2 unlocks
             controller.enter({ levelId: 2 });
             vi.advanceTimersByTime(3000);
             for (let i = 0; i < 4; i++) answerCorrectly();
