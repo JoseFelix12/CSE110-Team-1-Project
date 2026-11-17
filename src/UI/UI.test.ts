@@ -54,8 +54,6 @@ describe("Math Racer UI navigation", () => {
       (g) => new LevelSelectScreen(g)
     );
 
-    // Register a fake Race scene so we can
-    // test Level 1 without changing teammates' code.
     game.register(SceneIds.Race, () => ({
       enter: () => {},
     }));
@@ -124,16 +122,15 @@ describe("Math Racer UI navigation", () => {
     game.goTo(SceneIds.Home);
     game.goTo(SceneIds.LevelSelect);
 
-    const backButton =
-      document.getElementById("back-button");
+    const backButton = document.querySelector<HTMLButtonElement>(
+      '#level-select-screen button[aria-label="Back"]'
+    );
 
     expect(backButton).not.toBeNull();
 
     backButton!.click();
 
-    expect(game.getCurrentSceneId()).toBe(
-      SceneIds.Home
-    );
+    expect(game.getCurrentSceneId()).toBe(SceneIds.Home);
   });
 
   it("opens Race with levelId 1 when LEVEL 1 is clicked", () => {
@@ -151,14 +148,11 @@ describe("Math Racer UI navigation", () => {
 
     playButton!.click();
 
-    expect(goToSpy).toHaveBeenCalledWith(
-      SceneIds.Race,
-      { levelId: 1 }
-    );
+    expect(goToSpy).toHaveBeenCalledWith(SceneIds.Race, {
+      levelId: 1,
+    });
 
-    expect(game.getCurrentSceneId()).toBe(
-      SceneIds.Race
-    );
+    expect(game.getCurrentSceneId()).toBe(SceneIds.Race);
   });
 
   describe("level arrows", () => {
@@ -191,7 +185,7 @@ describe("Math Racer UI navigation", () => {
       for (const level of LEVELS) {
         expect(
           document.getElementById("level-name")!.textContent
-        ).toBe(level.name.toUpperCase());
+        ).toContain(level.name.toUpperCase());
         expect(
           document.getElementById("level-description")!.textContent
         ).toBe(level.description.toUpperCase());
@@ -210,7 +204,23 @@ describe("Math Racer UI navigation", () => {
       expect(title()).toBe("LEVEL 1");
     });
 
-    it("clicking the panel races the level being shown", () => {
+    it("marks locked levels and does not race them", () => {
+      click("level-next-button");
+      expect(
+        document.getElementById("level-name")!.textContent
+      ).toContain("LOCKED");
+      const goToSpy = vi.spyOn(game, "goTo");
+
+      click("level-play-button");
+
+      expect(goToSpy).not.toHaveBeenCalled();
+      expect(game.getCurrentSceneId()).toBe(SceneIds.LevelSelect);
+    });
+
+    it("clicking the panel races the level being shown once unlocked", () => {
+      vi.spyOn(game.state, "isLevelUnlocked").mockReturnValue(true);
+      game.goTo(SceneIds.Home);
+      game.goTo(SceneIds.LevelSelect);
       click("level-next-button");
       click("level-next-button");
       const goToSpy = vi.spyOn(game, "goTo");

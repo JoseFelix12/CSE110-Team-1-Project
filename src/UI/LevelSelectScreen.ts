@@ -1,18 +1,19 @@
 import type { Game } from "../Game/Game.ts";
-import type { LevelConfig } from "../Game/gameConfig.ts";
+import type { LevelStatus } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { drawThemePreview } from "../RacingScreen/RaceClassView.ts";
 
 /**
  * LevelSelectScreen - Shows one level at a time. The arrows (or the left and
- * right arrow keys) flip between levels, and clicking the panel races it.
- * The level's title, preview and description are drawn over levels.png.
+ * right arrow keys) flip between levels, and clicking the panel races it if
+ * the level is unlocked. The level's title, preview and description are drawn
+ * over LEVELS SCREEN.png.
  */
 export class LevelSelectScreen implements Scene {
   private game: Game;
   private screen: HTMLElement | null = null;
-  private levels: LevelConfig[] = [];
+  private levels: LevelStatus[] = [];
   private index = 0;
 
   private title: HTMLElement | null = null;
@@ -34,16 +35,27 @@ export class LevelSelectScreen implements Scene {
     screen.id = "level-select-screen";
 
     const image = document.createElement("img");
-    image.src = "/images/levels.png";
+    image.src = "/images/LEVELS%20SCREEN.png";
     image.alt = "Math Racer Level Selection";
+    image.loading = "eager";
+    image.decoding = "sync";
+
+    // Load the pixel font
+    if (!document.getElementById("levels-arcade-font")) {
+      const link = document.createElement("link");
+      link.id = "levels-arcade-font";
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
+      document.head.appendChild(link);
+    }
 
     const backButton = document.createElement("button");
     backButton.id = "back-button";
     backButton.className = "hotspot levels-back";
     backButton.setAttribute("aria-label", "Back");
-
     backButton.addEventListener("click", () => {
-      this.game.back();
+      this.game.goTo(SceneIds.Home);
     });
 
     const prevButton = document.createElement("button");
@@ -58,7 +70,6 @@ export class LevelSelectScreen implements Scene {
     nextButton.setAttribute("aria-label", "Next level");
     nextButton.addEventListener("click", () => this.showLevel(this.index + 1));
 
-    // These cover the Level 1 text and picture baked into levels.png
     const title = document.createElement("div");
     title.id = "level-title";
     title.className = "level-title";
@@ -79,7 +90,11 @@ export class LevelSelectScreen implements Scene {
     playButton.id = "level-play-button";
     playButton.className = "hotspot level-play";
     playButton.addEventListener("click", () => {
-      this.game.goTo(SceneIds.Race, { levelId: this.levels[this.index].id });
+      const level = this.levels[this.index];
+      if (!level.unlocked) {
+        return;
+      }
+      this.game.goTo(SceneIds.Race, { levelId: level.id });
     });
 
     screen.append(image, title, preview, name, description, backButton, prevButton, nextButton, playButton);
@@ -99,9 +114,6 @@ export class LevelSelectScreen implements Scene {
     document.removeEventListener("keydown", this.handleKeyDown);
     this.screen?.remove();
     this.screen = null;
-
-    const message = document.getElementById("message");
-    if (message) message.textContent = "";
   }
 
   /**
@@ -113,9 +125,16 @@ export class LevelSelectScreen implements Scene {
     const level = this.levels[this.index];
 
     this.title!.textContent = `LEVEL ${level.id}`;
-    this.name!.textContent = level.name.toUpperCase();
+    this.name!.textContent = level.unlocked
+      ? level.name.toUpperCase()
+      : `${level.name.toUpperCase()} - LOCKED`;
+    this.name!.classList.toggle("locked", !level.unlocked);
     this.description!.textContent = level.description.toUpperCase();
-    this.playButton!.setAttribute("aria-label", `Play level ${level.id}: ${level.name}`);
+    this.playButton!.style.cursor = level.unlocked ? "pointer" : "not-allowed";
+    this.playButton!.setAttribute(
+      "aria-label",
+      level.unlocked ? `Play Level ${level.id}` : `Level ${level.id} locked`,
+    );
     drawThemePreview(this.preview!, level.theme);
   }
 

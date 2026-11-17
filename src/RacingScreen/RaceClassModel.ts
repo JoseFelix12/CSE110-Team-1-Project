@@ -180,4 +180,12 @@ export class RaceClassModel {
     getRacerCount(): number {
         return this.opponents.length + 1;
     }
+
+    getCorrectAnswers(): number {
+        return this.correct_answers;
+    }
+
+    getIncorrectAnswers(): number {
+        return this.incorrect_answers;
+    }
 }

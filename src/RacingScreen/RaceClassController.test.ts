@@ -12,6 +12,14 @@ const fake = vi.hoisted(() => ({
     view: null as null | Record<string, ReturnType<typeof vi.fn>> & { handlers: RaceViewHandlers },
 }));
 
+vi.stubGlobal('Audio', class {
+    loop = false;
+    muted = false;
+    currentTime = 0;
+    play = vi.fn().mockResolvedValue(undefined);
+    pause = vi.fn();
+});
+
 // The real view needs a browser, so these tests watch what the controller asks of it
 vi.mock('./RaceClassView.ts', () => ({
     RaceClassView: class {

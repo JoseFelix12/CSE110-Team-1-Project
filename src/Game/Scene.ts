@@ -13,6 +13,7 @@ export const SceneIds = {
     MiniGame1: 'miniGame1',
     MiniGame2: 'miniGame2',
     Shop: 'shop',
+    Stats: 'stats',
     Instructions: 'instructions',
 } as const;
 
