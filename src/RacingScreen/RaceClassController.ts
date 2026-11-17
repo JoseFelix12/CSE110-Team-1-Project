@@ -38,7 +38,6 @@ export class RaceClassController implements Scene {
     private screenSwitcher: screenSwitcher;
     private gameState: GameState;
     private onRaceComplete?: (params: SceneParams) => void;
-    private currentLevelId = 1;
     private raceFinished = false;
     private parent: HTMLElement | null;
     private generator: QuestionGenerator;
@@ -295,42 +294,40 @@ export class RaceClassController implements Scene {
      */
     private endGame(): void {
         if (this.raceFinished) return;
-        this.raceFinished = true;  
+        this.raceFinished = true;
       
         this.engine.pause();
 
         const correct = this.model.getCorrect_Answers();
-        const incorrect = this.model.getIncorrect_Answers();
+        const incorrect = this.model.getIncorrectAnswers();
         const total = this.model.getQuestionCount();
 
         const result = this.gameState.recordRaceResult(
             this.levelId, 
-            this.model.getCorrect_Answers(), 
-            this.model.getQuestionCount()
+            correct, 
+            total
         );
         this.finishTimeout = setTimeout(() => {
             this.finishTimeout = null;
-
+        
             if (this.onRaceComplete) {
                 this.onRaceComplete({
                     mode: "race",
-                    levelId: this.currentLevelId,
+                    levelId: this.levelId,
                     correct,
                     incorrect,
                     total,
-                    accuracy: total > 0
-                        ? Math.round((correct / total) * 100)
-                        : 0,
+                    accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
                     stars: result.stars,
                     coinsEarned: result.coinsEarned,
                     newBest: result.newBest,
-                    unlockedLevelId: result.unlockedLevelId
+                    unlockedLevelId: result.unlockedLevelId,
                 });
             } else {
                 this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
-        }
-    }, FINISH_SCREEN_MS);
-}
+            }
+        }, FINISH_SCREEN_MS);
+    }
 
     private stopAllTimers(): void {
         this.stopCountdownTimer();

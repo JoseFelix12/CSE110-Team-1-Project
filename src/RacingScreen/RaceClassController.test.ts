@@ -297,5 +297,85 @@ describe('RaceClassController', () => {
             view().handlers.onQuit();
             expect(gameState.getCoins()).toBe(0);
         });
+
+        it('only records the race once if the finish line fires twice', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+        });
+
+        it('records the result on the level that was played', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+            controller.exit();
+        
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+            });
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+        
+            expect(gameState.getStars(2)).toBe(3);
+        });
+    });
+    describe('onRaceComplete', () => {
+        let onRaceComplete: Mock<(params: Record<string, unknown>) => void>;
+    
+        beforeEach(() => {
+            onRaceComplete = vi.fn();
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+                onRaceComplete,
+            });
+        });
+    
+        it('reports the race summary instead of switching screens', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({
+                mode: 'race',
+                levelId: 1,
+                correct: 2,
+                incorrect: 2,
+                total: 4,
+                accuracy: 50,
+                stars: 1,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 1 * COINS_PER_STAR,
+            }));
+            expect(switchToScreen).not.toHaveBeenCalled();
+        });
+    
+        it('reports the level that was actually played', () => {
+            gameState.recordRaceResult(1, 4, 4); // earn a star so level 2 unlocks
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({ levelId: 2 }));
+        });
+    
+        it('waits for the finish screen delay before reporting', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(onRaceComplete).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1500);
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+        });
     });
 });

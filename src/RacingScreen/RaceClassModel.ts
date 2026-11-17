@@ -39,6 +39,12 @@ export class RaceClassModel {
     getCorrect_Answers(): number {
         return this.correct_answers;
     }
+    /**
+     * Gets the amount of incorrect_answers
+     */
+    getIncorrectAnswers(): number {
+        return this.incorrect_answers;
+    }
 
     /**
      * Gets the amount of questions for the current level
@@ -148,14 +154,5 @@ export class RaceClassModel {
      */
     isNitroActive(): boolean {
         return this.nitroActive;
-    }
-    //Possibility of including placement?
-
-    getCorrectAnswers(): number {
-    return this.correct_answers;
-}
-
-    getIncorrectAnswers(): number {
-    return this.incorrect_answers;
     }
 }

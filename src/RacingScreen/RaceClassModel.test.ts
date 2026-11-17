@@ -46,6 +46,13 @@ describe('RaceClassModel', () => {
             expect(model['incorrect_answers']).toBe(1);
             expect(model['correct_answers']).toBe(0);
         });
+
+        it('getIncorrectAnswers returns the incorrect count', () => {
+            model.incrementIncorrect_Answers();
+            model.incrementIncorrect_Answers();
+            expect(model.getIncorrectAnswers()).toBe(2);
+            expect(model.getCorrect_Answers()).toBe(0);
+        });
     });
 
     describe('currentProgess', () => {
