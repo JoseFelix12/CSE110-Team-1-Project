@@ -4,9 +4,10 @@ import {
     FINISH_SCREEN_MS,
     QUESTION_TIMER,
 } from "../constants.ts";
-import { checkAnswer } from "../answerChecker.ts";
-import { createQuestionGenerator } from "../questionGenerator.ts";
-import type { Question, QuestionGenerator } from "../questionGenerator.ts";
+import { QuestionController } from "../Question/QuestionController.ts";
+import type { QuestionType } from "../Question/QuestionController.ts";
+import type { Question } from "../Question/QuestionModel.ts";
+import type { LevelConfig, Operator } from "../Game/gameConfig.ts";
 import type { screenSwitcher } from "../Game/Game.ts";
 import type { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
@@ -14,6 +15,14 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
+
+/** Which QuestionController question type each level operator asks */
+const QUESTION_TYPES: Record<Operator, QuestionType> = {
+    '+': 'addition',
+    '-': 'subtraction',
+    '*': 'multiplication',
+    '/': 'division',
+};
 
 export interface RaceControllerOptions {
     /** Where the view is added to the page. Defaults to document.body */
@@ -40,7 +49,12 @@ export class RaceClassController implements Scene {
     private onRaceComplete?: (params: SceneParams) => void;
     private raceFinished = false;
     private parent: HTMLElement | null;
-    private generator: QuestionGenerator;
+    /** Forces one theme for every level (the demo uses this); otherwise each level picks its own */
+    private themeOverride: RaceTheme | undefined;
+    /** Makes and checks questions, and keeps the ones missed this race */
+    private questions = new QuestionController();
+    private level: LevelConfig;
+
     private questionTimer: ReturnType<typeof setInterval> | null = null;
     private countdownTimer: ReturnType<typeof setInterval> | null = null;
     private finishTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -48,6 +62,8 @@ export class RaceClassController implements Scene {
     private countdownRemaining = 0;
     private currentQuestion: Question | null = null;
     private paused = false;
+    /** True from GO until the scene exits; the bots only move while this is set */
+    private racing = false;
     private lastNitroLevel = -1;
     private lastNitroActive = false;
     private levelId = 1;
@@ -67,7 +83,8 @@ export class RaceClassController implements Scene {
         this.gameState = gameState;
         this.onRaceComplete = options.onRaceComplete;
         this.parent = options.parent ?? null;
-        this.generator = this.createGenerator(1);
+        this.themeOverride = options.theme;
+        this.level = gameState.getLevel(1);
         this.engine.loop = true;
         this.lightCountDown.volume = .1;
         this.rev.volume = .2;
@@ -87,9 +104,9 @@ export class RaceClassController implements Scene {
                 onFinishLineCrossed: () => this.endGame(),
             },
             {
-                theme: options.theme,
                 skin: gameState.getCar().getSkin(),
                 speedMultiplier: gameState.getCar().getSpeedMultiplier(),
+                opponentColors: this.model.getOpponents().map((opponent) => opponent.profile.color),
             },
         );
     }
@@ -99,12 +116,14 @@ export class RaceClassController implements Scene {
     enter(params: SceneParams): void {
         this.levelId = typeof params.levelId === "number" ? params.levelId : 1;
         this.raceFinished = false;
-        this.generator = this.createGenerator(this.levelId);
+        this.level = this.gameState.getLevel(this.levelId);
+        this.view.setTheme(this.themeOverride ?? this.level.theme);
         this.view.mount(this.parent ?? document.body);
         this.startGame();
     }
 
     exit(): void {
+        this.racing = false;
         this.stopAllTimers();
         this.view.destroy();
     }
@@ -114,6 +133,7 @@ export class RaceClassController implements Scene {
         if (!this.paused) {
             this.model.updateNitro(dt);
             this.syncNitroView();
+            this.updateOpponents(dt);
         }
     }
 
@@ -126,12 +146,14 @@ export class RaceClassController implements Scene {
         this.engine.pause();
         this.stopAllTimers();
         this.model.reset(this.gameState.getLevel(this.levelId).questionCount);
+        this.questions = new QuestionController();
         this.view.setCar();
         this.lastNitroActive = false;
         this.lastNitroLevel = -1;
         this.syncNitroView();
         this.currentQuestion = null;
         this.paused = false;
+        this.racing = false;
         this.startCountdown();
         this.engine.play();
     }
@@ -155,6 +177,7 @@ export class RaceClassController implements Scene {
             } else {
                 this.stopCountdownTimer();
                 this.view.startRace();
+                this.racing = true;
                 this.nextQuestion();
             }
         }, 1000);
@@ -171,14 +194,18 @@ export class RaceClassController implements Scene {
      * Handles question generation
      */
     private nextQuestion(): void {
-        this.currentQuestion = this.generator.nextQuestion();
+        const { operators, minFactor, maxFactor } = this.level;
+        const operator = operators[Math.floor(Math.random() * operators.length)];
+        this.currentQuestion = this.questions.generateQuestion(QUESTION_TYPES[operator], minFactor, maxFactor);
         this.view.setQuestion(this.currentQuestion.text);
         this.startQuestionTimer();
     }
 
-    private createGenerator(levelId: number): QuestionGenerator {
-        const level = this.gameState.getLevel(levelId);
-        return createQuestionGenerator({ operators: level.operators, min: 1, max: level.maxFactor });
+    /**
+     * Questions answered wrong or timed out this race, for a review screen later
+     */
+    getWrongQuestions(): Question[] {
+        return this.questions.getWrongQuestions();
     }
 
     /**
@@ -195,6 +222,7 @@ export class RaceClassController implements Scene {
             this.questionTimeRemaining -= 1;
             this.view.updateTimer(this.questionTimeRemaining);
             if (this.questionTimeRemaining <= 0) {
+                this.questions.markWrong();
                 this.finishQuestion(false);
             }
         }, 1000);
@@ -222,7 +250,7 @@ export class RaceClassController implements Scene {
      */
     private handleAnswer(answer: string): void {
         if (this.currentQuestion !== null) {
-            this.finishQuestion(checkAnswer(this.currentQuestion, answer));
+            this.finishQuestion(this.questions.submitAnswer(answer));
         }
     }
 
@@ -285,8 +313,25 @@ export class RaceClassController implements Scene {
         this.view.setProgress(progress);
         if (progress < 1) {
             this.nextQuestion();
+        } else {
+            this.model.recordFinish();
+            this.view.setPlacement(this.model.getPlacement());
         }
         //At 1 the view drives to the finish line, then calls endGame
+    }
+
+    // ---------- Opponents ----------
+
+    /**
+     * Moves the bots and updates where the player is placed
+     */
+    private updateOpponents(dt: number): void {
+        if (!this.racing) {
+            return;
+        }
+        this.model.updateOpponents(dt);
+        this.view.setOpponentProgress(this.model.getOpponents().map((opponent) => opponent.getProgress()));
+        this.view.setPlacement(this.model.getPlacement());
     }
 
     /**

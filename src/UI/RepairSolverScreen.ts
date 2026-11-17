@@ -377,36 +377,18 @@ export class RepairSolverScreen implements Scene {
 
       questionNumber++;
 
-      const question = repairGame.generateQuestion("");
+      const question = repairGame.generateQuestion();
       const correctAnswer = question.answer;
 
       questionBox.textContent = question.text;
 
-      // Generate four unique answer choices
-      const choices = new Set<number>([correctAnswer]);
-
-      while (choices.size < 4) {
-        const offset = Math.floor(Math.random() * 15) - 7;
-        const choice = correctAnswer + offset;
-
-        if (choice >= 0) {
-          choices.add(choice);
-        }
-      }
-
-      // Shuffle the choices
-      const shuffled = [...choices];
-
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] =
-          [shuffled[j], shuffled[i]];
-      }
+      // One correct answer + three distractors, already shuffled
+      const { choices } = repairGame.generateAnswerChoices(question, buttons.length);
 
       updateStatus();
 
       buttons.forEach((button, index) => {
-        const answer = shuffled[index];
+        const answer = choices[index];
 
         button.textContent = String(answer);
         button.disabled = false;

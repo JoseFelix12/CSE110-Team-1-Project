@@ -219,6 +219,7 @@ describe("QuestionController", () => {
         a: 1,
         b: 1,
         answer: 2,
+        operator: "addition",
       });
 
       expect(questionController.getWrongQuestions()).toHaveLength(0);
@@ -232,10 +233,10 @@ describe("QuestionController", () => {
 
     questions.forEach((question) => {
       if (question.operator === "addition") {
-        expect(question.text).toBe(`${question.a} + ${question.b}?`);
+        expect(question.text).toBe(`${question.a} + ${question.b} = ?`);
       } else {
         expect(question.operator).toBe("subtraction");
-        expect(question.text).toBe(`${question.a} - ${question.b}?`);
+        expect(question.text).toBe(`${question.a} − ${question.b} = ?`);
       }
     });
   });
@@ -247,7 +248,7 @@ describe("QuestionController", () => {
 
     questions.forEach((question) => {
       expect(question.text).toBe(
-        `${(question as any).a} x ${(question as any).b}?`,
+        `${(question as any).a} × ${(question as any).b} = ?`,
       );
     });
   });
@@ -261,7 +262,7 @@ describe("QuestionController", () => {
       const a = (question as any).a;
       const b = (question as any).b;
 
-      expect(question.text).toBe(`${a} ÷ ${b}?`);
+      expect(question.text).toBe(`${a} ÷ ${b} = ?`);
       expect(a % b).toBe(0);
     });
   });
@@ -276,5 +277,78 @@ describe("QuestionController", () => {
     expect(() => {
       questionController.generateMultipleQuestions(10, 3);
     }).toThrow("Invalid Id");
+  });
+
+  describe("generateQuestion with a question type (used by the race)", () => {
+    it("makes each type of question", () => {
+      expect(questionController.generateQuestion("addition")).toBeInstanceOf(AdditionQuestion);
+      expect(questionController.generateQuestion("subtraction")).toBeInstanceOf(SubtractionQuestion);
+      expect(questionController.generateQuestion("multiplication")).toBeInstanceOf(MultiplicationQuestion);
+      expect(questionController.generateQuestion("division")).toBeInstanceOf(DivisionQuestion);
+    });
+
+    it("uses numbers from 1 to 10 by default", () => {
+      const question = questionController.generateQuestion("multiplication");
+      for (const n of [question.a, question.b]) {
+        expect(n).toBeGreaterThanOrEqual(1);
+        expect(n).toBeLessThanOrEqual(10);
+      }
+    });
+
+    it("uses the given number range, e.g. 2 digit numbers", () => {
+      for (const type of ["addition", "subtraction", "multiplication"]) {
+        for (let i = 0; i < 50; i++) {
+          const question = questionController.generateQuestion(type, 10, 99);
+          for (const n of [question.a, question.b]) {
+            expect(n).toBeGreaterThanOrEqual(10);
+            expect(n).toBeLessThanOrEqual(99);
+          }
+        }
+      }
+    });
+
+    it("never makes a subtraction question with a negative answer", () => {
+      for (let i = 0; i < 50; i++) {
+        const question = questionController.generateQuestion("subtraction", 10, 99);
+        expect(question.answer).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it("keeps division answers whole with a custom range", () => {
+      for (let i = 0; i < 50; i++) {
+        const question = questionController.generateQuestion("division", 1, 12);
+        expect(Number.isInteger(question.answer)).toBe(true);
+        expect(question.b).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it("stores the question as the current question", () => {
+      const question = questionController.generateQuestion("addition");
+      expect(questionController.getCurrentQuestion()).toBe(question);
+    });
+
+    it("writes question text the way the race shows it", () => {
+      expect(new AdditionQuestion(12, 34).text).toBe("12 + 34 = ?");
+      expect(new SubtractionQuestion(34, 12).text).toBe("34 − 12 = ?");
+      expect(new MultiplicationQuestion(3, 4).text).toBe("3 × 4 = ?");
+      expect(new DivisionQuestion(12, 4).text).toBe("12 ÷ 4 = ?");
+    });
+
+    it("throws an error for an invalid question type", () => {
+      expect(() => {
+        questionController.generateQuestion("invalidType");
+      }).toThrow("Invalid question type");
+    });
+
+    it("markWrong records the current question without an answer", () => {
+      const question = questionController.generateQuestion("addition");
+      questionController.markWrong();
+      expect(questionController.getWrongQuestions()).toEqual([question]);
+    });
+
+    it("checkAnswer checks the question it is given", () => {
+      questionController.generateQuestion("addition");
+      expect(questionController.checkAnswer(new AdditionQuestion(2, 3), "5")).toBe(true);
+    });
   });
 });

@@ -37,8 +37,13 @@ vi.mock('./RaceClassView.ts', () => ({
         showAnswerFeedback = vi.fn();
         setNitroLevel = vi.fn();
         setNitroActive = vi.fn();
-        constructor(handlers: unknown) {
+        setTheme = vi.fn();
+        setOpponentProgress = vi.fn();
+        setPlacement = vi.fn();
+        options: unknown;
+        constructor(handlers: unknown, options: unknown) {
             this.handlers = handlers;
+            this.options = options;
             fake.view = this as never;
         }
     },
@@ -59,8 +64,10 @@ describe('RaceClassController', () => {
     const view = () => fake.view!;
     const lastAnswer = (): string => {
         const text = view().setQuestion.mock.lastCall![0] as string;
-        const [a, b] = text.split(' = ')[0].split(' × ').map(Number);
-        return String(a * b);
+        const [a, symbol, b] = text.split(' = ')[0].split(' ');
+        const [x, y] = [Number(a), Number(b)];
+        const answers: Record<string, number> = { '+': x + y, '−': x - y, '×': x * y, '÷': x / y };
+        return String(answers[symbol]);
     };
     const startRacing = () => {
         controller.enter({ levelId: 1 });
@@ -254,6 +261,119 @@ describe('RaceClassController', () => {
             vi.advanceTimersByTime(30000); // three questions time out
             expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
         });
+    });
+
+    describe('opponents', () => {
+        it('gives the view a yellow, blue and green bot', () => {
+            expect(view().options).toMatchObject({ opponentColors: ['yellow', 'blue', 'green'] });
+        });
+
+        it('keeps the bots at the start until GO', () => {
+            controller.enter({ levelId: 1 });
+            controller.update(0.1);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(3000);
+            controller.update(0.1);
+            expect(view().setOpponentProgress).toHaveBeenCalledWith([0, 0, 0]);
+        });
+
+        it('moves the bots forward as time passes, but not while paused', () => {
+            startRacing();
+            // 40 seconds is far longer than even the easy bot needs for 4 questions
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setOpponentProgress).toHaveBeenLastCalledWith([1, 1, 1]);
+            expect(view().setPlacement).toHaveBeenLastCalledWith(4);
+
+            controller.enter({ levelId: 1 });
+            vi.advanceTimersByTime(3000);
+            view().handlers.onPause();
+            view().setOpponentProgress.mockClear();
+            controller.update(5);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+        });
+
+        it('places the player first when they finish before the bots', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) {
+                answerCorrectly();
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
+
+            // The place stays locked while the bots catch up
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
+        });
+    });
+
+    it.each([
+        [1, 'dirt'],
+        [2, 'raceTrack'],
+        [3, 'street'],
+    ])('races level %i on the %s theme', (levelId, theme) => {
+        controller.enter({ levelId });
+        expect(view().setTheme).toHaveBeenCalledWith(theme);
+    });
+
+    describe('questions', () => {
+        const questionParts = () => {
+            const text = view().setQuestion.mock.lastCall![0] as string;
+            const [a, symbol, b] = text.split(' = ')[0].split(' ');
+            return { a: Number(a), symbol, b: Number(b) };
+        };
+
+        it('asks level 1 2 digit addition and subtraction, never below 0', () => {
+            startRacing();
+            for (let i = 0; i < 3; i++) {
+                const { a, symbol, b } = questionParts();
+                expect(['+', '−']).toContain(symbol);
+                for (const n of [a, b]) {
+                    expect(n).toBeGreaterThanOrEqual(10);
+                    expect(n).toBeLessThanOrEqual(99);
+                }
+                if (symbol === '−') {
+                    expect(a).toBeGreaterThanOrEqual(b);
+                }
+                answerCorrectly();
+            }
+        });
+
+        it('asks the operators of the level being raced', () => {
+            controller.enter({ levelId: 4 });
+            vi.advanceTimersByTime(3000);
+            expect(questionParts().symbol).toBe('÷');
+        });
+
+        it('keeps wrong and timed out questions, but not right ones', () => {
+            startRacing();
+            answerCorrectly();
+            const wrong = view().setQuestion.mock.lastCall![0];
+            answerWrong();
+            const timedOut = view().setQuestion.mock.lastCall![0];
+            vi.advanceTimersByTime(10000);
+
+            expect(controller.getWrongQuestions().map((question) => question.text)).toEqual([wrong, timedOut]);
+        });
+
+        it('starts each race with no missed questions', () => {
+            startRacing();
+            answerWrong();
+            controller.enter({ levelId: 1 });
+            expect(controller.getWrongQuestions()).toEqual([]);
+        });
+    });
+
+    it('uses the theme option over the level theme when one is given', () => {
+        controller = new RaceClassController({ switchToScreen }, gameState, {
+            parent: {} as HTMLElement,
+            theme: 'street',
+        });
+        controller.enter({ levelId: 1 });
+        expect(view().setTheme).toHaveBeenCalledWith('street');
     });
 
     it('quits to the level screen', () => {

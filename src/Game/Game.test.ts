@@ -59,6 +59,19 @@ describe("Game", () => {
         expect(game.getCurrentSceneId()).toBe(SceneIds.Home);
     });
 
+    it("returns to a scene already in history instead of stacking it again", () => {
+        game.start();
+        game.goTo(SceneIds.Home);
+        game.goTo(SceneIds.LevelSelect);
+        game.goTo(SceneIds.Race, { levelId: 1 });
+        // The race finishing sends the player back to Level Select
+        game.goTo(SceneIds.LevelSelect);
+        game.back();
+        expect(game.getCurrentSceneId()).toBe(SceneIds.Home);
+        game.back();
+        expect(game.getCurrentSceneId()).toBe(SceneIds.Start);
+    });
+
     it("keeps history in order when a scene redirects inside enter()", () => {
         let redirected = false;
         game.register(SceneIds.Instructions, (g) => ({

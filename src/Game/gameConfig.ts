@@ -4,51 +4,77 @@
  * is defined in one place.
  */
 
-export type Operator = '*' | '/';
+export type Operator = '*' | '/' | '+' | '-';
+
+/** Road and scenery a level is raced on: dirt = desert, raceTrack = stadium, street = city */
+export type LevelTheme = 'dirt' | 'raceTrack' | 'street';
 
 export interface LevelConfig {
     id: number;
     name: string;
     description: string;
+    theme: LevelTheme;
     /** Operators the question generator should use for this level */
     operators: Operator[];
     /** Largest factor used when building questions (e.g. 10 -> up to 10 x 10) */
+    minFactor: number;
     maxFactor: number;
     questionCount: number;
 }
 
+// Every level uses Level 1's math for now; each level's own math comes later
 export const LEVELS: LevelConfig[] = [
     {
         id: 1,
-        name: 'Rookie Raceway',
-        description: 'Multiplication with factors up to 5.',
-        operators: ['*'],
-        maxFactor: 5,
+        name: 'Desert Dash',
+        description: 'Addition and Subtraction (2 digit numbers).',
+        theme: 'dirt',
+        operators: ['+', '-'],
+        minFactor: 10,
+        maxFactor: 99,
         questionCount: 15,
     },
     {
         id: 2,
-        name: 'Times Table Track',
-        description: 'Multiplication with factors up to 10.',
+        name: 'Rookie Raceway',
+        description: 'Multiplication with factors up to 6.',
+        theme: 'raceTrack',
         operators: ['*'],
-        maxFactor: 10,
+        minFactor: 1,
+        maxFactor: 6,
         questionCount: 15,
     },
     {
         id: 3,
-        name: 'Division Drift',
-        description: 'Division facts up to 10.',
-        operators: ['/'],
-        maxFactor: 10,
+        name: 'City Streets',
+        description: 'Multiplication with factors up to 12.',
+        theme: 'street',
+        operators: ['*'],
+        minFactor: 1,
+        maxFactor: 12,
         questionCount: 15,
     },
+
     {
         id: 4,
-        name: 'Grand Prix',
-        description: 'Mixed multiplication and division up to 12.',
-        operators: ['*', '/'],
+        name: 'Nascar Runway',
+        description: 'Division with factors up to 6',
+        theme: 'raceTrack',
+        operators: ['/'],
+        minFactor: 1,
+        maxFactor: 6,
+        questionCount: 15,
+    },
+
+    {
+        id: 5,
+        name: 'Downtown Dash',
+        description: 'Division with factors up to 12',
+        theme: 'street',
+        operators: ['/'],
+        minFactor: 1,
         maxFactor: 12,
-        questionCount: 20,
+        questionCount: 15,
     },
 ];
 
