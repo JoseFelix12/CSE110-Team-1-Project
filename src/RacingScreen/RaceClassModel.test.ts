@@ -210,7 +210,7 @@ describe('RaceClassModel', () => {
         });
 
         it('locks the place in when the player finishes', () => {
-            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+            for (let i = 0; i < QUESTION_COUNT; i++) {
                 model.incrementCorrect_Answers();
             }
             model.recordFinish();
@@ -220,17 +220,32 @@ describe('RaceClassModel', () => {
 
         it('counts bots that finished first as ahead', () => {
             model.updateOpponents(1000);
-            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+            for (let i = 0; i < QUESTION_COUNT; i++) {
                 model.incrementCorrect_Answers();
             }
             model.recordFinish();
             expect(model.getPlacement()).toBe(4);
         });
 
+        it('gives the bots the same number of questions as the player', () => {
+            model.reset(15);
+            model.updateOpponents(1000);
+            for (const opponent of model.getOpponents()) {
+                expect(opponent.getAnsweredCount()).toBe(15);
+                expect(opponent.getProgress()).toBe(1);
+            }
+        });
+
+        it('counts how many bots the player beat', () => {
+            expect(model.getOpponentsBeaten()).toBe(3);
+            model.updateOpponents(1000);
+            expect(model.getOpponentsBeaten()).toBe(0);
+        });
+
         it('reset sends the bots back to the start', () => {
             model.updateOpponents(1000);
             model.recordFinish();
-            model.reset();
+            model.reset(QUESTION_COUNT);
             expect(model.getOpponents().every((opponent) => opponent.getProgress() === 0)).toBe(true);
             expect(model.getPlacement()).toBe(1);
         });

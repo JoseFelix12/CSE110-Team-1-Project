@@ -46,9 +46,11 @@ export class Opponent {
     }
 
     /**
-     * Puts the bot back at the start with a fresh answer time
+     * Puts the bot back at the start with a fresh answer time. Pass the
+     * number of questions when it changes between races.
      */
-    reset(): void {
+    reset(totalQuestions = this.totalQuestions): void {
+        this.totalQuestions = totalQuestions;
         this.answered = 0;
         this.timeUntilAnswer = this.nextAnswerTime();
     }

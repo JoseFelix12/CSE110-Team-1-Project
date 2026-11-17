@@ -347,10 +347,11 @@ export class RaceClassController implements Scene {
         const incorrect = this.model.getIncorrectAnswers();
         const total = this.model.getQuestionCount();
 
+        const opponentsBeaten = this.model.getOpponentsBeaten();
         const result = this.gameState.recordRaceResult(
-            this.levelId, 
-            correct, 
-            total
+            this.levelId,
+            correct,
+            opponentsBeaten,
         );
         this.finishTimeout = setTimeout(() => {
             this.finishTimeout = null;
@@ -363,6 +364,8 @@ export class RaceClassController implements Scene {
                     incorrect,
                     total,
                     accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+                    placement: this.model.getPlacement(),
+                    opponentsBeaten,
                     stars: result.stars,
                     coinsEarned: result.coinsEarned,
                     newBest: result.newBest,
