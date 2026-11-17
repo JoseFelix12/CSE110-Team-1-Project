@@ -3,7 +3,7 @@ import type { Mock } from 'vitest';
 import { GameState } from '../Game/GameState.ts';
 import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
-import { MAX_HEALTH } from '../Game/gameConfig.ts';
+import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
@@ -16,6 +16,7 @@ vi.stubGlobal('Audio', class {
     loop = false;
     muted = false;
     currentTime = 0;
+    volume = 1;
     play = vi.fn().mockResolvedValue(undefined);
     pause = vi.fn();
 });
@@ -52,8 +53,7 @@ vi.mock('./RaceClassView.ts', () => ({
 // the bar can be filled within one race
 vi.mock('../constants.ts', async (original) => ({
     ...(await original<typeof import('../constants.ts')>()),
-    AMOUNT_OF_QUESTIONS_IN_LEVEL_1: 4,
-    CORRECT_ANSWERS_FOR_NITRO: 2,
+    CORRECT_ANSWERS_FOR_NITRO: 2, 
 }));
 
 describe('RaceClassController', () => {
@@ -86,6 +86,11 @@ describe('RaceClassController', () => {
         vi.useFakeTimers();
         switchToScreen = vi.fn<(id: SceneId) => void>();
         gameState = new GameState(null);
+        const realGetLevel = gameState.getLevel.bind(gameState);
+        vi.spyOn(gameState, 'getLevel').mockImplementation((id) => ({
+            ...realGetLevel(id),
+            questionCount: 4,
+        }));
         controller = new RaceClassController({ switchToScreen }, gameState, {
             parent: {} as HTMLElement,
         });
@@ -384,5 +389,113 @@ describe('RaceClassController', () => {
         view().updateTimer.mockClear();
         vi.advanceTimersByTime(60000);
         expect(view().updateTimer).not.toHaveBeenCalled();
+    });
+
+    describe('coins', () => {
+        it('awards coins and stars when the race ends', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+            expect(gameState.getStars(1)).toBe(3);
+        });
+    
+        it('only pays for correct answers', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            // 2 of 4 correct = 50% accuracy = 1 star
+            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 1 * COINS_PER_STAR);
+        });
+    
+        it('gives nothing if the player quits mid-race', () => {
+            startRacing();
+            answerCorrectly();
+            view().handlers.onQuit();
+            expect(gameState.getCoins()).toBe(0);
+        });
+
+        it('only records the race once if the finish line fires twice', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+        });
+
+        it('records the result on the level that was played', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+            controller.exit();
+        
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+            });
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+        
+            expect(gameState.getStars(2)).toBe(3);
+        });
+    });
+    describe('onRaceComplete', () => {
+        let onRaceComplete: Mock<(params: Record<string, unknown>) => void>;
+    
+        beforeEach(() => {
+            onRaceComplete = vi.fn();
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+                onRaceComplete,
+            });
+        });
+    
+        it('reports the race summary instead of switching screens', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({
+                mode: 'race',
+                levelId: 1,
+                correct: 2,
+                incorrect: 2,
+                total: 4,
+                accuracy: 50,
+                stars: 1,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 1 * COINS_PER_STAR,
+            }));
+            expect(switchToScreen).not.toHaveBeenCalled();
+        });
+    
+        it('reports the level that was actually played', () => {
+            gameState.recordRaceResult(1, 4, 4); // earn a star so level 2 unlocks
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({ levelId: 2 }));
+        });
+    
+        it('waits for the finish screen delay before reporting', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(onRaceComplete).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1500);
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+        });
     });
 });

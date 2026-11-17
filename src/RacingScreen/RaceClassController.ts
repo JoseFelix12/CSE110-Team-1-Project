@@ -15,7 +15,6 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
-//import { LEVELS } from "../Game/gameConfig.ts";
 
 /** Which QuestionController question type each level operator asks */
 const QUESTION_TYPES: Record<Operator, QuestionType> = {
@@ -48,7 +47,6 @@ export class RaceClassController implements Scene {
     private screenSwitcher: screenSwitcher;
     private gameState: GameState;
     private onRaceComplete?: (params: SceneParams) => void;
-    private currentLevelId = 1;
     private raceFinished = false;
     private parent: HTMLElement | null;
     /** Forces one theme for every level (the demo uses this); otherwise each level picks its own */
@@ -68,7 +66,7 @@ export class RaceClassController implements Scene {
     private racing = false;
     private lastNitroLevel = -1;
     private lastNitroActive = false;
-    
+    private levelId = 1;
 
     //Add carSound, correctAnswer and wrongAnswer here once we have audio files
     private lightCountDown = new Audio("/sounds/Light_countdown.mp3")
@@ -88,6 +86,11 @@ export class RaceClassController implements Scene {
         this.themeOverride = options.theme;
         this.level = gameState.getLevel(1);
         this.engine.loop = true;
+        this.lightCountDown.volume = .1;
+        this.rev.volume = .2;
+        this.correct.volume = .2;
+        this.incorrect.volume = .2;
+        this.engineFailure.volume = .2;
 
         this.model = new RaceClassModel();
         this.view = new RaceClassView(
@@ -111,10 +114,9 @@ export class RaceClassController implements Scene {
     // ---------- Scene ----------
 
     enter(params: SceneParams): void {
-        const levelId = typeof params.levelId === "number" ? params.levelId : 1;
-        this.currentLevelId = levelId;
+        this.levelId = typeof params.levelId === "number" ? params.levelId : 1;
         this.raceFinished = false;
-        this.level = this.gameState.getLevel(levelId);
+        this.level = this.gameState.getLevel(this.levelId);
         this.view.setTheme(this.themeOverride ?? this.level.theme);
         this.view.mount(this.parent ?? document.body);
         this.startGame();
@@ -143,7 +145,7 @@ export class RaceClassController implements Scene {
     startGame(): void {
         this.engine.pause();
         this.stopAllTimers();
-        this.model.reset();
+        this.model.reset(this.gameState.getLevel(this.levelId).questionCount);
         this.questions = new QuestionController();
         this.view.setCar();
         this.lastNitroActive = false;
@@ -335,48 +337,42 @@ export class RaceClassController implements Scene {
     /**
      * End race. The car has crossed the line, so show FINISH! before leaving.
      */
-    /**
- * End race. The car has crossed the line, so show FINISH! before leaving.
- */
-private endGame(): void {
-    if (this.raceFinished) return;
-    this.raceFinished = true;
+    private endGame(): void {
+        if (this.raceFinished) return;
+        this.raceFinished = true;
+      
+        this.engine.pause();
 
-    this.engine.pause();
+        const correct = this.model.getCorrect_Answers();
+        const incorrect = this.model.getIncorrectAnswers();
+        const total = this.model.getQuestionCount();
 
-    const correct = this.model.getCorrectAnswers();
-    const total = this.gameState.getLevel(this.currentLevelId).questionCount;
-    const incorrect = total - correct;
-
-    const result = this.gameState.recordRaceResult(
-        this.currentLevelId,
-        correct,
-        total
-    );
-
-    this.finishTimeout = setTimeout(() => {
-        this.finishTimeout = null;
-
-        if (this.onRaceComplete) {
-            this.onRaceComplete({
-                mode: "race",
-                levelId: this.currentLevelId,
-                correct,
-                incorrect,
-                total,
-                accuracy: total > 0
-                    ? Math.round((correct / total) * 100)
-                    : 0,
-                stars: result.stars,
-                coinsEarned: result.coinsEarned,
-                newBest: result.newBest,
-                unlockedLevelId: result.unlockedLevelId
-            });
-        } else {
-            this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
-        }
-    }, FINISH_SCREEN_MS);
-}
+        const result = this.gameState.recordRaceResult(
+            this.levelId, 
+            correct, 
+            total
+        );
+        this.finishTimeout = setTimeout(() => {
+            this.finishTimeout = null;
+        
+            if (this.onRaceComplete) {
+                this.onRaceComplete({
+                    mode: "race",
+                    levelId: this.levelId,
+                    correct,
+                    incorrect,
+                    total,
+                    accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+                    stars: result.stars,
+                    coinsEarned: result.coinsEarned,
+                    newBest: result.newBest,
+                    unlockedLevelId: result.unlockedLevelId,
+                });
+            } else {
+                this.screenSwitcher.switchToScreen(SceneIds.LevelSelect);
+            }
+        }, FINISH_SCREEN_MS);
+    }
 
     private stopAllTimers(): void {
         this.stopCountdownTimer();
@@ -428,11 +424,4 @@ private endGame(): void {
             sound.muted = muted;
         });
     }
-
-    /**
-     * Updates amount of coins based on correct answers
-     *
-    private coinUpdate(): void {
-        if(this.model.getCorrect_Answers() < this.gameState.getLevel(this.levelId).questionCount)
-    }*/
 }
