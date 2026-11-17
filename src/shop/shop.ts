@@ -1,140 +1,138 @@
 import type { GameState } from "../Game/GameState";
-import { ENGINE_UPGRADE_PRICES, SKIN_PRICES, UPGRADE_PRICES } from "../Game/gameConfig";
+import {
+  ENGINE_UPGRADE_PRICES,
+  SKIN_PRICES,
+  UPGRADE_PRICES,
+} from "../Game/gameConfig";
 import type { SkinColor, Upgrade } from "../Game/gameConfig";
 
 // Describes what is for sale and checks every purchase and reports why it failed
 
-
 export interface ShopItem {
-    id: string;
-    name: string;
-    description: string;
-    category: 'engine' | 'skin' | 'upgrade';
-    // Cost to buy, or null once it is owned 
-    price: number | null;
-    owned: boolean;
-    // Not owned yet and the player has enough coins
-    affordable: boolean;
+  id: string;
+  name: string;
+  description: string;
+  category: "engine" | "skin" | "upgrade";
+  // Cost to buy, or null once it is owned
+  price: number | null;
+  owned: boolean;
+  // Not owned yet and the player has enough coins
+  affordable: boolean;
 }
-const SKINS: SkinColor[] = [
-    'red', 
-    'blue',
-    'green', 
-    'purple',
-]
+const SKINS: SkinColor[] = ["red", "blue", "yellow", "white", "black", "pink", "green", "purple"];
 const UPGRADES: Upgrade[] = [
-    'Speed Boost',
-    'Better Tires',
-    'Shield',
-    'Extra Time',
-]
+  "Speed Boost",
+  "Better Tires",
+  "Shield",
+  "Extra Time",
+];
 // Descriptions of upgrades for the shop screen
 // Also placeholder
 export const UPGRADE_DESCRIPTIONS: Record<Upgrade, string> = {
   "Speed Boost": "A burst of speed when you answer correctly.",
   "Better Tires": "Wrong answers slow you down less.",
-  "Shield": "Blocks the damage from one wrong answer per race.",
+  Shield: "Blocks the damage from one wrong answer per race.",
   "Extra Time": "Adds seconds to the question timer.",
 };
 
-
-
 export class Shop {
-    private game: GameState;
+  private game: GameState;
 
-    constructor(game: GameState) {
-        this.game = game;
+  constructor(game: GameState) {
+    this.game = game;
+  }
+
+  equipSkin(skin: SkinColor): boolean {
+    if (!SKINS.includes(skin)) {
+      return false;
     }
-
-
-    // Return the player's current number of coins.
-    getBalance(): number {
-        return this.game.getCoins();
-    }
+    return this.game.selectSkin(skin);
+  }
+  // Return the player's current number of coins.
+  getBalance(): number {
+    return this.game.getCoins();
+  }
 
   // Return every item available in the shop
-    getCatalog(): ShopItem[] {
-        const items: ShopItem[] = [];
-        const balance = this.getBalance();
+  getCatalog(): ShopItem[] {
+    const items: ShopItem[] = [];
+    const balance = this.getBalance();
 
-        //Engine Upgrade
-        const engineLevel = this.game.getCar().getEngineLevel();
-        const enginePrice = ENGINE_UPGRADE_PRICES[engineLevel] ?? null;
+    //Engine Upgrade
+    const engineLevel = this.game.getCar().getEngineLevel();
+    const enginePrice = ENGINE_UPGRADE_PRICES[engineLevel] ?? null;
 
-        items.push({
-            id: "engine",
-            name: "Engine Upgrade",
-            description: "Increase your car speed.",
-            category: "engine",
-            price: enginePrice,
-            owned: enginePrice === null,
-            affordable: enginePrice !== null && balance >= enginePrice,
-        });
+    items.push({
+      id: "engine",
+      name: "Engine Upgrade",
+      description: "Increase your car speed.",
+      category: "engine",
+      price: enginePrice,
+      owned: enginePrice === null,
+      affordable: enginePrice !== null && balance >= enginePrice,
+    });
 
-
-        //Skins
-        for (const skin of SKINS) {
-            const price = SKIN_PRICES[skin];
-            const owned = this.game.ownsSkin(skin);
-            items.push({
-                id: `skin:${skin}`,
-                name: `${skin} Skin`,
-                description: `Change your car to ${skin}.`,
-                category: "skin",
-                price: owned ? null : price,
-                owned,
-                affordable: !owned && balance >= price,
-            });
-        }
-
-        //Upgrades
-        for (const upgrade of UPGRADES) {
-            const price = UPGRADE_PRICES[upgrade];
-            const owned = this.game.ownsUpgrade(upgrade);
-
-            items.push({
-                id: `upgrade:${upgrade}`,
-                name: upgrade,
-                description: UPGRADE_DESCRIPTIONS[upgrade],
-                category: "upgrade",
-                price: owned ? null : price,
-                owned,
-                affordable: !owned && balance >= price, 
-            });
-        }
-
-        return items;
+    //Skins
+    for (const skin of SKINS) {
+      const price = SKIN_PRICES[skin];
+      const owned = this.game.ownsSkin(skin);
+      items.push({
+        id: `skin:${skin}`,
+        name: `${skin} Skin`,
+        description: `Change your car to ${skin}.`,
+        category: "skin",
+        price: owned ? null : price,
+        owned,
+        affordable: !owned && balance >= price,
+      });
     }
 
+    //Upgrades
+    for (const upgrade of UPGRADES) {
+      const price = UPGRADE_PRICES[upgrade];
+      const owned = this.game.ownsUpgrade(upgrade);
 
+      items.push({
+        id: `upgrade:${upgrade}`,
+        name: upgrade,
+        description: UPGRADE_DESCRIPTIONS[upgrade],
+        category: "upgrade",
+        price: owned ? null : price,
+        owned,
+        affordable: !owned && balance >= price,
+      });
+    }
 
-    purchase(id: string): boolean {
-        // Engine upgrade
-        if (id === 'engine') {
-            return this.game.buyEngineUpgrade();
-        }
+    return items;
+  }
 
-        // Skin purchase
-        if (id.startsWith('skin:')) {
-            const skin = id.substring(5);
-            if (!SKINS.includes(skin as SkinColor)) {
-                return false;
-            }
-            return this.game.buySkin(skin as SkinColor);
-        }
+  purchase(id: string): boolean {
+    // Engine upgrade
+    if (id === "engine") {
+      return this.game.buyEngineUpgrade();
+    }
 
-        // Upgrade purchase
-        if (id.startsWith('upgrade:')) {
-            const upgrade = id.substring(8);
-
-            if (!UPGRADES.includes(upgrade as Upgrade)) {
-                return false;
-            }
-            return this.game.buyUpgrade(upgrade as Upgrade);
-        }
-
+    // Skin purchase
+    if (id.startsWith("skin:")) {
+      const skin = id.substring(5);
+      if (!SKINS.includes(skin as SkinColor)) {
         return false;
+      }
+      return this.game.buySkin(skin as SkinColor);
     }
+
+    // Upgrade purchase
+    if (id.startsWith("upgrade:")) {
+      const upgrade = id.substring(8);
+
+      if (!UPGRADES.includes(upgrade as Upgrade)) {
+        return false;
+      }
+      return this.game.buyUpgrade(upgrade as Upgrade);
+    }
+
+    return false;
+  }
 
 
 }
