@@ -33,8 +33,8 @@ describe("Shop", () => {
         it("should return all items in the shop", () => {
             const items = shop.getCatalog();
 
-            // 1 engine + 4 skins + 4 upgrades
-            expect(items).toHaveLength(9);
+            // 1 engine + 8 skins + 4 upgrades
+            expect(items).toHaveLength(13);
         });
 
         it("should include the engine upgrade", () => {
