@@ -65,8 +65,10 @@ export class QuestionController {
         b = Math.floor(Math.random() * 90) + 10;
         if (Math.random() < 0.5) {
           return new AdditionQuestion(a, b);
+        } else {
+          // Larger number first so answers (and word problems) never go negative
+          return new SubtractionQuestion(Math.max(a, b), Math.min(a, b));
         }
-        return new SubtractionQuestion(a, b);
       case 2:
         // Multiplication with factors up to 9.
         a = Math.floor(Math.random() * 9) + 1;
@@ -158,7 +160,6 @@ export class QuestionController {
     return userAnswer === question.answer;
   }
 }
-
 export class WordProblemAdapter extends QuestionController {
   private adaptee: QuestionController;
 
