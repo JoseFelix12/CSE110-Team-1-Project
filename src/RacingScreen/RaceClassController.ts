@@ -299,6 +299,10 @@ export class RaceClassController implements Scene {
       
         this.engine.pause();
 
+        const correct = this.model.getCorrect_Answers();
+        const incorrect = this.model.getIncorrect_Answers();
+        const total = this.model.getQuestionCount();
+
         const result = this.gameState.recordRaceResult(
             this.levelId, 
             this.model.getCorrect_Answers(), 
