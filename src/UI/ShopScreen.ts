@@ -26,21 +26,17 @@ interface UpgradeOption {
   name: string;
   description: string;
   price: number;
-  icon: string;
+  imageSrc: string;
 }
 
 interface PrototypeShopState {
-  coins: number;
   equippedColorId: ColorId;
   ownedColorIds: ColorId[];
   engineLevel: number;
   ownedUpgradeIds: UpgradeId[];
 }
 
-type StoredPrototypeShopState = Partial<PrototypeShopState> & {
-  /** Temporary migration support for the earlier star-based UI prototype. */
-  stars?: unknown;
-};
+type StoredPrototypeShopState = Partial<PrototypeShopState>;
 
 const COLOR_PRICE = 25;
 // Temporary UI values mirror the backend categories until its Shop API is ready.
@@ -64,33 +60,32 @@ const UPGRADES: readonly UpgradeOption[] = [
     name: "SPEED BOOST",
     description: "A burst of speed after a correct answer.",
     price: 20,
-    icon: "BOOST",
+    imageSrc: "/images/shop/upgrades/speed-boost.png",
   },
   {
     id: "better-tires",
     name: "BETTER TIRES",
     description: "Improves acceleration and handling.",
     price: 30,
-    icon: "TIRES",
+    imageSrc: "/images/shop/upgrades/better-tires.png",
   },
   {
     id: "shield",
     name: "SHIELD",
     description: "Blocks damage from one wrong answer.",
     price: 25,
-    icon: "SHIELD",
+    imageSrc: "/images/shop/upgrades/shield.png",
   },
   {
     id: "extra-time",
     name: "EXTRA TIME",
     description: "Adds five seconds to each question.",
     price: 35,
-    icon: "+5 SEC",
+    imageSrc: "/images/shop/upgrades/extra-time.png",
   },
 ];
 
 const DEFAULT_STATE: PrototypeShopState = {
-  coins: 75,
   equippedColorId: "red",
   ownedColorIds: ["red", "blue", "yellow"],
   engineLevel: 0,
@@ -136,14 +131,7 @@ function loadState(): PrototypeShopState {
       ownedColorIds.push(equippedColorId);
     }
 
-    const storedCoins = typeof parsed.coins === "number"
-      ? parsed.coins
-      : typeof parsed.stars === "number"
-        ? parsed.stars
-        : DEFAULT_STATE.coins;
-
     return {
-      coins: Math.max(0, storedCoins),
       equippedColorId,
       ownedColorIds,
       engineLevel,
@@ -160,6 +148,7 @@ export class ShopScreen implements Scene {
   private state: PrototypeShopState = loadState();
   private previewColorId: ColorId = this.state.equippedColorId;
   private pendingColorId: ColorId | null = null;
+  private unsubscribeFromGameState: (() => void) | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -284,10 +273,13 @@ export class ShopScreen implements Scene {
 
     document.getElementById("game")!.appendChild(screen);
     this.screen = screen;
+    this.unsubscribeFromGameState = this.game.state.subscribe(() => this.render());
     this.render();
   }
 
   exit(): void {
+    this.unsubscribeFromGameState?.();
+    this.unsubscribeFromGameState = null;
     this.screen?.remove();
     this.screen = null;
   }
@@ -337,12 +329,13 @@ export class ShopScreen implements Scene {
     const colorId = this.pendingColorId;
     if (!colorId) return;
 
-    if (this.state.coins < COLOR_PRICE) {
-      this.setMessage(`NEED ${COLOR_PRICE - this.state.coins} MORE COINS!`);
+    const balance = this.getBalance();
+    if (balance < COLOR_PRICE) {
+      this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
       return;
     }
 
-    this.state.coins -= COLOR_PRICE;
+    if (!this.game.state.spendCoins(COLOR_PRICE)) return;
     this.state.ownedColorIds.push(colorId);
     this.state.equippedColorId = colorId;
     this.previewColorId = colorId;
@@ -368,7 +361,7 @@ export class ShopScreen implements Scene {
     this.screen.querySelector<HTMLElement>("[data-confirm-color-name]")!.textContent = color.name;
     this.screen.querySelector<HTMLElement>("[data-confirm-color-swatch]")!
       .style.setProperty("--paint-color", color.hex);
-    this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(this.state.coins);
+    this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(this.getBalance());
     overlay.hidden = false;
     this.screen.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!.focus();
   }
@@ -385,12 +378,13 @@ export class ShopScreen implements Scene {
       this.setMessage("ENGINE IS ALREADY AT MAX LEVEL!");
       return;
     }
-    if (this.state.coins < price) {
-      this.setMessage(`NEED ${price - this.state.coins} MORE COINS!`);
+    const balance = this.getBalance();
+    if (balance < price) {
+      this.setMessage(`NEED ${price - balance} MORE COINS!`);
       return;
     }
 
-    this.state.coins -= price;
+    if (!this.game.state.spendCoins(price)) return;
     this.state.engineLevel += 1;
     this.saveAndRender();
     this.setMessage(`ENGINE UPGRADED TO LEVEL ${this.state.engineLevel}!`);
@@ -408,12 +402,13 @@ export class ShopScreen implements Scene {
     }
 
     const upgrade = this.getUpgrade(upgradeId);
-    if (this.state.coins < upgrade.price) {
-      this.setMessage(`NEED ${upgrade.price - this.state.coins} MORE COINS!`);
+    const balance = this.getBalance();
+    if (balance < upgrade.price) {
+      this.setMessage(`NEED ${upgrade.price - balance} MORE COINS!`);
       return;
     }
 
-    this.state.coins -= upgrade.price;
+    if (!this.game.state.spendCoins(upgrade.price)) return;
     this.state.ownedUpgradeIds.push(upgradeId);
     this.saveAndRender();
     this.setMessage(`${upgrade.name} UNLOCKED!`);
@@ -432,7 +427,11 @@ export class ShopScreen implements Scene {
     if (!this.screen) return;
 
     const previewColor = this.getColor(this.previewColorId);
-    this.screen.querySelector<HTMLElement>("[data-shop-balance]")!.textContent = String(this.state.coins);
+    const balance = this.getBalance();
+    this.screen.querySelector<HTMLElement>("[data-shop-balance]")!.textContent = String(balance);
+    if (this.pendingColorId) {
+      this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(balance);
+    }
     this.screen.querySelector<HTMLElement>("[data-color-name]")!.textContent = previewColor.name;
 
     const previewCar = this.screen.querySelector<HTMLImageElement>("[data-preview-car]")!;
@@ -506,7 +505,9 @@ export class ShopScreen implements Scene {
     const isOwned = this.state.ownedUpgradeIds.includes(upgrade.id);
     return `
       <article class="upgrade-card${isOwned ? " owned" : ""}">
-        <div class="upgrade-icon" aria-hidden="true">${upgrade.icon}</div>
+        <div class="upgrade-icon">
+          <img src="${upgrade.imageSrc}" alt="" aria-hidden="true" data-upgrade-sticker="${upgrade.id}">
+        </div>
         <h3>${upgrade.name}</h3>
         <p>${upgrade.description}</p>
         <button class="shop-purchase-button" type="button" data-upgrade-id="${upgrade.id}"
@@ -528,6 +529,10 @@ export class ShopScreen implements Scene {
     const upgrade = UPGRADES.find((candidate) => candidate.id === upgradeId);
     if (!upgrade) throw new Error(`Unknown prototype shop upgrade: ${upgradeId}`);
     return upgrade;
+  }
+
+  private getBalance(): number {
+    return this.game.state.getCoins();
   }
 
   private setMessage(message: string): void {

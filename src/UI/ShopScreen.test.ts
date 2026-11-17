@@ -20,6 +20,7 @@ describe("ShopScreen prototype", () => {
     localStorage.clear();
     document.body.innerHTML = '<main id="game"></main>';
     game = new Game(new GameState(null));
+    game.state.addCoins(75);
     game.register(SceneIds.Shop, (currentGame) => new ShopScreen(currentGame));
   });
 
@@ -37,6 +38,18 @@ describe("ShopScreen prototype", () => {
     expect(Array.from(document.querySelectorAll<HTMLElement>("[data-shop-tab]"))
       .map((tab) => tab.dataset.shopTab)).toEqual(["skin", "engine", "upgrade"]);
     expect(document.querySelector('[data-shop-tab="cosmetics"]')).toBeNull();
+  });
+
+  it("shows coins awarded after a completed race and updates while the shop is open", () => {
+    const result = game.state.recordRaceResult(1, 15, 15);
+    game.goTo(SceneIds.Shop);
+    expect(document.querySelector("[data-shop-balance]")?.textContent)
+      .toBe(String(75 + result.coinsEarned));
+
+    game.state.addCoins(25);
+
+    expect(document.querySelector("[data-shop-balance]")?.textContent)
+      .toBe(String(100 + result.coinsEarned));
   });
 
   it("equips an owned color", () => {
@@ -77,6 +90,7 @@ describe("ShopScreen prototype", () => {
     document.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!.click();
 
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("50");
+    expect(game.state.getCoins()).toBe(50);
     expect(document.querySelector(".shop-wallet")?.getAttribute("aria-label")).toBe("Prototype coin balance");
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("NEON GREEN");
     expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(4);
@@ -126,5 +140,17 @@ describe("ShopScreen prototype", () => {
 
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("55");
     expect(document.querySelector('[data-upgrade-id="speed-boost"]')?.textContent).toContain("OWNED");
+  });
+
+  it("renders the corresponding sticker for every upgrade", () => {
+    game.goTo(SceneIds.Shop);
+
+    const stickers = Array.from(document.querySelectorAll<HTMLImageElement>("[data-upgrade-sticker]"));
+    expect(stickers.map((sticker) => [sticker.dataset.upgradeSticker, sticker.getAttribute("src")])).toEqual([
+      ["speed-boost", "/images/shop/upgrades/speed-boost.png"],
+      ["better-tires", "/images/shop/upgrades/better-tires.png"],
+      ["shield", "/images/shop/upgrades/shield.png"],
+      ["extra-time", "/images/shop/upgrades/extra-time.png"],
+    ]);
   });
 });
