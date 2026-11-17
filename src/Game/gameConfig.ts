@@ -88,7 +88,7 @@ export const COINS_PER_CORRECT_ANSWER = 5;
 export const COINS_PER_STAR = 10;
 
 /* Car config */
-export type SkinColor = 'red' | 'blue' | 'green' | 'purple';
+export type SkinColor = 'red' | 'blue' | 'green' |'yellow'| 'purple'|'pink'|'white'|'black';
 export type Upgrade = 'Speed Boost' | 'Better Tires' | 'Shield' | 'Extra Time';
 export const MAX_HEALTH = 100;
 
@@ -99,6 +99,11 @@ export const SKIN_PRICES: Record<SkinColor, number> = {
     blue: 50,
     green: 50,
     purple: 75,
+    pink: 75,
+    black: 75,
+    white: 75,
+    yellow: 75
+
 };
 
 /** Cost of each engine upgrade; index 0 is the price of going from level 0 to 1 */
@@ -106,3 +111,13 @@ export const ENGINE_UPGRADE_PRICES = [40, 80, 150];
 
 /** Extra speed per engine level (0.1 = +10%) */
 export const ENGINE_SPEED_BONUS_PER_LEVEL = 0.1;
+
+//These are placeholder prices.
+// Price of each one time upgrade
+export const UPGRADE_PRICES: Record<Upgrade, number> = {
+  "Speed Boost": 20,
+  "Better Tires": 30,
+  "Shield": 25,
+  "Extra Time": 35,
+};
+
