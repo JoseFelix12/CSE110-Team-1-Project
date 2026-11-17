@@ -2,6 +2,9 @@ import type { Question } from './QuestionModel';
 import type { AnswerChoices, DistractorStrategy, Operation } from './DistractorModel';
 import { OPERATIONS, SIGNS, DEFAULT_STRATEGIES, isValidDistractor } from './DistractorModel';
 
+// Cap on random top-up attempts so generation can never loop forever
+const MAX_ATTEMPTS = 100;
+
 export class DistractorController {
 
   private rng: () => number;
@@ -47,12 +50,34 @@ export class DistractorController {
   }
 
   // Generate all answer choices for a given problem
-  genAnswerChoices(question: Question, numChoices: number): number[] {
-    return [];
+  genAnswerChoices(question: Question, numChoices: number): AnswerChoices {
+    const choices = this.shuffle([question.answer, ...this.genIncorrectAnswers(question, numChoices-1)]);
+    return { choices, correctIndex: choices.indexOf(question.answer)};
   }
 
   // Generate incorrect answers for a given problem
-  genIncorrectAnswers(question: Question): number[] {
-    return [];
+  // count is the number of wrong answers wanted
+  genIncorrectAnswers(question: Question, count: number): number[] {
+    const distractors = new Set<number>();
+
+    // 1. Plausible mistakes from the strategies, in random order
+    const candidates = this.shuffle(this.strategies.flatMap(s => s(question)));
+    for (const n of candidates) {
+      if (distractors.size >= count) break;
+      if (isValidDistractor(n, question, distractors)) distractors.add(n);
+    }
+
+    // 2. Top up with random nearby values
+    for (let attempts = 0; distractors.size < count && attempts < MAX_ATTEMPTS; attempts++) {
+      const n = this.randomOffset(question.answer);
+      if (isValidDistractor(n, question, distractors)) distractors.add(n);
+    }
+
+    // 3. Guaranteed fallback: walk upward from the answer until we have enough
+    for (let n = Math.max(0, Math.ceil(question.answer) + 1); distractors.size < count; n++) {
+      if (isValidDistractor(n, question, distractors)) distractors.add(n);
+    }
+
+    return [...distractors];
   }
 }
