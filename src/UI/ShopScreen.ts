@@ -1,6 +1,7 @@
 import type { Game } from "../Game/Game.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
+import { SKIN_PRICES } from "../Game/gameConfig";
 
 type ShopTab = "skin" | "engine" | "upgrade";
 type ColorId =
@@ -38,20 +39,54 @@ interface PrototypeShopState {
 
 type StoredPrototypeShopState = Partial<PrototypeShopState>;
 
-const COLOR_PRICE = 25;
 // Temporary UI values mirror the backend categories until its Shop API is ready.
 const ENGINE_PRICES = [40, 80, 150] as const;
 const STORAGE_KEY = "mathRacer.prototypeShop";
 
 const COLORS: readonly CarColor[] = [
   { id: "red", name: "RACING RED", hex: "#f20f19", filter: "none" },
-  { id: "blue", name: "OCEAN BLUE", hex: "#0879ed", filter: "hue-rotate(215deg) saturate(1.15)" },
-  { id: "yellow", name: "SUNSET GOLD", hex: "#ffc20b", filter: "hue-rotate(45deg) saturate(1.2) brightness(1.08)" },
-  { id: "green", name: "NEON GREEN", hex: "#18db38", filter: "hue-rotate(105deg) saturate(1.25) brightness(1.06)" },
-  { id: "purple", name: "PURPLE RUSH", hex: "#9227e8", filter: "hue-rotate(275deg) saturate(1.12)" },
-  { id: "white", name: "ARCTIC WHITE", hex: "#e8edf2", filter: "grayscale(1) brightness(2.1) contrast(.72)" },
-  { id: "black", name: "MIDNIGHT", hex: "#17191e", filter: "grayscale(1) brightness(.32) contrast(1.45)" },
-  { id: "pink", name: "HOT PINK", hex: "#f43c9b", filter: "hue-rotate(320deg) saturate(1.25) brightness(1.12)" },
+  {
+    id: "blue",
+    name: "OCEAN BLUE",
+    hex: "#0879ed",
+    filter: "hue-rotate(215deg) saturate(1.15)",
+  },
+  {
+    id: "yellow",
+    name: "SUNSET GOLD",
+    hex: "#ffc20b",
+    filter: "hue-rotate(45deg) saturate(1.2) brightness(1.08)",
+  },
+  {
+    id: "green",
+    name: "NEON GREEN",
+    hex: "#18db38",
+    filter: "hue-rotate(105deg) saturate(1.25) brightness(1.06)",
+  },
+  {
+    id: "purple",
+    name: "PURPLE RUSH",
+    hex: "#9227e8",
+    filter: "hue-rotate(275deg) saturate(1.12)",
+  },
+  {
+    id: "white",
+    name: "ARCTIC WHITE",
+    hex: "#e8edf2",
+    filter: "grayscale(1) brightness(2.1) contrast(.72)",
+  },
+  {
+    id: "black",
+    name: "MIDNIGHT",
+    hex: "#17191e",
+    filter: "grayscale(1) brightness(.32) contrast(1.45)",
+  },
+  {
+    id: "pink",
+    name: "HOT PINK",
+    hex: "#f43c9b",
+    filter: "hue-rotate(320deg) saturate(1.25) brightness(1.12)",
+  },
 ];
 
 const UPGRADES: readonly UpgradeOption[] = [
@@ -93,11 +128,16 @@ const DEFAULT_STATE: PrototypeShopState = {
 };
 
 function isColorId(value: unknown): value is ColorId {
-  return typeof value === "string" && COLORS.some((color) => color.id === value);
+  return (
+    typeof value === "string" && COLORS.some((color) => color.id === value)
+  );
 }
 
 function isUpgradeId(value: unknown): value is UpgradeId {
-  return typeof value === "string" && UPGRADES.some((upgrade) => upgrade.id === value);
+  return (
+    typeof value === "string" &&
+    UPGRADES.some((upgrade) => upgrade.id === value)
+  );
 }
 
 function freshDefaultState(): PrototypeShopState {
@@ -123,9 +163,11 @@ function loadState(): PrototypeShopState {
     const ownedUpgradeIds = Array.isArray(parsed.ownedUpgradeIds)
       ? parsed.ownedUpgradeIds.filter(isUpgradeId)
       : [...DEFAULT_STATE.ownedUpgradeIds];
-    const engineLevel = typeof parsed.engineLevel === "number" && Number.isInteger(parsed.engineLevel)
-      ? Math.min(Math.max(parsed.engineLevel, 0), ENGINE_PRICES.length)
-      : DEFAULT_STATE.engineLevel;
+    const engineLevel =
+      typeof parsed.engineLevel === "number" &&
+      Number.isInteger(parsed.engineLevel)
+        ? Math.min(Math.max(parsed.engineLevel, 0), ENGINE_PRICES.length)
+        : DEFAULT_STATE.engineLevel;
 
     if (!ownedColorIds.includes(equippedColorId)) {
       ownedColorIds.push(equippedColorId);
@@ -146,7 +188,7 @@ export class ShopScreen implements Scene {
   private readonly game: Game;
   private screen: HTMLElement | null = null;
   private state: PrototypeShopState = loadState();
-  private previewColorId: ColorId = this.state.equippedColorId;
+  private previewColorId: ColorId = "red";
   private pendingColorId: ColorId | null = null;
   private unsubscribeFromGameState: (() => void) | null = null;
 
@@ -155,6 +197,8 @@ export class ShopScreen implements Scene {
   }
 
   enter(_params: SceneParams): void {
+    this.previewColorId = this.game.state.getCar().getSkin();
+    this.pendingColorId = null;
     const screen = document.createElement("section");
     screen.className = "screen shop-screen";
     screen.id = "shop-screen";
@@ -234,7 +278,8 @@ export class ShopScreen implements Scene {
             <p id="color-confirm-description">Unlock this car color?</p>
             <div class="confirm-price">
               <span class="shop-coin-icon" aria-hidden="true"></span>
-              <strong>${COLOR_PRICE}</strong>
+              
+              <strong data-confirm-price></strong>
             </div>
             <p class="confirm-balance">YOUR BALANCE: <strong data-confirm-balance></strong> COINS</p>
             <div class="confirm-actions">
@@ -246,34 +291,50 @@ export class ShopScreen implements Scene {
       </div>
     `;
 
-    screen.querySelector<HTMLButtonElement>('[data-shop-action="back"]')!
+    screen
+      .querySelector<HTMLButtonElement>('[data-shop-action="back"]')!
       .addEventListener("click", () => this.game.goTo(SceneIds.Home));
 
-    screen.querySelectorAll<HTMLButtonElement>("[data-shop-tab]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.selectTab(button.dataset.shopTab as ShopTab);
+    screen
+      .querySelectorAll<HTMLButtonElement>("[data-shop-tab]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          this.selectTab(button.dataset.shopTab as ShopTab);
+        });
       });
-    });
 
-    screen.querySelector<HTMLElement>("[data-color-grid]")!
-      .addEventListener("click", (event) => this.handleColorClick(event, "data-color-id"));
-    screen.querySelector<HTMLElement>("[data-owned-color-grid]")!
-      .addEventListener("click", (event) => this.handleColorClick(event, "data-owned-color-id"));
-    screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!
+    screen
+      .querySelector<HTMLElement>("[data-color-grid]")!
+      .addEventListener("click", (event) =>
+        this.handleColorClick(event, "data-color-id"),
+      );
+    screen
+      .querySelector<HTMLElement>("[data-owned-color-grid]")!
+      .addEventListener("click", (event) =>
+        this.handleColorClick(event, "data-owned-color-id"),
+      );
+    screen
+      .querySelector<HTMLButtonElement>("[data-buy-engine]")!
       .addEventListener("click", () => this.buyEngineUpgrade());
-    screen.querySelector<HTMLElement>("[data-upgrade-grid]")!
+    screen
+      .querySelector<HTMLElement>("[data-upgrade-grid]")!
       .addEventListener("click", (event) => this.handleUpgradeClick(event));
-    screen.querySelector<HTMLButtonElement>('[data-confirm-action="cancel"]')!
+    screen
+      .querySelector<HTMLButtonElement>('[data-confirm-action="cancel"]')!
       .addEventListener("click", () => this.cancelColorPurchase());
-    screen.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!
+    screen
+      .querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!
       .addEventListener("click", () => this.confirmColorPurchase());
     screen.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && this.pendingColorId) this.cancelColorPurchase();
+      if (event.key === "Escape" && this.pendingColorId)
+        this.cancelColorPurchase();
     });
 
     document.getElementById("game")!.appendChild(screen);
     this.screen = screen;
-    this.unsubscribeFromGameState = this.game.state.subscribe(() => this.render());
+    this.unsubscribeFromGameState = this.game.state.subscribe(() =>
+      this.render(),
+    );
     this.render();
   }
 
@@ -287,33 +348,42 @@ export class ShopScreen implements Scene {
   private selectTab(tabName: ShopTab): void {
     if (!this.screen) return;
 
-    this.screen.querySelectorAll<HTMLButtonElement>("[data-shop-tab]").forEach((button) => {
-      const isActive = button.dataset.shopTab === tabName;
-      button.classList.toggle("active", isActive);
-      button.setAttribute("aria-pressed", String(isActive));
-    });
-    this.screen.querySelectorAll<HTMLElement>("[data-shop-panel]").forEach((panel) => {
-      const isActive = panel.dataset.shopPanel === tabName;
-      panel.classList.toggle("active", isActive);
-      panel.hidden = !isActive;
-    });
+    this.screen
+      .querySelectorAll<HTMLButtonElement>("[data-shop-tab]")
+      .forEach((button) => {
+        const isActive = button.dataset.shopTab === tabName;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    this.screen
+      .querySelectorAll<HTMLElement>("[data-shop-panel]")
+      .forEach((panel) => {
+        const isActive = panel.dataset.shopPanel === tabName;
+        panel.classList.toggle("active", isActive);
+        panel.hidden = !isActive;
+      });
     this.setMessage("");
   }
 
-  private handleColorClick(event: Event, attribute: "data-color-id" | "data-owned-color-id"): void {
+  private handleColorClick(
+    event: Event,
+    attribute: "data-color-id" | "data-owned-color-id",
+  ): void {
     const target = event.target as Element;
     const button = target.closest<HTMLButtonElement>(`[${attribute}]`);
-    const colorId = attribute === "data-color-id"
-      ? button?.dataset.colorId
-      : button?.dataset.ownedColorId;
+    const colorId =
+      attribute === "data-color-id"
+        ? button?.dataset.colorId
+        : button?.dataset.ownedColorId;
     if (isColorId(colorId)) this.selectColor(colorId);
   }
 
   private selectColor(colorId: ColorId): void {
-    if (this.state.ownedColorIds.includes(colorId)) {
+    if (this.game.state.ownsSkin(colorId)) {
+      this.game.state.selectSkin(colorId);
       this.pendingColorId = null;
       this.previewColorId = colorId;
-      this.state.equippedColorId = colorId;
+      // this.state.equippedColorId = colorId;
       this.hideColorConfirmation();
       this.saveAndRender();
       return;
@@ -329,15 +399,22 @@ export class ShopScreen implements Scene {
     const colorId = this.pendingColorId;
     if (!colorId) return;
 
-    const balance = this.getBalance();
-    if (balance < COLOR_PRICE) {
-      this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
+    // const balance = this.getBalance();
+    // if (balance < COLOR_PRICE) {
+    //   this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
+    //   return;
+    // }
+    if (!this.game.state.buySkin(colorId)) {
+      const missing = SKIN_PRICES[colorId] - this.getBalance();
+      this.setMessage(
+        missing > 0 ? `NEED ${missing} MORE COINS!` : `Can't buy that`,
+      );
       return;
     }
 
-    if (!this.game.state.spendCoins(COLOR_PRICE)) return;
-    this.state.ownedColorIds.push(colorId);
-    this.state.equippedColorId = colorId;
+    // if (!this.game.state.spendCoins(COLOR_PRICE)) return;
+    // this.state.ownedColorIds.push(colorId);
+    // this.state.equippedColorId = colorId;
     this.previewColorId = colorId;
     this.pendingColorId = null;
     this.hideColorConfirmation();
@@ -347,7 +424,7 @@ export class ShopScreen implements Scene {
 
   private cancelColorPurchase(): void {
     this.pendingColorId = null;
-    this.previewColorId = this.state.equippedColorId;
+    this.previewColorId = this.game.state.getCar().getSkin();
     this.hideColorConfirmation();
     this.render();
     this.setMessage("PURCHASE CANCELLED");
@@ -357,18 +434,31 @@ export class ShopScreen implements Scene {
     if (!this.screen) return;
 
     const color = this.getColor(colorId);
-    const overlay = this.screen.querySelector<HTMLElement>("[data-color-confirm]")!;
-    this.screen.querySelector<HTMLElement>("[data-confirm-color-name]")!.textContent = color.name;
-    this.screen.querySelector<HTMLElement>("[data-confirm-color-swatch]")!
+    const overlay = this.screen.querySelector<HTMLElement>(
+      "[data-color-confirm]",
+    )!;
+    this.screen.querySelector<HTMLElement>(
+      "[data-confirm-color-name]",
+    )!.textContent = color.name;
+    this.screen
+      .querySelector<HTMLElement>("[data-confirm-color-swatch]")!
       .style.setProperty("--paint-color", color.hex);
-    this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(this.getBalance());
+    this.screen.querySelector<HTMLElement>(
+      "[data-confirm-balance]",
+    )!.textContent = String(this.getBalance());
     overlay.hidden = false;
-    this.screen.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!.focus();
+    this.screen
+      .querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!
+      .focus();
+    this.screen.querySelector<HTMLElement>(
+      "[data-confirm-price]",
+    )!.textContent = String(SKIN_PRICES[colorId]);
   }
 
   private hideColorConfirmation(): void {
     if (this.screen) {
-      this.screen.querySelector<HTMLElement>("[data-color-confirm]")!.hidden = true;
+      this.screen.querySelector<HTMLElement>("[data-color-confirm]")!.hidden =
+        true;
     }
   }
 
@@ -428,27 +518,34 @@ export class ShopScreen implements Scene {
 
     const previewColor = this.getColor(this.previewColorId);
     const balance = this.getBalance();
-    this.screen.querySelector<HTMLElement>("[data-shop-balance]")!.textContent = String(balance);
+    this.screen.querySelector<HTMLElement>("[data-shop-balance]")!.textContent =
+      String(balance);
     if (this.pendingColorId) {
-      this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(balance);
+      this.screen.querySelector<HTMLElement>(
+        "[data-confirm-balance]",
+      )!.textContent = String(balance);
     }
-    this.screen.querySelector<HTMLElement>("[data-color-name]")!.textContent = previewColor.name;
+    this.screen.querySelector<HTMLElement>("[data-color-name]")!.textContent =
+      previewColor.name;
 
-    const previewCar = this.screen.querySelector<HTMLImageElement>("[data-preview-car]")!;
+    const previewCar =
+      this.screen.querySelector<HTMLImageElement>("[data-preview-car]")!;
     previewCar.alt = `${previewColor.name} car preview`;
-    const paintFilter = previewColor.filter === "none" ? "" : `${previewColor.filter} `;
+    const paintFilter =
+      previewColor.filter === "none" ? "" : `${previewColor.filter} `;
     previewCar.style.filter = `${paintFilter}drop-shadow(0 5px 5px rgba(0, 0, 0, .8))`;
 
-    this.screen.querySelector<HTMLElement>("[data-color-grid]")!.innerHTML = COLORS
-      .map((color) => this.colorCardMarkup(color))
-      .join("");
-    this.screen.querySelector<HTMLElement>("[data-owned-color-grid]")!.innerHTML = this.state.ownedColorIds
+    this.screen.querySelector<HTMLElement>("[data-color-grid]")!.innerHTML =
+      COLORS.map((color) => this.colorCardMarkup(color)).join("");
+    this.screen.querySelector<HTMLElement>(
+      "[data-owned-color-grid]",
+    )!.innerHTML = this.game.state
+      .getOwnedSkins()
       .map((id) => this.ownedColorMarkup(this.getColor(id)))
       .join("");
     this.renderEnginePanel();
-    this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML = UPGRADES
-      .map((upgrade) => this.upgradeCardMarkup(upgrade))
-      .join("");
+    this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML =
+      UPGRADES.map((upgrade) => this.upgradeCardMarkup(upgrade)).join("");
   }
 
   private renderEnginePanel(): void {
@@ -457,26 +554,32 @@ export class ShopScreen implements Scene {
     const price = ENGINE_PRICES[this.state.engineLevel];
     this.screen.querySelector<HTMLElement>("[data-engine-level]")!.textContent =
       `${this.state.engineLevel}/${ENGINE_PRICES.length}`;
-    this.screen.querySelector<HTMLElement>("[data-engine-level-track]")!.innerHTML = ENGINE_PRICES
-      .map((_, index) => `<span class="${index < this.state.engineLevel ? "filled" : ""}"></span>`)
-      .join("");
+    this.screen.querySelector<HTMLElement>(
+      "[data-engine-level-track]",
+    )!.innerHTML = ENGINE_PRICES.map(
+      (_, index) =>
+        `<span class="${index < this.state.engineLevel ? "filled" : ""}"></span>`,
+    ).join("");
 
-    const button = this.screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!;
+    const button =
+      this.screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!;
     button.disabled = price === undefined;
-    button.innerHTML = price === undefined
-      ? "MAX LEVEL"
-      : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`;
+    button.innerHTML =
+      price === undefined
+        ? "MAX LEVEL"
+        : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`;
   }
 
   private colorCardMarkup(color: CarColor): string {
-    const isOwned = this.state.ownedColorIds.includes(color.id);
-    const isEquipped = this.state.equippedColorId === color.id;
+    const isOwned = this.game.state.ownsSkin(color.id);
+    const isEquipped = this.game.state.getCar().getSkin() === color.id;
     const isPreviewing = this.previewColorId === color.id && !isEquipped;
+    const price = SKIN_PRICES[color.id];
     const stateLabel = isEquipped
       ? "EQUIPPED"
       : isOwned
         ? "OWNED"
-        : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${COLOR_PRICE}`;
+        : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`;
 
     return `
       <button class="color-card${isEquipped ? " equipped" : ""}${isPreviewing ? " previewing" : ""}${isOwned ? " owned" : " locked"}"
@@ -491,7 +594,7 @@ export class ShopScreen implements Scene {
   }
 
   private ownedColorMarkup(color: CarColor): string {
-    const isEquipped = this.state.equippedColorId === color.id;
+    const isEquipped = this.game.state.getCar().getSkin() === color.id;
     return `
       <button class="owned-color${isEquipped ? " equipped" : ""}"
         type="button" data-owned-color-id="${color.id}" aria-pressed="${isEquipped}">
@@ -512,9 +615,11 @@ export class ShopScreen implements Scene {
         <p>${upgrade.description}</p>
         <button class="shop-purchase-button" type="button" data-upgrade-id="${upgrade.id}"
           ${isOwned ? "disabled" : ""}>
-          ${isOwned
-            ? "OWNED"
-            : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${upgrade.price}`}
+          ${
+            isOwned
+              ? "OWNED"
+              : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${upgrade.price}`
+          }
         </button>
       </article>`;
   }
@@ -527,7 +632,8 @@ export class ShopScreen implements Scene {
 
   private getUpgrade(upgradeId: UpgradeId): UpgradeOption {
     const upgrade = UPGRADES.find((candidate) => candidate.id === upgradeId);
-    if (!upgrade) throw new Error(`Unknown prototype shop upgrade: ${upgradeId}`);
+    if (!upgrade)
+      throw new Error(`Unknown prototype shop upgrade: ${upgradeId}`);
     return upgrade;
   }
 
@@ -537,7 +643,9 @@ export class ShopScreen implements Scene {
 
   private setMessage(message: string): void {
     if (this.screen) {
-      this.screen.querySelector<HTMLElement>("[data-shop-message]")!.textContent = message;
+      this.screen.querySelector<HTMLElement>(
+        "[data-shop-message]",
+      )!.textContent = message;
     }
   }
 }
