@@ -1,32 +1,33 @@
 
 import type { Game } from "../Game/Game.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
+// Update these two import paths if your teammates use a different folder.
 import { QuestionController } from "../Question/QuestionController.ts";
 import type { Question } from "../Question/QuestionModel.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
-
-type MathQuestion = {
-  text: string;
-  choices: [number, number, number];
-  correct: number;
-  source: Question;
-};
+import {LaneGameController} from "../LaneGame/LaneGameController.ts"
+import {LaneGameModel} from "../LaneGame/LaneGameModel.ts"
 
 export class CatchTheAnswer implements Scene {
   private game: Game;
   private questionController = new QuestionController();
   private readonly totalRounds = 10;
   private correctCount = 0;
-  private currentQuestion: MathQuestion | null = null;
+  private currentQuestion: Question | null = null;
   private availableLevelCount = 1;
+  private laneGameController: LaneGameController;
+  private laneGameModel: LaneGameModel;
+  private onLaneSelection: () => void;
+
 
   private screen: HTMLElement | null = null;
   private car: HTMLImageElement | null = null;
-  private questionText: HTMLDivElement | null = null;
+  private answerText: HTMLDivElement | null = null;
   private scoreText: HTMLDivElement | null = null;
+  private roadLines: HTMLDivElement | null = null;
   private movingDashes: HTMLDivElement[] = [];
 
-  private answers: HTMLDivElement[] = [];
+  private questions: HTMLDivElement[] = [];
 
   // Keep the lane positions that worked!
   private readonly lanePositions = [25, 50, 75];
@@ -44,8 +45,11 @@ export class CatchTheAnswer implements Scene {
   private frameId = 0;
   private pauseTimer: number | null = null;
 
-  constructor(game: Game) {
+  constructor(game: Game, laneGameController: LaneGameController, laneGameModel: LaneGameModel, onLaneSelection: () => void) {
     this.game = game;
+    this.laneGameController = laneGameController;
+    this.laneGameModel = laneGameModel;
+    this.onLaneSelection = onLaneSelection;
   }
 
   enter(_params: SceneParams): void {
@@ -137,6 +141,7 @@ export class CatchTheAnswer implements Scene {
     }
 
     screen.appendChild(roadLines);
+    this.roadLines = roadLines;
 
     // Question display
     const question = document.createElement("div");
@@ -164,7 +169,7 @@ export class CatchTheAnswer implements Scene {
     });
 
     screen.appendChild(question);
-    this.questionText = question;
+    this.answerText = question;
 
     // Score panel
     const score = document.createElement("div");
@@ -235,7 +240,7 @@ export class CatchTheAnswer implements Scene {
       });
 
       screen.appendChild(box);
-      this.answers.push(box);
+      this.questions.push(box);
     }
 
     // Player car
@@ -269,7 +274,7 @@ export class CatchTheAnswer implements Scene {
 
   // The unlocked-level rules below follow our planned level progression.
   // Confirm the exact difficulty rules with the team's gameConfig.ts.
-  private generateUnlockedQuestion(): MathQuestion {
+  /* private generateUnlockedQuestion(): Question {
     const unlocked = this.availableLevelCount;
     let type: string;
     let maxOperand: number;
@@ -288,6 +293,7 @@ export class CatchTheAnswer implements Scene {
     }
 
     let question: Question;
+    // Reuse the teammate's generator, rejecting questions that exceed
     // the currently available difficulty. The limit is always reachable.
     do {
       question = this.questionController.generateQuestion(type);
@@ -316,7 +322,7 @@ export class CatchTheAnswer implements Scene {
       choices: shuffled as [number, number, number],
       source: question,
     };
-  }
+  }*/
 
   private startRound(): void {
     if (this.round >= this.totalRounds) {
@@ -324,15 +330,17 @@ export class CatchTheAnswer implements Scene {
       return;
     }
 
-    this.currentQuestion = this.generateUnlockedQuestion();
+    this.laneGameController.generateRound();
     this.answerY = -18;
 
-    if (this.questionText) {
-      this.questionText.textContent = this.currentQuestion.text;
+    //Assigns the correct answer to the answer box
+    if (this.answerText) {
+      this.answerText.textContent = String(this.laneGameModel.getTargetAnswer());
     }
 
-    this.answers.forEach((box, i) => {
-      box.textContent = String(this.currentQuestion!.choices[i]);
+    
+    this.questions.forEach((box, i) => {
+      box.textContent = String(this.laneGameModel.getLanes()[i].getQuestion()?.text || "");
       box.style.top = `${this.answerY}%`;
     });
 
@@ -360,7 +368,7 @@ export class CatchTheAnswer implements Scene {
     if (!this.paused) {
       this.answerY += dt * 20;
 
-      this.answers.forEach((box) => {
+      this.questions.forEach((box) => {
         box.style.top = `${this.answerY}%`;
       });
 
@@ -377,17 +385,7 @@ export class CatchTheAnswer implements Scene {
   private checkAnswer(): void {
     this.paused = true;
 
-    if (!this.currentQuestion) return;
-    const selectedAnswer = this.currentQuestion.choices[this.lane];
-    const correct = this.questionController.submitAnswer(String(selectedAnswer));
-
-    if (correct) {
-      this.score += 10;
-      this.correctCount++;
-    }
-
-    this.updateScore();
-    this.showFeedback(correct);
+    this.onLaneSelection();
 
     this.pauseTimer = window.setTimeout(() => {
       this.pauseTimer = null;
@@ -395,11 +393,11 @@ export class CatchTheAnswer implements Scene {
       if (!this.active) return;
 
       this.round++;
-      this.startRound();
+      this.laneGameController.generateRound();
     }, 650);
   }
 
-  private showFeedback(correct: boolean): void {
+  showFeedback(correct: boolean): void {
     if (!this.screen || !this.car) return;
 
     const feedback = document.createElement("div");
@@ -477,7 +475,7 @@ export class CatchTheAnswer implements Scene {
     }, 650);
   }
 
-  private updateScore(): void {
+  updateScore(): void {
     if (this.scoreText) {
       this.scoreText.textContent = String(this.score);
     }
@@ -487,7 +485,7 @@ export class CatchTheAnswer implements Scene {
     if (!this.car) return;
 
     this.car.style.left =
-      `${this.lanePositions[this.lane]}%`;
+      `${this.lanePositions[this.laneGameModel.getCurrentLane().getLaneNumber() - 1]}%`;
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {
@@ -515,12 +513,12 @@ export class CatchTheAnswer implements Scene {
     const coinsEarned = this.correctCount * COINS_PER_CORRECT_ANSWER;
     this.game.state.addCoins(coinsEarned);
 
-    this.answers.forEach((box) => {
+    this.questions.forEach((box) => {
       box.style.display = "none";
     });
 
-    if (this.questionText) {
-      this.questionText.textContent = "";
+    if (this.answerText) {
+      this.answerText.textContent = "";
     }
 
     if (!this.screen) return;
@@ -623,10 +621,11 @@ export class CatchTheAnswer implements Scene {
     this.screen?.remove();
     this.screen = null;
     this.car = null;
-    this.questionText = null;
+    this.answerText = null;
     this.scoreText = null;
+    this.roadLines = null;
     this.movingDashes = [];
-    this.answers = [];
+    this.questions = [];
     this.currentQuestion = null;
   }
 

@@ -44,14 +44,21 @@ export class LaneGameController {
         // Randomly select one of the lanes to be the correct answer
         const randomLaneIndex = Math.floor(Math.random() * lanes.length);
         const targetLane = lanes[randomLaneIndex];
-        this.model.setLane(targetLane);
         this.model.setAnswer(targetLane.getQuestion()?.answer || 0);
     }
 
-    private handleCarMovement(): void {
+    handleCarMovement(key: "ArrowLeft" | "ArrowRight"): void {
         // Key press is detected in view 
-        // calls view function to move the car to another lane
-        // sets current lane to that lane
+        // Finds the current lane and moves the car to the left or right lane based on the key pressed
+        const lanes = this.model.getLanes();
+        const currentLane = this.model.getCurrentLane();
+        const currentIndex = lanes.indexOf(currentLane);
+
+        if (key === "ArrowLeft" && currentIndex > 0) {
+            this.model.setCurrentLane(lanes[currentIndex - 1]);
+        } else if (key === "ArrowRight" && currentIndex < lanes.length - 1) {
+            this.model.setCurrentLane(lanes[currentIndex + 1]);
+        }
     }
 
     handleLaneSelection(): void {
