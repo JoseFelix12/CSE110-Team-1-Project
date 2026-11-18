@@ -39,7 +39,7 @@ export class LaneGameModel {
      * Increment score when the lane with the correct answer is chosen
      */
     incrementScore(): void {
-        this.score++;
+        this.score+= 10;
     }
     /**
      * Increment the count of correct answers

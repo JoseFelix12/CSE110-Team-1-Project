@@ -1,7 +1,7 @@
 import {LaneGameModel} from "./LaneGameModel.ts"
 import {QuestionController} from "../Question/QuestionController.ts"
 import {GameState} from "../Game/GameState.ts"
-import {CatchTheAnswer} from "../UI/CatchTheAnswer.ts"
+import {CatchTheAnswer} from "../UI/LaneGameScreen.ts"
 import {Game} from "../Game/Game.ts"
 
 export class LaneGameController {

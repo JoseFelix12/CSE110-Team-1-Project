@@ -220,7 +220,7 @@ export class CatchTheAnswer implements Scene {
         alignItems: "center",
         justifyContent: "center",
         fontFamily: this.font,
-        fontSize: "clamp(12px, 1.8vw, 23px)",
+        fontSize: "clamp(12px, 1.3vw, 20px)",
         color: "#111",
         zIndex: "3",
       });
