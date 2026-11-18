@@ -31,6 +31,9 @@ export class LaneGameModel {
      */
     reset(): void {
         this.score = 0;
+        this.correctCount = 0;
+        this.currentLane = this.lanes[0];
+        this.targetAnswer = this.lanes[Math.floor(Math.random() * this.lanes.length)].getQuestion()?.answer || 0;
     }
     /**
      * Increment score when the lane with the correct answer is chosen
@@ -59,7 +62,7 @@ export class LaneGameModel {
     /**
      * Changes which lane the user is currently in
      */
-    setLane(lane: Lane): void {
+    setCurrentLane(lane: Lane): void {
         this.currentLane = lane;
     }
     /**
@@ -79,6 +82,12 @@ export class LaneGameModel {
      */
     setAnswer(answer: number){
         this.targetAnswer = answer;
+    }
+    /**
+     * Gets the number of correctly answered questions
+     */
+    getCorrectCount(): number {
+        return this.correctCount;
     }
 
     /**

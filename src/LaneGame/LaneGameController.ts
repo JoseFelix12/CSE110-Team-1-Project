@@ -9,19 +9,24 @@ export class LaneGameController {
     private game: Game;
     private questionGenerator: QuestionController
     private catchTheAnswer: CatchTheAnswer;
-
     private state: GameState;
+
     constructor(game: Game){
         this.game = game;
         this.model = new LaneGameModel();
         this.questionGenerator = new QuestionController();
-        this.catchTheAnswer = new CatchTheAnswer(
-            this.game, 
-            this, 
-            this.model,
-            () => this.handleLaneSelection()
-        );
         this.state = new GameState();
+        this.catchTheAnswer = new CatchTheAnswer(
+            this.game,
+            this,
+            this.model
+        );
+        
+    }
+
+    static create(game: Game): CatchTheAnswer {
+        const controller = new LaneGameController(game);
+        return controller.catchTheAnswer;
     }
 
     startGame(): void {
@@ -65,11 +70,11 @@ export class LaneGameController {
         // When car touches the expression in its current lane
         // checks if that lanes expression matches the right answe given
 
-        if (!this.model.getCurrentLane().getQuestion()) {
-            return;
-        }
         const laneQuestion = this.model.getCurrentLane().getQuestion();
-        const correct = this.questionGenerator.submitAnswer(String(laneQuestion?.answer));
+
+        if (!laneQuestion) return;
+
+        const correct = laneQuestion.answer === this.model.getTargetAnswer();
 
         if(correct) {
             // Updates score
@@ -79,10 +84,6 @@ export class LaneGameController {
         this.catchTheAnswer.updateScore();
         this.catchTheAnswer.showFeedback(correct);
         
-    }
-
-    private endGame(): void {
-        // Switch to results screen with final score
     }
 
     getFinalScore(): number {

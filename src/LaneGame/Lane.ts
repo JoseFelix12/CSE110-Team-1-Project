@@ -1,4 +1,4 @@
-import { Question } from "../Question/QuestionModel.ts";
+import type { Question } from "../Question/QuestionModel.ts";
 
 /**
  * Class for the state of of a lane for the lane minigame

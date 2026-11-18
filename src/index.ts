@@ -13,6 +13,7 @@ import { ShopScreen } from "./UI/ShopScreen.ts";
 
 import "./UI/ui.css";
 import { RaceClassController } from "./RacingScreen/RaceClassController.ts";
+import { LaneGameController } from "./LaneGame/LaneGameController.ts";
 
 const game = new Game();
 
@@ -27,7 +28,7 @@ game.register(SceneIds.MiniGameSelect, (g) =>
 );
 
 game.register(SceneIds.MiniGame1, (g) =>
-  new CatchTheAnswer(g)
+  LaneGameController.create(g)
 );
 
 game.register(SceneIds.MiniGame2, (g) => 
