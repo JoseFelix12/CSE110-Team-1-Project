@@ -6,13 +6,14 @@ import { StartScreen } from "./UI/StartScreen.ts";
 import { GarageScreen } from "./UI/GarageScreen.ts";
 import { LevelSelectScreen } from "./UI/LevelSelectScreen.ts";
 import { MiniGameSelectScreen } from "./UI/MiniGameSelectScreen.ts";
-import { CatchTheAnswer } from "./UI/CatchTheAnswer.ts";
+import { CatchTheAnswer } from "./UI/LaneGameScreen.ts";
 import { StatsScreen } from "./UI/StatsScreen.ts";
 import { RepairSolverScreen } from "./UI/RepairSolverScreen.ts";
 import { ShopScreen } from "./UI/ShopScreen.ts";
 
 import "./UI/ui.css";
 import { RaceClassController } from "./RacingScreen/RaceClassController.ts";
+import { LaneGameController } from "./LaneGame/LaneGameController.ts";
 
 const game = new Game();
 
@@ -27,7 +28,7 @@ game.register(SceneIds.MiniGameSelect, (g) =>
 );
 
 game.register(SceneIds.MiniGame1, (g) =>
-  new CatchTheAnswer(g)
+  LaneGameController.create(g)
 );
 
 game.register(SceneIds.MiniGame2, (g) => 
