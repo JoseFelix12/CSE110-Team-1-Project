@@ -1,17 +1,12 @@
 import type { Game } from "../Game/Game.ts";
+import { SKIN_PRICES } from "../Game/gameConfig.ts";
+import type { SkinColor } from "../Game/gameConfig.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
 
 type ShopTab = "skin" | "engine" | "upgrade";
-type ColorId =
-  | "red"
-  | "blue"
-  | "yellow"
-  | "green"
-  | "purple"
-  | "white"
-  | "black"
-  | "pink";
+/** Car colors are the game's skins, so owning and equipping them goes through GameState */
+type ColorId = SkinColor;
 type UpgradeId = "speed-boost" | "better-tires" | "shield" | "extra-time";
 
 interface CarColor {
@@ -30,16 +25,14 @@ interface UpgradeOption {
 }
 
 interface PrototypeShopState {
-  equippedColorId: ColorId;
-  ownedColorIds: ColorId[];
   engineLevel: number;
   ownedUpgradeIds: UpgradeId[];
 }
 
 type StoredPrototypeShopState = Partial<PrototypeShopState>;
 
-const COLOR_PRICE = 25;
 // Temporary UI values mirror the backend categories until its Shop API is ready.
+// Colors already use the backend (GameState and SKIN_PRICES).
 const ENGINE_PRICES = [40, 80, 150] as const;
 const STORAGE_KEY = "mathRacer.prototypeShop";
 
@@ -86,8 +79,6 @@ const UPGRADES: readonly UpgradeOption[] = [
 ];
 
 const DEFAULT_STATE: PrototypeShopState = {
-  equippedColorId: "red",
-  ownedColorIds: ["red", "blue", "yellow"],
   engineLevel: 0,
   ownedUpgradeIds: [],
 };
@@ -103,7 +94,6 @@ function isUpgradeId(value: unknown): value is UpgradeId {
 function freshDefaultState(): PrototypeShopState {
   return {
     ...DEFAULT_STATE,
-    ownedColorIds: [...DEFAULT_STATE.ownedColorIds],
     ownedUpgradeIds: [...DEFAULT_STATE.ownedUpgradeIds],
   };
 }
@@ -114,12 +104,6 @@ function loadState(): PrototypeShopState {
     if (!raw) return freshDefaultState();
 
     const parsed = JSON.parse(raw) as StoredPrototypeShopState;
-    const ownedColorIds = Array.isArray(parsed.ownedColorIds)
-      ? parsed.ownedColorIds.filter(isColorId)
-      : [...DEFAULT_STATE.ownedColorIds];
-    const equippedColorId = isColorId(parsed.equippedColorId)
-      ? parsed.equippedColorId
-      : DEFAULT_STATE.equippedColorId;
     const ownedUpgradeIds = Array.isArray(parsed.ownedUpgradeIds)
       ? parsed.ownedUpgradeIds.filter(isUpgradeId)
       : [...DEFAULT_STATE.ownedUpgradeIds];
@@ -127,13 +111,7 @@ function loadState(): PrototypeShopState {
       ? Math.min(Math.max(parsed.engineLevel, 0), ENGINE_PRICES.length)
       : DEFAULT_STATE.engineLevel;
 
-    if (!ownedColorIds.includes(equippedColorId)) {
-      ownedColorIds.push(equippedColorId);
-    }
-
     return {
-      equippedColorId,
-      ownedColorIds,
       engineLevel,
       ownedUpgradeIds,
     };
@@ -146,7 +124,7 @@ export class ShopScreen implements Scene {
   private readonly game: Game;
   private screen: HTMLElement | null = null;
   private state: PrototypeShopState = loadState();
-  private previewColorId: ColorId = this.state.equippedColorId;
+  private previewColorId: ColorId = "red";
   private pendingColorId: ColorId | null = null;
   private unsubscribeFromGameState: (() => void) | null = null;
 
@@ -155,6 +133,7 @@ export class ShopScreen implements Scene {
   }
 
   enter(_params: SceneParams): void {
+    this.previewColorId = this.equippedColorId();
     const screen = document.createElement("section");
     screen.className = "screen shop-screen";
     screen.id = "shop-screen";
@@ -234,7 +213,7 @@ export class ShopScreen implements Scene {
             <p id="color-confirm-description">Unlock this car color?</p>
             <div class="confirm-price">
               <span class="shop-coin-icon" aria-hidden="true"></span>
-              <strong>${COLOR_PRICE}</strong>
+              <strong data-confirm-price></strong>
             </div>
             <p class="confirm-balance">YOUR BALANCE: <strong data-confirm-balance></strong> COINS</p>
             <div class="confirm-actions">
@@ -310,12 +289,12 @@ export class ShopScreen implements Scene {
   }
 
   private selectColor(colorId: ColorId): void {
-    if (this.state.ownedColorIds.includes(colorId)) {
+    if (this.ownsColor(colorId)) {
       this.pendingColorId = null;
       this.previewColorId = colorId;
-      this.state.equippedColorId = colorId;
+      this.game.state.selectSkin(colorId);
       this.hideColorConfirmation();
-      this.saveAndRender();
+      this.render();
       return;
     }
 
@@ -329,25 +308,25 @@ export class ShopScreen implements Scene {
     const colorId = this.pendingColorId;
     if (!colorId) return;
 
+    const price = SKIN_PRICES[colorId];
     const balance = this.getBalance();
-    if (balance < COLOR_PRICE) {
-      this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
+    if (balance < price) {
+      this.setMessage(`NEED ${price - balance} MORE COINS!`);
       return;
     }
 
-    if (!this.game.state.spendCoins(COLOR_PRICE)) return;
-    this.state.ownedColorIds.push(colorId);
-    this.state.equippedColorId = colorId;
+    // buySkin spends the coins and equips the new color
+    if (!this.game.state.buySkin(colorId)) return;
     this.previewColorId = colorId;
     this.pendingColorId = null;
     this.hideColorConfirmation();
-    this.saveAndRender();
+    this.render();
     this.setMessage(`${this.getColor(colorId).name} UNLOCKED!`);
   }
 
   private cancelColorPurchase(): void {
     this.pendingColorId = null;
-    this.previewColorId = this.state.equippedColorId;
+    this.previewColorId = this.equippedColorId();
     this.hideColorConfirmation();
     this.render();
     this.setMessage("PURCHASE CANCELLED");
@@ -359,6 +338,7 @@ export class ShopScreen implements Scene {
     const color = this.getColor(colorId);
     const overlay = this.screen.querySelector<HTMLElement>("[data-color-confirm]")!;
     this.screen.querySelector<HTMLElement>("[data-confirm-color-name]")!.textContent = color.name;
+    this.screen.querySelector<HTMLElement>("[data-confirm-price]")!.textContent = String(SKIN_PRICES[colorId]);
     this.screen.querySelector<HTMLElement>("[data-confirm-color-swatch]")!
       .style.setProperty("--paint-color", color.hex);
     this.screen.querySelector<HTMLElement>("[data-confirm-balance]")!.textContent = String(this.getBalance());
@@ -442,13 +422,22 @@ export class ShopScreen implements Scene {
     this.screen.querySelector<HTMLElement>("[data-color-grid]")!.innerHTML = COLORS
       .map((color) => this.colorCardMarkup(color))
       .join("");
-    this.screen.querySelector<HTMLElement>("[data-owned-color-grid]")!.innerHTML = this.state.ownedColorIds
+    this.screen.querySelector<HTMLElement>("[data-owned-color-grid]")!.innerHTML = this.game.state.getOwnedSkins()
       .map((id) => this.ownedColorMarkup(this.getColor(id)))
       .join("");
     this.renderEnginePanel();
     this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML = UPGRADES
       .map((upgrade) => this.upgradeCardMarkup(upgrade))
       .join("");
+  }
+
+  /** The skin the race will use */
+  private equippedColorId(): ColorId {
+    return this.game.state.getCar().getSkin();
+  }
+
+  private ownsColor(colorId: ColorId): boolean {
+    return this.game.state.ownsSkin(colorId);
   }
 
   private renderEnginePanel(): void {
@@ -469,14 +458,14 @@ export class ShopScreen implements Scene {
   }
 
   private colorCardMarkup(color: CarColor): string {
-    const isOwned = this.state.ownedColorIds.includes(color.id);
-    const isEquipped = this.state.equippedColorId === color.id;
+    const isOwned = this.ownsColor(color.id);
+    const isEquipped = this.equippedColorId() === color.id;
     const isPreviewing = this.previewColorId === color.id && !isEquipped;
     const stateLabel = isEquipped
       ? "EQUIPPED"
       : isOwned
         ? "OWNED"
-        : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${COLOR_PRICE}`;
+        : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${SKIN_PRICES[color.id]}`;
 
     return `
       <button class="color-card${isEquipped ? " equipped" : ""}${isPreviewing ? " previewing" : ""}${isOwned ? " owned" : " locked"}"
@@ -491,7 +480,7 @@ export class ShopScreen implements Scene {
   }
 
   private ownedColorMarkup(color: CarColor): string {
-    const isEquipped = this.state.equippedColorId === color.id;
+    const isEquipped = this.equippedColorId() === color.id;
     return `
       <button class="owned-color${isEquipped ? " equipped" : ""}"
         type="button" data-owned-color-id="${color.id}" aria-pressed="${isEquipped}">

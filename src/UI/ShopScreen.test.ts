@@ -5,6 +5,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Game } from "../Game/Game.ts";
 import { GameState } from "../Game/GameState.ts";
+import { SKIN_PRICES } from "../Game/gameConfig.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import { ShopScreen } from "./ShopScreen.ts";
 
@@ -28,7 +29,8 @@ describe("ShopScreen prototype", () => {
     game.goTo(SceneIds.Shop);
 
     expect(document.querySelectorAll("[data-color-id]")).toHaveLength(8);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    // Only red is free
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("RACING RED");
   });
 
@@ -53,6 +55,8 @@ describe("ShopScreen prototype", () => {
   });
 
   it("equips an owned color", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
 
     document.querySelector<HTMLButtonElement>('[data-color-id="blue"]')!.click();
@@ -61,7 +65,29 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector('[data-color-id="blue"]')?.classList.contains("equipped")).toBe(true);
   });
 
+  it("equips the color on the car the race uses", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
+    game.goTo(SceneIds.Shop);
+
+    document.querySelector<HTMLButtonElement>('[data-owned-color-id="blue"]')!.click();
+    expect(game.state.getCar().getSkin()).toBe("blue");
+
+    document.querySelector<HTMLButtonElement>('[data-owned-color-id="red"]')!.click();
+    expect(game.state.getCar().getSkin()).toBe("red");
+  });
+
+  it("shows the equipped color when the shop is opened again", () => {
+    game.state.buySkin("blue");
+    game.goTo(SceneIds.Shop);
+
+    expect(document.querySelector("[data-color-name]")?.textContent).toBe("OCEAN BLUE");
+    expect(document.querySelector('[data-color-id="blue"]')?.classList.contains("equipped")).toBe(true);
+  });
+
   it("restores the red preview filter after switching from blue", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
     const previewCar = document.querySelector<HTMLImageElement>("[data-preview-car]")!;
 
@@ -85,15 +111,19 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("NEON GREEN");
     expect(document.querySelector<HTMLElement>("[data-color-confirm]")?.hidden).toBe(false);
     expect(document.querySelector("[data-confirm-color-name]")?.textContent).toBe("NEON GREEN");
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelector("[data-confirm-price]")?.textContent).toBe(String(SKIN_PRICES.green));
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
 
     document.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!.click();
 
-    expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("50");
-    expect(game.state.getCoins()).toBe(50);
+    const left = String(75 - SKIN_PRICES.green);
+    expect(document.querySelector("[data-shop-balance]")?.textContent).toBe(left);
+    expect(game.state.getCoins()).toBe(75 - SKIN_PRICES.green);
+    expect(game.state.ownsSkin("green")).toBe(true);
+    expect(game.state.getCar().getSkin()).toBe("green");
     expect(document.querySelector(".shop-wallet")?.getAttribute("aria-label")).toBe("Prototype coin balance");
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("NEON GREEN");
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(4);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(2);
   });
 
   it("cancels a color purchase without spending coins", () => {
@@ -105,21 +135,23 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("75");
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("RACING RED");
     expect(document.querySelector<HTMLElement>("[data-color-confirm]")?.hidden).toBe(true);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
+    expect(game.state.getCar().getSkin()).toBe("red");
   });
 
   it("uses coin pricing and coin-specific insufficient balance feedback", () => {
     game.goTo(SceneIds.Shop);
 
     expect(document.querySelector('[data-color-id="green"] .shop-coin-icon')).not.toBeNull();
+    expect(document.querySelector('[data-color-id="purple"]')?.textContent).toContain(String(SKIN_PRICES.purple));
     previewAndConfirmColor("green");
     previewAndConfirmColor("purple");
-    previewAndConfirmColor("white");
-    document.querySelector<HTMLButtonElement>('[data-color-id="black"]')!.click();
-    document.querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!.click();
 
-    expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("0");
-    expect(document.querySelector("[data-shop-message]")?.textContent).toBe("NEED 25 MORE COINS!");
+    const left = 75 - SKIN_PRICES.green;
+    expect(document.querySelector("[data-shop-balance]")?.textContent).toBe(String(left));
+    expect(document.querySelector("[data-shop-message]")?.textContent)
+      .toBe(`NEED ${SKIN_PRICES.purple - left} MORE COINS!`);
+    expect(game.state.ownsSkin("purple")).toBe(false);
   });
 
   it("purchases a prototype engine level with coins", () => {
