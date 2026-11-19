@@ -49,7 +49,7 @@ export class LaneGameController {
         // Randomly select one of the lanes to be the correct answer
         const randomLaneIndex = Math.floor(Math.random() * lanes.length);
         const targetLane = lanes[randomLaneIndex];
-        this.model.setAnswer(targetLane.getQuestion()?.answer || 0);
+        this.model.setAnswer(targetLane.getQuestion()?.answer ?? 0);
     }
 
     handleCarMovement(key: "ArrowLeft" | "ArrowRight"): void {

@@ -24,7 +24,7 @@ export class LaneGameModel {
 			new Lane(3)
 		];
         this.currentLane = this.lanes[0];
-        this.targetAnswer = this.lanes[Math.floor(Math.random() * this.lanes.length)].getQuestion()?.answer || 0;
+        this.targetAnswer = 0;
     }
     /**
      * Resets the score for a new try
