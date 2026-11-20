@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOpponents, Opponent, OPPONENT_PROFILES, sampleNormal } from './Opponent.ts';
+import { createOpponents, Opponent, OPPONENT_PROFILES, pickOpponentColors, sampleNormal } from './Opponent.ts';
 
 /** Average and spread of the time between answers, over many questions */
 function measureAnswerTimes(opponent: Opponent, questions: number): { mean: number; stdDev: number } {
@@ -81,5 +81,29 @@ describe('sampleNormal', () => {
     it('returns the mean for the middle roll', () => {
         // cos(2π · 0.25) = 0, so the spread term drops out
         expect(sampleNormal(4, 1, (() => { const rolls = [0.5, 0.25]; return () => rolls.shift()!; })())).toBeCloseTo(4);
+    });
+});
+
+describe('pickOpponentColors', () => {
+    const BOTS = ['yellow', 'blue', 'green'] as const;
+
+    it('keeps the bot colors when none match the player', () => {
+        expect(pickOpponentColors(BOTS, 'red')).toEqual(['yellow', 'blue', 'green']);
+    });
+
+    it('swaps a bot that matches the player for a color nobody is using', () => {
+        for (const player of BOTS) {
+            const colors = pickOpponentColors(BOTS, player);
+            expect(colors).not.toContain(player);
+            expect(new Set(colors).size).toBe(3);
+        }
+    });
+
+    it('only changes the bot that matches', () => {
+        expect(pickOpponentColors(BOTS, 'blue')).toEqual(['yellow', 'purple', 'green']);
+    });
+
+    it('does not reuse a color the player has', () => {
+        expect(pickOpponentColors(['purple', 'blue'], 'blue')).toEqual(['purple', 'pink']);
     });
 });

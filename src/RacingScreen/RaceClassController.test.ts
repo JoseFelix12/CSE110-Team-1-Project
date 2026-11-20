@@ -269,6 +269,18 @@ describe('RaceClassController', () => {
             expect(view().options).toMatchObject({ opponentColors: ['yellow', 'blue', 'green'] });
         });
 
+        it('recolors a bot that matches the player skin', () => {
+            gameState.addCoins(1000);
+            gameState.buySkin('blue');
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+            });
+            const options = view().options as unknown as { skin: string; opponentColors: string[] };
+            expect(options.skin).toBe('blue');
+            expect(options.opponentColors).toHaveLength(3);
+            expect(options.opponentColors).not.toContain('blue');
+        });
+
         it('keeps the bots at the start until GO', () => {
             controller.enter({ levelId: 1 });
             controller.update(0.1);

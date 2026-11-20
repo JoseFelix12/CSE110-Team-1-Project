@@ -12,6 +12,7 @@ import type { screenSwitcher } from "../Game/Game.ts";
 import type { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
+import { pickOpponentColors } from "./Opponent.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
@@ -106,7 +107,11 @@ export class RaceClassController implements Scene {
             {
                 skin: gameState.getCar().getSkin(),
                 speedMultiplier: gameState.getCar().getSpeedMultiplier(),
-                opponentColors: this.model.getOpponents().map((opponent) => opponent.profile.color),
+                // A bot that matches the player's skin gets a different color
+                opponentColors: pickOpponentColors(
+                    this.model.getOpponents().map((opponent) => opponent.profile.color),
+                    gameState.getCar().getSkin(),
+                ),
             },
         );
     }

@@ -1,3 +1,5 @@
+import type { SkinColor } from '../Game/gameConfig.ts';
+
 export type OpponentDifficulty = 'easy' | 'medium' | 'hard';
 export type OpponentColor = 'yellow' | 'blue' | 'green';
 
@@ -14,6 +16,26 @@ export const OPPONENT_PROFILES: Record<OpponentDifficulty, OpponentProfile> = {
     medium: { difficulty: 'medium', color: 'blue', meanSeconds: 4, stdDevSeconds: 1 },
     hard: { difficulty: 'hard', color: 'green', meanSeconds: 3.5, stdDevSeconds: 0.5 },
 };
+
+/** Colors a bot switches to, in this order, when its own color matches the player's car */
+const SPARE_COLORS: SkinColor[] = ['purple', 'pink', 'white', 'black', 'red', 'yellow', 'blue', 'green'];
+
+/**
+ * Picks a color for each bot so none of them matches the player's car.
+ * Bots keep their own color unless it is the same as the player's, then
+ * take the first spare color that no other car is using.
+ */
+export function pickOpponentColors(botColors: readonly SkinColor[], playerColor: SkinColor): SkinColor[] {
+    const used = new Set<SkinColor>([playerColor, ...botColors]);
+    return botColors.map((color) => {
+        if (color !== playerColor) {
+            return color;
+        }
+        const spare = SPARE_COLORS.find((candidate) => !used.has(candidate)) ?? color;
+        used.add(spare);
+        return spare;
+    });
+}
 
 /** A normal sample can come out near 0 or negative, so no answer is faster than this */
 const MIN_ANSWER_SECONDS = 1;
