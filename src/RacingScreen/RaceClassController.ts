@@ -155,7 +155,6 @@ export class RaceClassController implements Scene {
         this.paused = false;
         this.racing = false;
         this.startCountdown();
-        this.engine.play();
     }
 
     /**
@@ -178,6 +177,7 @@ export class RaceClassController implements Scene {
                 this.stopCountdownTimer();
                 this.view.startRace();
                 this.racing = true;
+                this.engine.play();
                 this.nextQuestion();
             }
         }, 1000);
@@ -394,6 +394,8 @@ export class RaceClassController implements Scene {
     private handlePause(): void {
         this.paused = true;
         this.engine.pause();
+        this.lightCountDown.pause();
+        this.rev.pause();
         this.stopCountdownTimer();
         this.stopQuestionTimer();
     }
@@ -404,10 +406,14 @@ export class RaceClassController implements Scene {
     private handleResume(): void {
         this.paused = false;
         if (this.countdownRemaining > 0) {
+            if (!this.lightCountDown.ended) this.lightCountDown.play();
+            if (!this.rev.ended) this.rev.play();
             this.runCountdownTimer();
-        } else if (this.currentQuestion !== null) {
+        } else {
             this.engine.play();
-            this.runQuestionTimer();
+            if (this.currentQuestion !== null) {
+                this.runQuestionTimer();
+            }
         }
     }
 
