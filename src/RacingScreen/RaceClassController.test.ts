@@ -187,6 +187,15 @@ describe('RaceClassController', () => {
             expect(view().showAnswerFeedback).not.toHaveBeenCalled();
         });
 
+        it('ignores the nitro button when the car has no health left', () => {
+            startRacing();
+            fillNitro();
+            gameState.getMutableCar().inflictDamage(MAX_HEALTH);
+            view().handlers.onNitro();
+            expect(view().setNitroActive).not.toHaveBeenCalled();
+            expect(view().showAnswerFeedback).toHaveBeenCalledTimes(2);
+        });
+
         it('fills nitro from correct answers, then burns it off', () => {
             startRacing();
             fillNitro();

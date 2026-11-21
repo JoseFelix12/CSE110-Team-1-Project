@@ -121,7 +121,10 @@ export class RaceClassModel {
      * Updates values when nitro is used
      * @returns true if nitro is used, false if not
      */
-    handleNitro(): boolean {
+    handleNitro(health: number): boolean {
+        if(health <= 0){
+            return false;
+        }
         if (this.nitroLevel >= 1 && this.nitroTimeRemaining <= 0) {
             this.nitroTimeRemaining = NITRO_SECONDS;
             this.nitroActive = true;

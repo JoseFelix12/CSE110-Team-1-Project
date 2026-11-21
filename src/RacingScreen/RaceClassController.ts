@@ -262,7 +262,7 @@ export class RaceClassController implements Scene {
         if(this.currentQuestion == null){
             return;
         }
-        if(this.model.handleNitro()){
+        if (this.model.handleNitro(this.gameState.getCar().getHealth())) {
             this.nitroUse.play();
             this.finishQuestion(true, true);
         }

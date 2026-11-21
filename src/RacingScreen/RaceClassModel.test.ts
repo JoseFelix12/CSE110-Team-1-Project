@@ -13,6 +13,7 @@ function fillNitro(model: RaceClassModel): void {
 }
 
 const QUESTION_COUNT = 4;
+const FULL_HEALTH = 100;
 
 describe('RaceClassModel', () => {
     let model: RaceClassModel;
@@ -134,29 +135,36 @@ describe('RaceClassModel', () => {
     });
 
     describe('handleNitro', () => {
+        it('refuses to start nitro at 0 health, even with a full bar', () => {
+            fillNitro(model);
+            expect(model.handleNitro(0)).toBe(false);
+            expect(model.isNitroActive()).toBe(false);
+            expect(model.getNitroLevel()).toBe(1); // charge is not spent
+        });
+        
         it('does nothing and returns false when the bar is not full', () => {
             model.chargeNitro();
-            expect(model.handleNitro()).toBe(false);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(false);
             expect(model.isNitroActive()).toBe(false);
         });
 
         it('activates nitro and returns true when the bar is full', () => {
             fillNitro(model);
-            expect(model.handleNitro()).toBe(true);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(true);
             expect(model.isNitroActive()).toBe(true);
         });
 
         it('spends the charge so the next nitro needs a full bar again', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             expect(model['nitroLevel']).toBe(0);
         });
 
         it('cannot start a second nitro while one is running', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             fillNitro(model);
-            expect(model.handleNitro()).toBe(false);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(false);
         });
     });
 
@@ -169,7 +177,7 @@ describe('RaceClassModel', () => {
 
         it('drains the bar while nitro is active', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             expect(model.getNitroLevel()).toBe(1);
             model.updateNitro(NITRO_SECONDS / 2);
             expect(model.getNitroLevel()).toBeCloseTo(0.5);
@@ -178,7 +186,7 @@ describe('RaceClassModel', () => {
 
         it('ends nitro when the time runs out', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             model.updateNitro(NITRO_SECONDS);
             expect(model.isNitroActive()).toBe(false);
             expect(model.getNitroLevel()).toBe(0);
@@ -186,7 +194,7 @@ describe('RaceClassModel', () => {
 
         it('keeps charge earned during nitro', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             model.chargeNitro();
             model.updateNitro(NITRO_SECONDS);
             expect(model.getNitroLevel()).toBeCloseTo(1 / CORRECT_ANSWERS_FOR_NITRO);
@@ -259,7 +267,7 @@ describe('RaceClassModel', () => {
                 model.incrementIncorrectStreak();
             }
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
 
             model.reset(QUESTION_COUNT);
 
