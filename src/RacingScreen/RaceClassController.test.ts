@@ -336,18 +336,15 @@ describe('RaceClassController', () => {
             return { a: Number(a), symbol, b: Number(b) };
         };
 
-        it('asks level 1 2 digit addition and subtraction, never below 0', () => {
+        it('asks level 1 a 2 digit number up to 70 plus a 1 digit number', () => {
             startRacing();
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 4; i++) {
                 const { a, symbol, b } = questionParts();
-                expect(['+', '−']).toContain(symbol);
-                for (const n of [a, b]) {
-                    expect(n).toBeGreaterThanOrEqual(10);
-                    expect(n).toBeLessThanOrEqual(99);
-                }
-                if (symbol === '−') {
-                    expect(a).toBeGreaterThanOrEqual(b);
-                }
+                expect(symbol).toBe('+');
+                expect(a).toBeGreaterThanOrEqual(10);
+                expect(a).toBeLessThanOrEqual(70);
+                expect(b).toBeGreaterThanOrEqual(1);
+                expect(b).toBeLessThanOrEqual(9);
                 answerCorrectly();
             }
         });
