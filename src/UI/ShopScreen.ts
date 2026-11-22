@@ -31,12 +31,6 @@ interface UpgradeOption {
   imageSrc: string;
 }
 
-
-
-
-// Temporary UI values mirror the backend categories until its Shop API is ready.
-// const ENGINE_PRICES = [40, 80, 150] as const;
-
 const COLORS: readonly CarColor[] = [
   { id: "red", name: "RACING RED", hex: "#f20f19", filter: "none" },
   {
@@ -336,7 +330,6 @@ export class ShopScreen implements Scene {
       
       this.pendingColorId = null;
       this.previewColorId = colorId;
-      // this.state.equippedColorId = colorId;
       this.hideColorConfirmation();
       this.game.state.selectSkin(colorId);
       return;
@@ -352,12 +345,6 @@ export class ShopScreen implements Scene {
     
     const colorId = this.pendingColorId;
     if (!colorId) return;
-
-    // const balance = this.getBalance();
-    // if (balance < COLOR_PRICE) {
-    //   this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
-    //   return;
-    // }
     this.previewColorId = colorId;
     this.pendingColorId = null;
     this.hideColorConfirmation();
@@ -425,8 +412,6 @@ export class ShopScreen implements Scene {
     }
 
     if (!this.game.state.buyEngineUpgrade()) return;
-    // this.state.engineLevel += 1;
-    // this.saveAndRender();
     this.setMessage(`ENGINE UPGRADED TO LEVEL ${this.game.state.getCar().getEngineLevel()}!`);
   }
 
