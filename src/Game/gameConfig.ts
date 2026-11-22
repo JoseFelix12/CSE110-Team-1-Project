@@ -93,16 +93,17 @@ export type Upgrade = 'Speed Boost' | 'Better Tires' | 'Shield' | 'Extra Time';
 export const MAX_HEALTH = 100;
 
 export const DEFAULT_SKIN: SkinColor = 'red';
+export const STARTER_SKINS: SkinColor[] = [DEFAULT_SKIN, 'blue', 'yellow'];
 
 export const SKIN_PRICES: Record<SkinColor, number> = {
     red: 0,
-    blue: 50,
+    blue: 0,
     green: 50,
     purple: 75,
     pink: 75,
     black: 75,
     white: 75,
-    yellow: 75
+    yellow: 0
 
 };
 

@@ -85,7 +85,6 @@ describe("Shop", () => {
         });
 
         it("should show an owned skin as already purchased", () => {
-            // Red is the default skin.
             const items = shop.getCatalog();
 
             const redSkin = items.find((item) => item.id === "skin:red");
@@ -95,21 +94,19 @@ describe("Shop", () => {
         });
 
         it("should show whether an item is affordable", () => {
-            // The player starts with zero coins.
             let items = shop.getCatalog();
 
-            let blueSkin = items.find((item) => item.id === "skin:blue");
+            let greenSkin = items.find((item) => item.id === "skin:green");
 
-            expect(blueSkin?.affordable).toBe(false);
+            expect(greenSkin?.affordable).toBe(false);
 
-            // Give the player enough coins.
-            game.addCoins(SKIN_PRICES.blue);
+            game.addCoins(SKIN_PRICES.green);
 
             items = shop.getCatalog();
 
-            blueSkin = items.find((item) => item.id === "skin:blue");
+            greenSkin = items.find((item) => item.id === "skin:green");
 
-            expect(blueSkin?.affordable).toBe(true);
+            expect(greenSkin?.affordable).toBe(true);
         });
     });
 
@@ -132,14 +129,14 @@ describe("Shop", () => {
         });
 
         it("should purchase a skin", () => {
-            const price = SKIN_PRICES.blue;
+            const price = SKIN_PRICES.green;
 
             game.addCoins(price);
 
-            const result = shop.purchase("skin:blue");
+            const result = shop.purchase("skin:green");
 
             expect(result).toBe(true);
-            expect(game.ownsSkin("blue")).toBe(true);
+            expect(game.ownsSkin("green")).toBe(true);
             expect(game.getCoins()).toBe(0);
         });
 
@@ -156,11 +153,10 @@ describe("Shop", () => {
         });
 
         it("should not purchase an item if the player cannot afford it", () => {
-            // Player starts with zero coins.
-            const result = shop.purchase("skin:blue");
+            const result = shop.purchase("skin:green");
 
             expect(result).toBe(false);
-            expect(game.ownsSkin("blue")).toBe(false);
+            expect(game.ownsSkin("green")).toBe(false);
             expect(game.getCoins()).toBe(0);
         });
 
