@@ -1,7 +1,8 @@
 import type { Game } from "../Game/Game.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
-import { SKIN_PRICES } from "../Game/gameConfig";
+import { SKIN_PRICES, ENGINE_UPGRADE_PRICES, UPGRADE_PRICES } from "../Game/gameConfig";
+import type { Upgrade } from "../Game/gameConfig"
 
 type ShopTab = "skin" | "engine" | "upgrade";
 type ColorId =
@@ -30,18 +31,11 @@ interface UpgradeOption {
   imageSrc: string;
 }
 
-interface PrototypeShopState {
-  equippedColorId: ColorId;
-  ownedColorIds: ColorId[];
-  engineLevel: number;
-  ownedUpgradeIds: UpgradeId[];
-}
 
-type StoredPrototypeShopState = Partial<PrototypeShopState>;
+
 
 // Temporary UI values mirror the backend categories until its Shop API is ready.
-const ENGINE_PRICES = [40, 80, 150] as const;
-const STORAGE_KEY = "mathRacer.prototypeShop";
+// const ENGINE_PRICES = [40, 80, 150] as const;
 
 const COLORS: readonly CarColor[] = [
   { id: "red", name: "RACING RED", hex: "#f20f19", filter: "none" },
@@ -120,12 +114,14 @@ const UPGRADES: readonly UpgradeOption[] = [
   },
 ];
 
-const DEFAULT_STATE: PrototypeShopState = {
-  equippedColorId: "red",
-  ownedColorIds: ["red", "blue", "yellow"],
-  engineLevel: 0,
-  ownedUpgradeIds: [],
+const UPGRADE_BY_ID: Record<UpgradeId, Upgrade> = {
+  "speed-boost": "Speed Boost",
+  "better-tires": "Better Tires",
+  shield: "Shield",
+  "extra-time": "Extra Time",
 };
+
+
 
 function isColorId(value: unknown): value is ColorId {
   return (
@@ -140,54 +136,11 @@ function isUpgradeId(value: unknown): value is UpgradeId {
   );
 }
 
-function freshDefaultState(): PrototypeShopState {
-  return {
-    ...DEFAULT_STATE,
-    ownedColorIds: [...DEFAULT_STATE.ownedColorIds],
-    ownedUpgradeIds: [...DEFAULT_STATE.ownedUpgradeIds],
-  };
-}
 
-function loadState(): PrototypeShopState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return freshDefaultState();
-
-    const parsed = JSON.parse(raw) as StoredPrototypeShopState;
-    const ownedColorIds = Array.isArray(parsed.ownedColorIds)
-      ? parsed.ownedColorIds.filter(isColorId)
-      : [...DEFAULT_STATE.ownedColorIds];
-    const equippedColorId = isColorId(parsed.equippedColorId)
-      ? parsed.equippedColorId
-      : DEFAULT_STATE.equippedColorId;
-    const ownedUpgradeIds = Array.isArray(parsed.ownedUpgradeIds)
-      ? parsed.ownedUpgradeIds.filter(isUpgradeId)
-      : [...DEFAULT_STATE.ownedUpgradeIds];
-    const engineLevel =
-      typeof parsed.engineLevel === "number" &&
-      Number.isInteger(parsed.engineLevel)
-        ? Math.min(Math.max(parsed.engineLevel, 0), ENGINE_PRICES.length)
-        : DEFAULT_STATE.engineLevel;
-
-    if (!ownedColorIds.includes(equippedColorId)) {
-      ownedColorIds.push(equippedColorId);
-    }
-
-    return {
-      equippedColorId,
-      ownedColorIds,
-      engineLevel,
-      ownedUpgradeIds,
-    };
-  } catch {
-    return freshDefaultState();
-  }
-}
 
 export class ShopScreen implements Scene {
   private readonly game: Game;
   private screen: HTMLElement | null = null;
-  private state: PrototypeShopState = loadState();
   private previewColorId: ColorId = "red";
   private pendingColorId: ColorId | null = null;
   private unsubscribeFromGameState: (() => void) | null = null;
@@ -380,12 +333,12 @@ export class ShopScreen implements Scene {
 
   private selectColor(colorId: ColorId): void {
     if (this.game.state.ownsSkin(colorId)) {
-      this.game.state.selectSkin(colorId);
+      
       this.pendingColorId = null;
       this.previewColorId = colorId;
       // this.state.equippedColorId = colorId;
       this.hideColorConfirmation();
-      this.saveAndRender();
+      this.game.state.selectSkin(colorId);
       return;
     }
 
@@ -396,6 +349,7 @@ export class ShopScreen implements Scene {
   }
 
   private confirmColorPurchase(): void {
+    
     const colorId = this.pendingColorId;
     if (!colorId) return;
 
@@ -404,6 +358,10 @@ export class ShopScreen implements Scene {
     //   this.setMessage(`NEED ${COLOR_PRICE - balance} MORE COINS!`);
     //   return;
     // }
+    this.previewColorId = colorId;
+    this.pendingColorId = null;
+    this.hideColorConfirmation();
+
     if (!this.game.state.buySkin(colorId)) {
       const missing = SKIN_PRICES[colorId] - this.getBalance();
       this.setMessage(
@@ -411,14 +369,6 @@ export class ShopScreen implements Scene {
       );
       return;
     }
-
-    // if (!this.game.state.spendCoins(COLOR_PRICE)) return;
-    // this.state.ownedColorIds.push(colorId);
-    // this.state.equippedColorId = colorId;
-    this.previewColorId = colorId;
-    this.pendingColorId = null;
-    this.hideColorConfirmation();
-    this.saveAndRender();
     this.setMessage(`${this.getColor(colorId).name} UNLOCKED!`);
   }
 
@@ -463,8 +413,8 @@ export class ShopScreen implements Scene {
   }
 
   private buyEngineUpgrade(): void {
-    const price = ENGINE_PRICES[this.state.engineLevel];
-    if (price === undefined) {
+    const price = this.game.state.getNextEngineUpgradePrice();
+    if (price === null) {
       this.setMessage("ENGINE IS ALREADY AT MAX LEVEL!");
       return;
     }
@@ -474,10 +424,10 @@ export class ShopScreen implements Scene {
       return;
     }
 
-    if (!this.game.state.spendCoins(price)) return;
-    this.state.engineLevel += 1;
-    this.saveAndRender();
-    this.setMessage(`ENGINE UPGRADED TO LEVEL ${this.state.engineLevel}!`);
+    if (!this.game.state.buyEngineUpgrade()) return;
+    // this.state.engineLevel += 1;
+    // this.saveAndRender();
+    this.setMessage(`ENGINE UPGRADED TO LEVEL ${this.game.state.getCar().getEngineLevel()}!`);
   }
 
   private handleUpgradeClick(event: Event): void {
@@ -485,33 +435,26 @@ export class ShopScreen implements Scene {
     const button = target.closest<HTMLButtonElement>("[data-upgrade-id]");
     const upgradeId = button?.dataset.upgradeId;
     if (!isUpgradeId(upgradeId)) return;
+    const upgrade = this.getUpgrade(upgradeId);
+    const gameUpgrade = UPGRADE_BY_ID[upgradeId];
 
-    if (this.state.ownedUpgradeIds.includes(upgradeId)) {
-      this.setMessage(`${this.getUpgrade(upgradeId).name} ALREADY OWNED!`);
+    if (this.game.state.ownsUpgrade(gameUpgrade)) {
+      this.setMessage(`${upgrade.name} ALREADY OWNED!`);
       return;
     }
 
-    const upgrade = this.getUpgrade(upgradeId);
+    const price = UPGRADE_PRICES[gameUpgrade];
     const balance = this.getBalance();
     if (balance < upgrade.price) {
-      this.setMessage(`NEED ${upgrade.price - balance} MORE COINS!`);
+      this.setMessage(`NEED ${price - balance} MORE COINS!`);
       return;
     }
 
-    if (!this.game.state.spendCoins(upgrade.price)) return;
-    this.state.ownedUpgradeIds.push(upgradeId);
-    this.saveAndRender();
+    if (!this.game.state.buyUpgrade(gameUpgrade)) return;
     this.setMessage(`${upgrade.name} UNLOCKED!`);
   }
 
-  private saveAndRender(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-    } catch {
-      // The prototype still works in memory if browser storage is unavailable.
-    }
-    this.render();
-  }
+  
 
   private render(): void {
     if (!this.screen) return;
@@ -550,22 +493,24 @@ export class ShopScreen implements Scene {
 
   private renderEnginePanel(): void {
     if (!this.screen) return;
+    const level = this.game.state.getCar().getEngineLevel();
+    const price = this.game.state.getNextEngineUpgradePrice();
+    const maxLevel= ENGINE_UPGRADE_PRICES.length;
 
-    const price = ENGINE_PRICES[this.state.engineLevel];
     this.screen.querySelector<HTMLElement>("[data-engine-level]")!.textContent =
-      `${this.state.engineLevel}/${ENGINE_PRICES.length}`;
+      `${level}/${maxLevel}`;
     this.screen.querySelector<HTMLElement>(
       "[data-engine-level-track]",
-    )!.innerHTML = ENGINE_PRICES.map(
+    )!.innerHTML = ENGINE_UPGRADE_PRICES.map(
       (_, index) =>
-        `<span class="${index < this.state.engineLevel ? "filled" : ""}"></span>`,
+        `<span class="${index < level ? "filled" : ""}"></span>`,
     ).join("");
 
     const button =
       this.screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!;
-    button.disabled = price === undefined;
+    button.disabled = price === null;
     button.innerHTML =
-      price === undefined
+      price === null
         ? "MAX LEVEL"
         : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`;
   }
@@ -605,7 +550,10 @@ export class ShopScreen implements Scene {
   }
 
   private upgradeCardMarkup(upgrade: UpgradeOption): string {
-    const isOwned = this.state.ownedUpgradeIds.includes(upgrade.id);
+    const gameUpgrade = UPGRADE_BY_ID[upgrade.id];
+    const isOwned = this.game.state.ownsUpgrade(gameUpgrade);
+    const price = UPGRADE_PRICES[gameUpgrade];
+
     return `
       <article class="upgrade-card${isOwned ? " owned" : ""}">
         <div class="upgrade-icon">
@@ -618,7 +566,7 @@ export class ShopScreen implements Scene {
           ${
             isOwned
               ? "OWNED"
-              : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${upgrade.price}`
+              : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`
           }
         </button>
       </article>`;
