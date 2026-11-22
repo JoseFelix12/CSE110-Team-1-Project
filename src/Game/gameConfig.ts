@@ -19,6 +19,9 @@ export interface LevelConfig {
     /** Largest factor used when building questions (e.g. 10 -> up to 10 x 10) */
     minFactor: number;
     maxFactor: number;
+    /** Range for the second number when it differs from the first (e.g. 1-9 for a 1 digit number) */
+    secondMinFactor?: number;
+    secondMaxFactor?: number;
     questionCount: number;
 }
 
@@ -27,11 +30,13 @@ export const LEVELS: LevelConfig[] = [
     {
         id: 1,
         name: 'Desert Dash',
-        description: 'Addition and Subtraction (2 digit numbers).',
+        description: 'Add a 2 digit number (up to 70) and a 1 digit number.',
         theme: 'dirt',
-        operators: ['+', '-'],
+        operators: ['+'],
         minFactor: 10,
-        maxFactor: 99,
+        maxFactor: 70,
+        secondMinFactor: 1,
+        secondMaxFactor: 9,
         questionCount: 15,
     },
     {
