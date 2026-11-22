@@ -278,6 +278,14 @@ describe('RaceClassController', () => {
             expect(view().options).toMatchObject({ opponentColors: ['yellow', 'blue', 'green'] });
         });
 
+        it('recolors a bot that matches the player skin', () => {
+            gameState.selectSkin('blue'); // blue is a starter skin
+            controller.enter({ levelId: 1 });
+            const options = view().options as unknown as { skin: string; opponentColors: string[] };
+            expect(options.skin).toBe('blue');
+            expect(options.opponentColors).toEqual(['yellow', 'purple', 'green']);
+        });
+
         it('keeps the bots at the start until GO', () => {
             controller.enter({ levelId: 1 });
             controller.update(0.1);
