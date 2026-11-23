@@ -39,11 +39,24 @@ export class LaneGameController {
     generateRound(): void{
         const lanes = this.model.getLanes();
 
+        const usedQuestions = new Set<string>();
+        const usedAnswers = new Set<number>();
+
         for (const lane of lanes) {
             //Generates a new question for each lane
-            
-            const question = this.questionGenerator.generateQuestion(this.state.getCurrentLevelId());
+            let question;
+            do {
+                question = this.questionGenerator.generateQuestion(this.state.getCurrentLevelId());
+                
+            } while (
+                usedQuestions.has(question.text) ||
+                usedAnswers.has(question.answer)
+            )
+
+            usedQuestions.add(question.text);
+            usedAnswers.add(question.answer);
             lane.setQuestion(question);
+            
             
         }
         // Randomly select one of the lanes to be the correct answer
