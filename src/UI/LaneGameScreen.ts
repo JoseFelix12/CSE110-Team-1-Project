@@ -4,13 +4,16 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
 import type {LaneGameController} from "../LaneGame/LaneGameController.ts"
 import type {LaneGameModel} from "../LaneGame/LaneGameModel.ts"
+import { SceneIds } from "../Game/Scene.ts";
 
 export class CatchTheAnswer implements Scene {
   private game: Game;
   private readonly totalRounds = 10;
   private laneGameController: LaneGameController;
   private laneGameModel: LaneGameModel;
-
+  private correctSound = new Audio("/sounds/Correct.mp3");
+  private incorrectSound = new Audio("/sounds/Incorrect.mp3");
+  private backgroundMusic = new Audio("/sounds/lane-music.mp3");
 
   private screen: HTMLElement | null = null;
   private car: HTMLImageElement | null = null;
@@ -55,6 +58,9 @@ export class CatchTheAnswer implements Scene {
     }
 
     this.laneGameController.startGame();
+    this.backgroundMusic.loop = true;
+    this.backgroundMusic.volume = 0.15;
+    void this.backgroundMusic.play().catch(() => {});
 
     this.round = 0;
     this.answerY = -18;
@@ -212,7 +218,7 @@ export class CatchTheAnswer implements Scene {
         left: `${this.lanePositions[i]}%`,
         top: "-18%",
         transform: "translateX(-50%)",
-        width: "25%",
+        width: "22%",
         aspectRatio: "3 / 1",
         backgroundImage: 'url("/images/Rectangle.png")',
         backgroundSize: "100% 100%",
@@ -235,7 +241,7 @@ export class CatchTheAnswer implements Scene {
 
     Object.assign(car.style, {
       position: "absolute",
-      width: "12%",
+      width: "25%",
       height: "auto",
       bottom: "5%",
       left: "50%",
@@ -390,6 +396,10 @@ export class CatchTheAnswer implements Scene {
 
   showFeedback(correct: boolean): void {
     if (!this.screen || !this.car) return;
+    const sound = correct ? this.correctSound : this.incorrectSound;
+    sound.volume = 0.4;
+    sound.currentTime = 0;
+    void sound.play().catch(() => {});
 
     const feedback = document.createElement("div");
     feedback.textContent = correct ? "CORRECT! +10" : "WRONG!";
@@ -495,6 +505,8 @@ export class CatchTheAnswer implements Scene {
 
   private finishGame(): void {
     if (!this.active) return;
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
     this.active = false;
     this.paused = true;
     cancelAnimationFrame(this.frameId);
@@ -522,7 +534,7 @@ export class CatchTheAnswer implements Scene {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      gap: "28px",
+      gap: "12px",
       padding: "20px",
       boxSizing: "border-box",
       zIndex: "20",
@@ -584,6 +596,30 @@ export class CatchTheAnswer implements Scene {
     balance.style.fontSize = "clamp(9px, 1.4vw, 15px)";
     overlay.appendChild(balance);
     overlay.appendChild(restart);
+    // Review Wrong Answers button
+    const reviewButton = document.createElement("button");
+
+    reviewButton.textContent = "REVIEW WRONG ANSWERS";
+
+    Object.assign(reviewButton.style, {
+      padding: "12px 18px",
+      backgroundColor: "#244936",
+      color: "#89e5a7",
+      border: "3px solid #89e5a7",
+      borderRadius: "8px",
+      fontFamily: this.font,
+      fontSize: "clamp(8px, 1.2vw, 12px)",
+      cursor: "pointer",
+    });
+
+    reviewButton.onclick = () => {
+      this.game.goTo(SceneIds.WrongAnswers, {
+        wrongAnswers: this.laneGameController.getWrongAnswers(),
+        returnTo: SceneIds.MiniGameSelect,
+      });
+    };
+
+overlay.appendChild(reviewButton);
 
     const back = document.createElement("button");
     back.textContent = "BACK TO MINI GAMES";
@@ -600,6 +636,8 @@ export class CatchTheAnswer implements Scene {
   }
 
   private cleanup(): void {
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
     this.active = false;
     cancelAnimationFrame(this.frameId);
 

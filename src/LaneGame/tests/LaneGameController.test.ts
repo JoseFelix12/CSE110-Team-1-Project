@@ -4,7 +4,7 @@ import { LaneGameController } from "../LaneGameController.ts";
 import type { Game } from "../../Game/Game.ts";
 
 // Mock question generation so tests use predictable answers.
-vi.mock("../Question/QuestionController.ts", () => {
+vi.mock("../../Question/QuestionController.ts", () => {
     return {
         QuestionController: class {
             private count = 0;
@@ -25,7 +25,7 @@ vi.mock("../Question/QuestionController.ts", () => {
 });
 
 // Mock the game state.
-vi.mock("../Game/GameState.ts", () => {
+vi.mock("../../Game/GameState.ts", () => {
     return {
         GameState: class {
             getCurrentLevelId() {
@@ -36,7 +36,7 @@ vi.mock("../Game/GameState.ts", () => {
 });
 
 // Mock the view so we don't need to render the actual game screen.
-vi.mock("../UI/LaneGameScreen.ts", () => {
+vi.mock("../../UI/LaneGameScreen.ts", () => {
     return {
         CatchTheAnswer: class {
             updateScore = vi.fn();

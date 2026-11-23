@@ -4,22 +4,26 @@ import { SceneIds } from "./Game/Scene.ts";
 
 import { StartScreen } from "./UI/StartScreen.ts";
 import { GarageScreen } from "./UI/GarageScreen.ts";
+import { TutorialScreen } from "./UI/TutorialScreen.ts";
 import { LevelSelectScreen } from "./UI/LevelSelectScreen.ts";
 import { MiniGameSelectScreen } from "./UI/MiniGameSelectScreen.ts";
-import { CatchTheAnswer } from "./UI/LaneGameScreen.ts";
 import { StatsScreen } from "./UI/StatsScreen.ts";
 import { RepairSolverScreen } from "./UI/RepairSolverScreen.ts";
 import { ShopScreen } from "./UI/ShopScreen.ts";
+import { WrongAnswersScreen } from "./UI/WrongAnswersScreen.ts";
 
 import "./UI/ui.css";
 import { RaceClassController } from "./RacingScreen/RaceClassController.ts";
 import { LaneGameController } from "./LaneGame/LaneGameController.ts";
+
 
 const game = new Game();
 
 game.register(SceneIds.Start, (g) => new StartScreen(g));
 
 game.register(SceneIds.Home, (g) => new GarageScreen(g));
+
+game.register(SceneIds.Instructions, (g) => new TutorialScreen(g));
 
 game.register(SceneIds.LevelSelect, (g) => new LevelSelectScreen(g));
 
@@ -47,6 +51,10 @@ game.register(SceneIds.Race, (g) => new RaceClassController(
 
 game.register(SceneIds.Stats, (g) =>
   new StatsScreen(g)
+);
+
+game.register(SceneIds.WrongAnswers, (g) =>
+  new WrongAnswersScreen(g)
 );
 
 game.start();

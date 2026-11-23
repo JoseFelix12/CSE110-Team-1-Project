@@ -2,6 +2,7 @@ import {LaneGameModel} from "./LaneGameModel.ts"
 import {QuestionController} from "../Question/QuestionController.ts"
 import {GameState} from "../Game/GameState.ts"
 import {CatchTheAnswer} from "../UI/LaneGameScreen.ts"
+import type { Question } from "../Question/QuestionModel.ts";
 import {Game} from "../Game/Game.ts"
 
 export class LaneGameController {
@@ -10,6 +11,11 @@ export class LaneGameController {
     private questionGenerator: QuestionController
     private catchTheAnswer: CatchTheAnswer;
     private state: GameState;
+    private wrongAnswers: {
+        question: Question;
+        playerAnswer: string | null;
+        correctChoice: string;
+    }[] = [];
 
     constructor(game: Game){
         this.game = game;
@@ -31,6 +37,7 @@ export class LaneGameController {
 
     startGame(): void {
         this.model.reset();
+        this.wrongAnswers = [];
     }
 
     /**
@@ -76,15 +83,36 @@ export class LaneGameController {
 
         const correct = laneQuestion.answer === this.model.getTargetAnswer();
 
-        if(correct) {
-            // Updates score
-            this.model.incrementScore();
-            this.model.incrementCorrectCount();
-        }
+        if (correct) {
+    // Updates score
+    this.model.incrementScore();
+    this.model.incrementCorrectCount();
+} else {
+    const target = this.model.getTargetAnswer();
+
+    const correctQuestion = this.model.getLanes()
+        .map(lane => lane.getQuestion())
+        .find(question => question?.answer === target);
+
+    if (correctQuestion) {
+        this.wrongAnswers.push({
+            question: {
+                ...correctQuestion,
+                text: `Choose the expression equal to ${target}`,
+            },
+            playerAnswer: laneQuestion.text.replace(/\s*=\s*\?$/, ""),
+            correctChoice: correctQuestion.text.replace(/\s*=\s*\?$/, ""),
+        });
+    }
+}
         this.catchTheAnswer.updateScore();
         this.catchTheAnswer.showFeedback(correct);
         
     }
+
+    getWrongAnswers() {
+    return [...this.wrongAnswers];
+}
 
     getFinalScore(): number {
         return this.model.getScore();

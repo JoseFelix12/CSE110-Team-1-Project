@@ -99,7 +99,29 @@ export class StatsScreen implements Scene {
     : "⭐".repeat(state.getTotalStars())
     );
     addStat("HIGHEST UNLOCKED", `LEVEL ${highest}`);
-    addStat("LEVELS UNLOCKED", `${unlocked.length} / ${levels.length}`);
+    const reviewButton = document.createElement("button");
+    reviewButton.textContent = "REVIEW WRONG ANSWERS";
+
+    Object.assign(reviewButton.style, {
+      background: "#202020",
+      border: "2px solid #aaa",
+      borderRadius: "8px",
+      padding: "clamp(10px, 2vw, 22px)",
+      color: "#ffd32a",
+      fontFamily: "inherit",
+      fontSize: "clamp(9px, 1.2vw, 15px)",
+      lineHeight: "1.8",
+      cursor: "pointer",
+      minWidth: "0",
+      overflowWrap: "anywhere",
+    });
+
+    reviewButton.onclick = () => {
+     this.game.goTo(SceneIds.WrongAnswers, params);
+    };
+
+panel.appendChild(reviewButton);
+
 
     screen.appendChild(panel);
     document.getElementById("game")!.appendChild(screen);

@@ -1,4 +1,4 @@
-
+import type { Question } from "../Question/QuestionModel.ts";
 import type { Game } from "../Game/Game.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
@@ -14,8 +14,10 @@ const FONT = '"Press Start 2P", monospace';
 export class RepairSolverScreen implements Scene {
   private screen: HTMLElement | null = null;
   private timeoutId: number | null = null;
-
+  private correctSound = new Audio("/sounds/Correct.mp3");
+  private incorrectSound = new Audio("/sounds/Incorrect.mp3");
   private game: Game;
+  private backgroundMusic = new Audio("/sounds/repair-music.mp3");
 
   constructor(game: Game) {
     this.game = game;
@@ -31,6 +33,10 @@ export class RepairSolverScreen implements Scene {
         "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
       document.head.appendChild(link);
     }
+
+    this.backgroundMusic.loop = true;
+    this.backgroundMusic.volume = 0.15;
+    void this.backgroundMusic.play().catch(() => {});
 
     const screen = document.createElement("section");
     this.screen = screen;
@@ -79,14 +85,6 @@ export class RepairSolverScreen implements Scene {
       "0%", "0%", "100%", "100%"
     );
 
-    // Red car
-    const carImage = addImage(
-      "/images/redcarmn2.png",
-      "5%", "30%", "38%", "45%"
-    );
-    carImage.style.objectFit = "contain";
-    carImage.style.imageRendering = "pixelated";
-
     // EXIT artwork
     const exitButton = document.createElement("button");
     exitButton.setAttribute("aria-label", "Exit Repair Solver");
@@ -130,6 +128,10 @@ export class RepairSolverScreen implements Scene {
     let correctCount = 0;
     let incorrectCount = 0;
     let finished = false;
+    const wrongAnswers: {
+      question: Question;
+      playerAnswer: string | null;
+    }[] = [];
 
     // Question box
     const questionBox = document.createElement("div");
@@ -159,19 +161,33 @@ export class RepairSolverScreen implements Scene {
 
     // Progress and car health
     const status = document.createElement("div");
+  Object.assign(status.style, {
+    position: "absolute",
+    left: "9%",
+    top: "80%",
+    width: "34%",
+    minHeight: "13%",
+    padding: "10px 12px",
+    boxSizing: "border-box",
 
-    Object.assign(status.style, {
-      position: "absolute",
-      left: "3%",
-      top: "80%",
-      width: "42%",
-      textAlign: "center",
-      color: "white",
-      fontFamily: FONT,
-      fontSize: "clamp(8px, 1vw, 14px)",
-      lineHeight: "2",
-      whiteSpace: "pre-line",
-    });
+    backgroundColor: "#25252d",
+    border: "3px solid white",
+    borderRadius: "8px",
+
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+
+    textAlign: "center",
+    color: "white",
+    fontFamily: FONT,
+    fontSize: "clamp(8px, 1vw, 14px)",
+    lineHeight: "2",
+    whiteSpace: "pre-line",
+    zIndex: "5",
+  });
+
 
     screen.appendChild(status);
 
@@ -213,6 +229,8 @@ export class RepairSolverScreen implements Scene {
     const showResults = (): void => {
       if (finished || this.screen !== screen) return;
       finished = true;
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
 
       questionBox.remove();
       buttons.forEach(button => button.remove());
@@ -354,6 +372,28 @@ export class RepairSolverScreen implements Scene {
         this.game.goTo(SceneIds.MiniGameSelect);
       };
 
+      // Review Wrong Answers button
+      const reviewButton = document.createElement("button");
+      reviewButton.textContent = "REVIEW WRONG ANSWERS";
+
+      Object.assign(reviewButton.style, {
+        padding: "12px 18px",
+        backgroundColor: "#244936",
+        color: "#89e5a7",
+        border: "3px solid #89e5a7",
+        borderRadius: "8px",
+        fontFamily: FONT,
+        fontSize: "clamp(8px, 1.2vw, 12px)",
+        cursor: "pointer",
+      });
+
+      reviewButton.onclick = () => {
+        this.game.goTo(SceneIds.WrongAnswers, {
+          wrongAnswers,
+          returnTo: SceneIds.MiniGameSelect,
+        });
+      };
+
       overlay.append(
         heading,
         description,
@@ -361,6 +401,7 @@ export class RepairSolverScreen implements Scene {
         coins,
         balance,
         playAgain,
+        reviewButton,
         backButton
       );
 
@@ -401,12 +442,23 @@ export class RepairSolverScreen implements Scene {
 
           if (answer === correctAnswer) {
             correctCount++;
+            this.correctSound.volume = 0.4;
+            this.correctSound.currentTime = 0;
+            void this.correctSound.play().catch(() => {});
             repairGame.fixCar(HEALTH_GAIN);
             updateStatus("CORRECT! +20 HEALTH");
 
             status.style.color = "#59FF72";
           } else {
             incorrectCount++;
+            this.incorrectSound.volume = 0.4;
+            this.incorrectSound.currentTime = 0;
+            void this.incorrectSound.play().catch(() => {});
+
+            wrongAnswers.push({
+            question,
+            playerAnswer: String(answer),
+          });
 
             this.game.state
               .getMutableCar()
@@ -438,6 +490,9 @@ export class RepairSolverScreen implements Scene {
   }
 
   exit(): void {
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
+
     if (this.timeoutId !== null) {
       window.clearTimeout(this.timeoutId);
       this.timeoutId = null;

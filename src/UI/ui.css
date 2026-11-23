@@ -128,8 +128,14 @@ body {
   top: 91.8%;
   width: 47.9%;
   height: 3.5%;
-  background: #1b1b1b;
-  font-size: 1.8cqw;
+  color: #000000;
+  font-size: clamp(8px, 1.1vw, 15px);
+  text-align: center;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  padding: 4px 12px;
 }
 
 .hotspot:focus-visible {
