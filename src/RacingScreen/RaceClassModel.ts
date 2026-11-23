@@ -1,4 +1,4 @@
-import { CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
+import { NITRO_SECONDS } from "../constants.ts";
 import { createOpponents } from "./Opponent.ts";
 import type { Opponent } from "./Opponent.ts";
 
@@ -107,8 +107,8 @@ export class RaceClassModel {
      * Updates nitro amount by constant variable CORRECT_ANSWERS_FOR_NITRO at 
      * all times
      */
-    chargeNitro(): void {
-        this.nitroLevel = Math.min(1, this.nitroLevel + 1 / CORRECT_ANSWERS_FOR_NITRO);
+    chargeNitro(nitro_storage: number): void {
+        this.nitroLevel = Math.min(1, this.nitroLevel + 1 / nitro_storage);
     }
     /**
      * Resets the nitrolevel

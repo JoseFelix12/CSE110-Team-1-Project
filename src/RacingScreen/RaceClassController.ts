@@ -1,4 +1,5 @@
 import {
+    CORRECT_ANSWERS_FOR_NITRO,
   COUNTDOWN_SECONDS,
   DAMAGE_PER_STREAK,
   FINISH_SCREEN_MS,
@@ -320,7 +321,12 @@ export class RaceClassController implements Scene {
       this.model.incrementCorrect_Answers();
       this.model.resetIncorrectStreak();
       if (!usedNitro) {
-        this.model.chargeNitro();
+        if(this.gameState.ownsUpgrade("Speed Boost")){
+          this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO - 1);
+        }
+        else{
+          this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
+        }
       }
     } else {
       this.incorrect.currentTime = 0;
