@@ -9,6 +9,10 @@ export interface OpponentProfile {
     stdDevSeconds: number;
 }
 
+/**
+ * No bot may be purple: the race paints a bot purple when it matches the
+ * player's car (see RaceClassController)
+ */
 export const OPPONENT_PROFILES: Record<OpponentDifficulty, OpponentProfile> = {
     easy: { difficulty: 'easy', color: 'yellow', meanSeconds: 6, stdDevSeconds: 1 },
     medium: { difficulty: 'medium', color: 'blue', meanSeconds: 4, stdDevSeconds: 1 },

@@ -123,7 +123,10 @@ export class RaceClassController implements Scene {
       {
         skin: car.getSkin(),
         speedMultiplier: car.getSpeedMultiplier(),
-        opponentColors: this.model.getOpponents().map((o) => o.profile.color),
+        // The bots are yellow, blue and green, so purple never matches anyone
+        opponentColors: this.model.getOpponents().map((o) =>
+          o.profile.color === car.getSkin() ? 'purple' : o.profile.color,
+        ),
       },
     );
   }
@@ -155,24 +158,23 @@ export class RaceClassController implements Scene {
 
   // ---------- Race flow ----------
 
-  /**
-   * Starts Game
-   */
-  startGame(): void {
-    this.engine.pause();
-    this.stopAllTimers();
-    this.model.reset(this.gameState.getLevel(this.levelId).questionCount);
-    this.questions = new QuestionController();
-    this.view.setCar();
-    this.lastNitroActive = false;
-    this.lastNitroLevel = -1;
-    this.syncNitroView();
-    this.currentQuestion = null;
-    this.paused = false;
-    this.racing = false;
-    this.startCountdown();
-    this.engine.play();
-  }
+    /**
+     * Starts Game
+     */
+    startGame(): void {
+        this.engine.pause();
+        this.stopAllTimers();
+        this.model.reset(this.gameState.getLevel(this.levelId).questionCount);
+        this.questions = new QuestionController();
+        this.view.setCar();
+        this.lastNitroActive = false;
+        this.lastNitroLevel = -1;
+        this.syncNitroView();
+        this.currentQuestion = null;
+        this.paused = false;
+        this.racing = false;
+        this.startCountdown();
+    }
 
   /**
    * Starts the race countdown
@@ -185,19 +187,20 @@ export class RaceClassController implements Scene {
     this.runCountdownTimer();
   }
 
-  private runCountdownTimer(): void {
-    this.countdownTimer = setInterval(() => {
-      this.countdownRemaining -= 1;
-      if (this.countdownRemaining > 0) {
-        this.view.showCountdown(this.countdownRemaining as 3 | 2 | 1);
-      } else {
-        this.stopCountdownTimer();
-        this.view.startRace();
-        this.racing = true;
-        this.nextQuestion();
-      }
-    }, 1000);
-  }
+    private runCountdownTimer(): void {
+        this.countdownTimer = setInterval(() => {
+            this.countdownRemaining -= 1;
+            if (this.countdownRemaining > 0) {
+                this.view.showCountdown(this.countdownRemaining as 3 | 2 | 1);
+            } else {
+                this.stopCountdownTimer();
+                this.view.startRace();
+                this.racing = true;
+                this.engine.play();
+                this.nextQuestion();
+            }
+        }, 1000);
+    }
 
   private stopCountdownTimer(): void {
     if (this.countdownTimer != null) {
@@ -276,20 +279,20 @@ export class RaceClassController implements Scene {
     }
   }
 
-  /**
-   * Considers the question correct if nitro is used. Will later implement
-   * storing the question in the question bank.
-   */
-  private handleNitroButton(): void {
-    if (this.currentQuestion == null) {
-      return;
+    /**
+     * Considers the question correct if nitro is used. Will later implement
+     * storing the question in the question bank.
+     */
+    private handleNitroButton(): void{
+        if(this.currentQuestion == null){
+            return;
+        }
+        if (this.model.handleNitro(this.gameState.getCar().getHealth())) {
+            this.nitroUse.play();
+            this.finishQuestion(true, true);
+        }
+        this.syncNitroView();
     }
-    if (this.model.handleNitro()) {
-      this.nitroUse.play();
-      this.finishQuestion(true, true);
-    }
-    this.syncNitroView();
-  }
 
   private syncNitroView(): void {
     const level = this.model.getNitroLevel();
@@ -411,28 +414,34 @@ export class RaceClassController implements Scene {
 
   // ---------- Pause menu ----------
 
-  /**
-   * View tells when pause button is pressed
-   */
-  private handlePause(): void {
-    this.paused = true;
-    this.engine.pause();
-    this.stopCountdownTimer();
-    this.stopQuestionTimer();
-  }
-
-  /**
-   * View tells when Resume button is pressed
-   */
-  private handleResume(): void {
-    this.paused = false;
-    if (this.countdownRemaining > 0) {
-      this.runCountdownTimer();
-    } else if (this.currentQuestion !== null) {
-      this.engine.play();
-      this.runQuestionTimer();
+    /**
+     * View tells when pause button is pressed
+     */
+    private handlePause(): void {
+        this.paused = true;
+        this.engine.pause();
+        this.lightCountDown.pause();
+        this.rev.pause();
+        this.stopCountdownTimer();
+        this.stopQuestionTimer();
     }
-  }
+
+    /**
+     * View tells when Resume button is pressed
+     */
+    private handleResume(): void {
+        this.paused = false;
+        if (this.countdownRemaining > 0) {
+            if (!this.lightCountDown.ended) this.lightCountDown.play();
+            if (!this.rev.ended) this.rev.play();
+            this.runCountdownTimer();
+        } else {
+            this.engine.play();
+            if (this.currentQuestion !== null) {
+                this.runQuestionTimer();
+            }
+        }
+    }
 
   /**
    * View tells when Quit button is pressed
