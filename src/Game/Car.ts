@@ -119,6 +119,18 @@ export class Car implements ReadonlyCar {
             this.data.upgrades.push(upgrade);
         }
     }
+
+    /**
+     * Removes one copy of an upgrade. Returns true if the car had it.
+     */
+    public removeUpgrade(upgrade: Upgrade): boolean {
+        const index = this.data.upgrades.indexOf(upgrade);
+        if (index === -1) {
+            return false;
+        }
+        this.data.upgrades.splice(index, 1);
+        return true;
+    }
     /**
      * Update the speed multiplier of the car.
      * Should be called when the engine level changes.
