@@ -123,7 +123,10 @@ export class RaceClassController implements Scene {
       {
         skin: car.getSkin(),
         speedMultiplier: car.getSpeedMultiplier(),
-        opponentColors: this.model.getOpponents().map((o) => o.profile.color),
+        // The bots are yellow, blue and green, so purple never matches anyone
+        opponentColors: this.model.getOpponents().map((o) =>
+          o.profile.color === car.getSkin() ? 'purple' : o.profile.color,
+        ),
       },
     );
   }
