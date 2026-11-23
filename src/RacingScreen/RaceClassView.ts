@@ -32,6 +32,9 @@ const SPEED_CHANGE_SECONDS = 0.9;
 /** How far past the screen edge the finish line appears */
 const FINISH_DISTANCE = 800;
 const GO_MESSAGE_SECONDS = 0.9;
+/** The "NITRO READY!" message stays for this long, then fades out */
+const NITRO_MESSAGE_SECONDS = 2;
+const NITRO_MESSAGE_FADE_SECONDS = 0.5;
 const PROGRESS_EASING = 5;
 
 /** Each level picks one of these in gameConfig */
@@ -138,6 +141,8 @@ export class RaceClassView {
     private temporarySpeed = 0;
     private temporarySpeedLeft = 0;
     private nitroActive = false;
+    private nitroLevel = 0;
+    private nitroMessageLeft = 0;
     private countdown: CountdownValue | null = null;
     private goMessageLeft = 0;
     private targetProgress = 0;
@@ -258,6 +263,8 @@ export class RaceClassView {
         this.speed = 0;
         this.temporarySpeedLeft = 0;
         this.nitroActive = false;
+        this.nitroLevel = 0;
+        this.nitroMessageLeft = 0;
         this.countdown = null;
         this.goMessageLeft = 0;
         this.targetProgress = 0;
@@ -333,6 +340,11 @@ export class RaceClassView {
      * Sets how full the nitro bar is, from 0 to 1
      */
     setNitroLevel(level: number): void {
+        // Just filled up: tell the player nitro is ready
+        if (level >= 1 && this.nitroLevel < 1 && !this.nitroActive) {
+            this.nitroMessageLeft = NITRO_MESSAGE_SECONDS + NITRO_MESSAGE_FADE_SECONDS;
+        }
+        this.nitroLevel = level;
         this.questionBar.setNitroLevel(level);
     }
 
@@ -340,6 +352,9 @@ export class RaceClassView {
      * Turns the nitro speed and exhaust flame on or off
      */
     setNitroActive(active: boolean): void {
+        if (active) {
+            this.nitroMessageLeft = 0;
+        }
         this.nitroActive = active;
         this.questionBar.setNitroActive(active);
     }
@@ -370,6 +385,7 @@ export class RaceClassView {
         this.shownProgress += (this.targetProgress - this.shownProgress) * Math.min(1, dt * PROGRESS_EASING);
         this.temporarySpeedLeft = Math.max(0, this.temporarySpeedLeft - dt);
         this.goMessageLeft = Math.max(0, this.goMessageLeft - dt);
+        this.nitroMessageLeft = Math.max(0, this.nitroMessageLeft - dt);
         this.car.update(dt, this.speed);
         this.finishLine.update(dt);
         this.advanceOpponents(dt);
@@ -450,6 +466,30 @@ export class RaceClassView {
         this.drawPlayerMarker();
         this.drawProgressMeter();
         this.drawMessage();
+        this.drawNitroMessage();
+    }
+
+    /**
+     * "NITRO READY!" in the middle of the screen, fading out at the end
+     */
+    private drawNitroMessage(): void {
+        if (this.nitroMessageLeft <= 0 || this.phase !== 'racing') {
+            return;
+        }
+        const ctx = this.ctx;
+        const x = CANVAS_WIDTH / 2;
+        const y = CANVAS_HEIGHT / 2;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, this.nitroMessageLeft / NITRO_MESSAGE_FADE_SECONDS);
+        ctx.font = 'bold 44px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#111111';
+        ctx.strokeText('NITRO READY!', x, y);
+        ctx.fillStyle = '#2fb8ff';
+        ctx.fillText('NITRO READY!', x, y);
+        ctx.restore();
     }
 
     private drawStartLine(): void {
