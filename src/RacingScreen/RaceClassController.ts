@@ -238,7 +238,12 @@ export class RaceClassController implements Scene {
    * Start the question timer
    */
   private startQuestionTimer(): void {
-    this.questionTimeRemaining = QUESTION_TIMER;
+    if(this.gameState.ownsUpgrade("Extra Time")){
+      this.questionTimeRemaining = QUESTION_TIMER + 5;
+    }
+    else{
+      this.questionTimeRemaining = QUESTION_TIMER;
+    }
     this.view.updateTimer(this.questionTimeRemaining);
     this.runQuestionTimer();
   }
