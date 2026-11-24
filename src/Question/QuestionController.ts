@@ -17,6 +17,10 @@ function randomInt(min: number, max: number): number {
 export class QuestionController {
   private currentQuestion: Question | null = null;
   private wrong_questions: Question[] = [];
+  private wrong_answers: {
+  question: Question;
+  playerAnswer: string | null;
+}[] = [];
   //private view: QuestionView
 
   //Question generation factory. Takes either a level id (1-5) or a question
@@ -125,6 +129,12 @@ export class QuestionController {
   getWrongQuestions(): Question[] {
     return [...this.wrong_questions];
   }
+  getWrongAnswers(): {
+    question: Question;
+    playerAnswer: string | null;
+  }[] {
+    return [...this.wrong_answers];
+  }
 
   //Checks the answer to the current question and records it if it was wrong
   submitAnswer(answer: string): boolean {
@@ -136,6 +146,11 @@ export class QuestionController {
 
     if (!isCorrect) {
       this.wrong_questions.push(this.currentQuestion);
+
+      this.wrong_answers.push({
+      question: this.currentQuestion,
+      playerAnswer: answer,
+      });
     }
 
     return isCorrect;
@@ -146,6 +161,10 @@ export class QuestionController {
   markWrong(): void {
     if (this.currentQuestion !== null) {
       this.wrong_questions.push(this.currentQuestion);
+      this.wrong_answers.push({
+        question: this.currentQuestion,
+        playerAnswer: null,
+});
     }
   }
 

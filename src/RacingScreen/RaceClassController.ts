@@ -386,6 +386,7 @@ export class RaceClassController implements Scene {
         this.onRaceComplete({
           mode: "race",
           levelId: this.levelId,
+          wrongAnswers: this.questions.getWrongAnswers(),
           correct,
           incorrect,
           total,
