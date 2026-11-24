@@ -8,6 +8,7 @@ import {
   LEVELS,
   SKIN_PRICES,
   MAX_STARS,
+  MIN_ACCURACY_FOR_STARS,
   STARS_TO_UNLOCK_NEXT,
   UPGRADE_PRICES,
   STARTER_SKINS,
@@ -75,9 +76,13 @@ function getDefaultStorage(): StorageLike | null {
 }
 
 /**
- * 1 star for each opponent the player finished ahead of, from 0 to MAX_STARS
+ * 1 star for each opponent the player finished ahead of, from 0 to MAX_STARS.
+ * No stars if accuracy (0 to 1) is below MIN_ACCURACY_FOR_STARS.
  */
-export function calculateStars(opponentsBeaten: number): number {
+export function calculateStars(opponentsBeaten: number, accuracy = 1): number {
+  if (accuracy < MIN_ACCURACY_FOR_STARS) {
+    return 0;
+  }
   return Math.max(0, Math.min(MAX_STARS, Math.floor(opponentsBeaten)));
 }
 
@@ -138,7 +143,8 @@ export class GameState {
   }
 
   /**
-   * Level 1 is always unlocked; others need enough stars on the level before
+   * Level 1 is always unlocked; others need STARS_TO_UNLOCK_NEXT stars on the
+   * level before (earned with at least 75% accuracy)
    */
   isLevelUnlocked(levelId: number): boolean {
     const index = LEVELS.findIndex((l) => l.id === levelId);
@@ -175,19 +181,23 @@ export class GameState {
 
   /**
    * Records a finished race: awards coins, keeps best stars, unlocks the next level.
-   * Stars come from how many opponents the player finished ahead of.
+   * Stars come from how many opponents the player finished ahead of, but
+   * only if they got at least 75% of the questions right. total is the
+   * number of questions in the race (defaults to the level's questionCount).
    */
   recordRaceResult(
     levelId: number,
     correct: number,
     opponentsBeaten: number,
+    total = this.getLevel(levelId).questionCount,
   ): RaceResult {
     this.getLevel(levelId);
     if (!this.isLevelUnlocked(levelId)) {
       throw new Error(`Level ${levelId} is locked`);
     }
 
-    const stars = calculateStars(opponentsBeaten);
+    const accuracy = total > 0 ? correct / total : 0;
+    const stars = calculateStars(opponentsBeaten, accuracy);
     const previousStars = this.getStars(levelId);
     const lockedBefore = LEVELS.filter((l) => !this.isLevelUnlocked(l.id)).map(
       (l) => l.id,

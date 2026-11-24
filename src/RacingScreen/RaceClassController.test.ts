@@ -445,8 +445,8 @@ describe('RaceClassController', () => {
             answerWrong();
             answerWrong();
             view().handlers.onFinishLineCrossed();
-            // Bots never moved, so the player beat all 3
-            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+            // Beat all 3 bots, but 50% accuracy earns no stars
+            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER);
         });
     
         it('gives nothing if the player quits mid-race', () => {
@@ -512,14 +512,31 @@ describe('RaceClassController', () => {
                 accuracy: 50,
                 placement: 1,
                 opponentsBeaten: 3,
-                stars: 3,
-                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
+                // 50% accuracy is below 75%, so no stars
+                stars: 0,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER,
             }));
             expect(switchToScreen).not.toHaveBeenCalled();
         });
+
+        it('gives stars at 75% accuracy', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({
+                accuracy: 75,
+                stars: 3,
+                coinsEarned: 3 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
+            }));
+        });
     
         it('reports the level that was actually played', () => {
-            gameState.recordRaceResult(1, 4, 3); // earn a star so level 2 unlocks
+            gameState.recordRaceResult(1, 4, 3, 4); // earn stars so level 2 unlocks
             controller.enter({ levelId: 2 });
             vi.advanceTimersByTime(3000);
             for (let i = 0; i < 4; i++) answerCorrectly();

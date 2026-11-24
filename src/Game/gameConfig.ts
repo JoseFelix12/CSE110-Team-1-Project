@@ -86,8 +86,14 @@ export const LEVELS: LevelConfig[] = [
 /** Most stars a race can earn: 1 star for each opponent the player beats */
 export const MAX_STARS = 3;
 
-/** Stars needed on a level to unlock the next one */
-export const STARS_TO_UNLOCK_NEXT = 1;
+/** Fraction of questions the player must get right to earn any stars */
+export const MIN_ACCURACY_FOR_STARS = 0.75;
+
+/**
+ * Stars needed on a level to unlock the next one. Stars are only earned with
+ * at least MIN_ACCURACY_FOR_STARS, so this also needs 75% accuracy.
+ */
+export const STARS_TO_UNLOCK_NEXT = 2;
 
 export const COINS_PER_CORRECT_ANSWER = 5;
 export const COINS_PER_STAR = 10;

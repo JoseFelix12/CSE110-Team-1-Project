@@ -378,6 +378,7 @@ export class RaceClassController implements Scene {
       this.levelId,
       correct,
       opponentsBeaten,
+      total,
     );
     this.finishTimeout = setTimeout(() => {
       this.finishTimeout = null;
