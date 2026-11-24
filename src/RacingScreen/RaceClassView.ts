@@ -1,4 +1,5 @@
-import type { LevelTheme, SkinColor } from '../Game/gameConfig.ts';
+import type { LevelTheme, SkinColor, Upgrade } from '../Game/gameConfig.ts';
+import { UPGRADE_ICONS } from '../UI/upgradeIcons.ts';
 import { Background, CityBackground, DesertBackground, StadiumBackground } from './view/Background.ts';
 import { CarSprite } from './view/CarSprite.ts';
 import type { CarColor } from './view/CarSprite.ts';
@@ -88,6 +89,7 @@ export interface RaceViewOptions {
     /** From GameState.getSpeedMultiplier() */
     speedMultiplier?: number;
     muted?: boolean;
+    upgrades?: readonly Upgrade[];
     /** One car per bot, in the same order as setOpponentProgress. At most 3. */
     opponentColors?: CarColor[];
 }
@@ -122,6 +124,7 @@ export class RaceClassView {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
     private pauseButton: HTMLButtonElement;
+    private upgradeHud: HTMLUListElement;
     private questionBar: QuestionBar;
     private pauseMenu: PauseMenu;
 
@@ -193,6 +196,11 @@ export class RaceClassView {
         this.pauseButton.textContent = 'Pause';
         this.pauseButton.addEventListener('click', this.pause);
 
+        this.upgradeHud = document.createElement('ul');
+        this.upgradeHud.className = 'race-view__upgrades';
+        this.upgradeHud.setAttribute('aria-label', 'Car upgrades');
+        this.setUpgrades(options.upgrades ?? []);
+
         this.questionBar = new QuestionBar({
             onSubmit: (answer) => this.handlers.onAnswerSubmit(answer),
             onNitro: () => this.handlers.onNitro(),
@@ -205,7 +213,7 @@ export class RaceClassView {
         });
         this.pauseMenu.setMuted(this.muted);
 
-        this.root.append(this.canvas, this.pauseButton, this.questionBar.element, this.pauseMenu.element);
+        this.root.append(this.canvas, this.pauseButton, this.upgradeHud, this.questionBar.element, this.pauseMenu.element);
     }
 
     // ---------- Setup ----------
@@ -242,6 +250,30 @@ export class RaceClassView {
     }
 
     // ---------- Called by the controller ----------
+
+    setUpgrades(upgrades: readonly Upgrade[]): void {
+        const shieldCount = upgrades.filter((upgrade) => upgrade === 'Shield').length;
+        this.upgradeHud.replaceChildren();
+
+        for (const upgrade of new Set(upgrades)) {
+            if (!Object.prototype.hasOwnProperty.call(UPGRADE_ICONS, upgrade)) continue;
+            const item = document.createElement('li');
+            item.title = upgrade;
+            const icon = document.createElement('img');
+            icon.src = UPGRADE_ICONS[upgrade];
+            icon.alt = upgrade;
+            item.append(icon);
+
+            if (upgrade === 'Shield') {
+                const count = document.createElement('span');
+                count.textContent = `×${shieldCount}`;
+                item.append(count);
+            }
+            this.upgradeHud.append(item);
+        }
+
+        this.upgradeHud.hidden = this.upgradeHud.childElementCount === 0;
+    }
 
     /**
      * Switches the road and scenery, e.g. to the theme of the level being raced
@@ -675,6 +707,31 @@ const RACE_VIEW_CSS = `
 .race-button:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
 .race-button:disabled { background: #55585f; color: #c9ccd3; cursor: not-allowed; }
 .race-view__pause { position: absolute; top: 8px; right: 8px; }
+.race-view__upgrades {
+    position: absolute;
+    top: 8px;
+    right: 106px;
+    display: flex;
+    gap: 4px;
+    margin: 0;
+    padding: 3px;
+    border: 2px solid #000;
+    background: #17181c;
+    list-style: none;
+    pointer-events: none;
+}
+.race-view__upgrades li {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-weight: bold;
+}
+.race-view__upgrades img {
+    width: clamp(20px, 5vw, 32px);
+    height: clamp(20px, 5vw, 32px);
+    object-fit: contain;
+    image-rendering: pixelated;
+}
 .race-bar {
     display: grid;
     grid-template-columns: 1fr minmax(120px, 180px) minmax(160px, 220px);
@@ -734,6 +791,7 @@ const RACE_VIEW_CSS = `
 }
 .race-pause__title { margin: 0 0 4px; font-size: 28px; text-align: center; }
 @media (max-width: 640px) {
+    .race-view__upgrades { top: 56px; right: 8px; }
     .race-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 10px 16px; }
     .race-bar__question-area { grid-column: 1 / -1; justify-content: space-between; }
     .race-bar__question { font-size: 26px; min-height: 32px; }
