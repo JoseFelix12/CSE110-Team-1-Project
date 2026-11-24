@@ -315,6 +315,16 @@ describe("QuestionController", () => {
       }
     });
 
+    it("gives the second number its own range when one is passed", () => {
+      for (let i = 0; i < 50; i++) {
+        const question = questionController.generateQuestion("addition", 10, 70, 1, 9);
+        expect(question.a).toBeGreaterThanOrEqual(10);
+        expect(question.a).toBeLessThanOrEqual(70);
+        expect(question.b).toBeGreaterThanOrEqual(1);
+        expect(question.b).toBeLessThanOrEqual(9);
+      }
+    });
+
     it("keeps division answers whole with a custom range", () => {
       for (let i = 0; i < 50; i++) {
         const question = questionController.generateQuestion("division", 1, 12);

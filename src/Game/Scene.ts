@@ -14,6 +14,7 @@ export const SceneIds = {
     MiniGame2: 'miniGame2',
     Shop: 'shop',
     Stats: 'stats',
+    WrongAnswers: 'wrongAnswers',
     Instructions: 'instructions',
 } as const;
 
