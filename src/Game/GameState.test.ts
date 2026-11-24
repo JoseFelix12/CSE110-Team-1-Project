@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GameState, SAVE_KEY, calculateStars } from "./GameState.ts";
 import type { StorageLike } from "./GameState.ts";
-import { ENGINE_UPGRADE_PRICES, LEVELS, SKIN_PRICES } from "./gameConfig.ts";
+import { ENGINE_UPGRADE_PRICES, LEVELS, SKIN_PRICES, UPGRADE_PRICES, type Upgrade } from "./gameConfig.ts";
 import type { ReadonlyCar } from "./Car.ts";
 
 class MemoryStorage implements StorageLike {
@@ -167,5 +167,51 @@ describe("GameState", () => {
         const memoryOnly = new GameState(null);
         memoryOnly.addCoins(5);
         expect(memoryOnly.getCoins()).toBe(5);
+    });
+});
+
+describe("consumeUpgrade", () => {
+    const stateWith = (upgrade: Upgrade) => {
+        const state = new GameState(null);
+        state.addCoins(UPGRADE_PRICES[upgrade]);
+        state.buyUpgrade(upgrade);
+        return state;
+    };
+
+    it("uses up the upgrade and returns true", () => {
+        const state = stateWith('Shield');
+        expect(state.consumeUpgrade('Shield')).toBe(true);
+        expect(state.ownsUpgrade('Shield')).toBe(false);
+    });
+
+    it("returns false if the player does not have it", () => {
+        expect(new GameState(null).consumeUpgrade('Shield')).toBe(false);
+    });
+
+    it("tells subscribers only when something was used", () => {
+        const state = stateWith('Shield');
+        let calls = 0;
+        state.subscribe(() => { calls++; });
+        state.consumeUpgrade('Shield');
+        state.consumeUpgrade('Shield');
+        expect(calls).toBe(1);
+    });
+
+    it("saves, so the upgrade stays used after a reload", () => {
+        const storage = new MemoryStorage();
+        const state = new GameState(storage);
+        state.addCoins(UPGRADE_PRICES.Shield);
+        state.buyUpgrade("Shield");
+        state.consumeUpgrade("Shield");
+    
+        expect(new GameState(storage).ownsUpgrade("Shield")).toBe(false);
+    });
+
+    it("lets the player buy the upgrade again after using it up", () => {
+        const state = stateWith("Shield");
+        state.consumeUpgrade("Shield");
+        state.addCoins(UPGRADE_PRICES.Shield);
+        expect(state.buyUpgrade("Shield")).toBe(true);
+        expect(state.ownsUpgrade("Shield")).toBe(true);
     });
 });

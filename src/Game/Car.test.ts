@@ -265,6 +265,32 @@ describe("Car", () => {
         });
     });
 
+    describe("removeUpgrade: removes one copy of an upgrade", () => {
+        it("removes the upgrade and returns true", () => {
+            const custom = new Car({ ...Car.defaultData(), upgrades: ['Shield'] });
+            expect(custom.removeUpgrade('Shield')).toBe(true);
+            expect(custom.getUpgrades()).toEqual([]);
+        });
+    
+        it("returns false and changes nothing if the car does not have it", () => {
+            const custom = new Car({ ...Car.defaultData(), upgrades: ['Extra Time'] });
+            expect(custom.removeUpgrade('Shield')).toBe(false);
+            expect(custom.getUpgrades()).toEqual(['Extra Time']);
+        });
+    
+        it("leaves the other upgrades alone", () => {
+            const custom = new Car({ ...Car.defaultData(), upgrades: ['Shield', 'Extra Time'] });
+            custom.removeUpgrade('Shield');
+            expect(custom.getUpgrades()).toEqual(['Extra Time']);
+        });
+
+        it("removes only one copy when there are several", () => {
+            const custom = new Car({ ...Car.defaultData(), upgrades: ['Shield', 'Shield'] });
+            custom.removeUpgrade('Shield');
+            expect(custom.getUpgrades()).toEqual(['Shield']);
+        });
+    });
+
     describe("fromSave: builds a car from saved (untrusted) data, using defaults for missing or invalid fields", () => {
         describe("missing or empty saves fall back to the defaults", () => {
             it("undefined save", () => {
