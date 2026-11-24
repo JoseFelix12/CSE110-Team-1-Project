@@ -81,7 +81,7 @@ const UPGRADES: readonly UpgradeOption[] = [
   {
     id: "speed-boost",
     name: "SPEED BOOST",
-    description: "A burst of speed after a correct answer.",
+    description: "Nitro is gathered more quickly.",
     price: 20,
     imageSrc: "/images/shop/upgrades/speed-boost.png",
   },
