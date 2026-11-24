@@ -1,3 +1,4 @@
+
 # CSE110-Team-1-Project
 
 # Math Racer
@@ -8,23 +9,29 @@
 
 **Math Racer** is an educational racing game developed by UC San Diego CSE 110 students. Our goal is to make practicing math more interactive and enjoyable by combining racing gameplay with arithmetic questions.
 
-Players will answer math questions while racing, progress through levels, earn stars, and eventually use rewards to customize and upgrade their cars.
+Players answer math questions while racing, progress through levels, earn stars and coins, and use rewards to customize and upgrade their cars. The game also includes additional math-based mini-games where players can practice their skills and earn rewards.
 
-> **Development Status: Sprint 1 - Work in Progress**
+> **Development Status: Work in Progress**
 >
-> Math Racer is currently in its early development stages. Sprint 1 focuses on the basic game structure, initial screen navigation, math question functionality, and a simple racing interface.
+> Math Racer has progressed beyond its initial development stage. The game now includes the Start Screen, Garage/Main Menu, Level Selection, racing gameplay, Mini Games, and Stats Screen.
 >
-> Additional screens and features, including the Shop, Mini Games, Stats, and car customization interfaces, are planned for future sprints.
+> Core functionality such as math question processing, race progression, level unlocking, coin rewards, and saving player progress has been implemented. Both Catch the Answer and Repair Solver mini-games have also been developed.
+>
+> Development is ongoing, with current efforts focused on completing the Shop interface, expanding car customization, improving player statistics, and integrating and refining the remaining game features.
 
 ---
 
 ## Current Gameplay
 
-### Sprint 1 Game Flow
+### Game Flow
 
-The current game is focused on the following navigation:
+The current game includes the following navigation:
 
-**Start Screen → Garage/Main Menu → Level Selection → Level 1 → Basic Racing Interface**
+**Start Screen → Garage/Main Menu → Level Selection → Racing Level → Race Results**
+
+**Garage/Main Menu → Mini Games → Catch the Answer / Repair Solver**
+
+The game also includes a Stats Screen where players can view their progress and rewards.
 
 ### Start Screen
 
@@ -35,23 +42,21 @@ The Start Screen is the first screen displayed when launching Math Racer.
 - Allows players to press Space to continue.
 - Navigates to the Garage/Main Menu.
 
-**Status:** Initial UI implemented.
-
+**Status:** Implemented.
 
 ### Garage / Main Menu
 
-The Garage currently serves as the game's main menu and provides access to the different sections of Math Racer.
+The Garage serves as the game's main menu and provides access to the different sections of Math Racer.
 
-**The main menu includes four buttons:**
-- **LEVELS:** Navigates to the Level Selection screen. This is currently the only functional button.
-- **MINI GAMES:** Will navigate to the Mini Games section in a future sprint.
-- **SHOP:** Will allow players to purchase upgrades and customize their cars in a future sprint.
-- **TUTORIAL:** Will provide instructions on how to play Math Racer in a future sprint. (Need to add a button)
+**The main menu includes:**
+- **LEVELS:** Navigates to the Level Selection screen.
+- **MINI GAMES:** Navigates to the Mini Games selection screen.
+- **SHOP:** Will allow players to purchase upgrades and customize their cars once the Shop interface is fully integrated.
+- **TUTORIAL:** Planned to provide instructions on how to play Math Racer.
 
-**Status:** Initial UI implemented. The LEVELS button is functional, while MINI GAMES, SHOP, and TUTORIAL are planned for future sprints.
+**Status:** Main menu implemented. LEVELS and MINI GAMES navigation are functional, while additional features are still being integrated.
 
-> **Note:** The Garage currently functions as the main navigation menu. Car customization, upgrades, and purchases will be handled through the Shop once that feature is implemented.
-
+> **Note:** The Garage currently functions as the main navigation menu. Car customization, upgrades, and purchases will be handled through the Shop as development continues.
 
 ### Level Selection
 
@@ -59,140 +64,235 @@ The Level Selection screen allows players to choose a racing level and track the
 
 **Current Features:**
 - Displays the Level Selection interface.
-- Includes a clickable **Level 1** button that requests the racing scene.
+- Allows players to browse through levels using clickable left and right arrows.
+- Displays whether a level is locked or unlocked.
+- Allows players to select and play unlocked levels.
 - Includes a functional **BACK** button that returns players to the Garage/Main Menu.
+- Uses player progress to determine which levels are available.
 
-**Planned Features (Future Sprints):**
-- **Additional Levels:** More racing levels will be added as development continues.
-- **Arrow Navigation:** Players will be able to browse through different levels using clickable left and right arrows.
-- **Locked and Unlocked Levels:** Levels will initially be locked and will become available based on the player's accuracy in the previous level.
-- **Level Progression:** Players will need to achieve the required accuracy to unlock and advance to the next level.
+**Level Progression:**
+- Players begin with Level 1 unlocked.
+- Additional levels become available based on the player's performance.
+- The game tracks earned stars and unlocked levels.
+- Progress is saved so players can continue from previous sessions.
 
-**Status:** Initial Level Selection UI implemented. Level 1 selection and back navigation are functional. Additional levels, arrow navigation, and accuracy-based unlocking are planned for future sprints.
+**Status:** Level Selection UI, arrow navigation, and level unlocking functionality implemented.
 
+### Racing Levels
 
-### Level 1 — Racing
+The racing levels combine a racing environment with arithmetic questions.
 
-Level 1 introduces the basic racing experience.
+**Current Features:**
+- Displays the player's car and racing environment.
+- Presents arithmetic questions during gameplay.
+- Processes player answers.
+- Tracks correct answers and race progression.
+- Includes countdown and question timers.
+- Manages race completion.
+- Calculates race results and rewards.
+- Updates player progress after completing a race.
 
-**Current development focuses on:**
-- A simple racing interface.
-- Displaying the player's car and racing environment.
-- Presenting arithmetic questions.
-- Handling player answers.
-- Managing basic race progression.
+The racing system uses separate model, view, and controller components to manage gameplay.
 
-The racing system is being developed using separate model, view, and controller components.
+**Status:** Core racing components and race results functionality implemented. Gameplay integration and refinement are ongoing.
 
-**Status:** Basic racing components developed; integration and refinement are ongoing.
+### Race Results
+
+After completing a race, the game records the player's performance and rewards.
+
+**Current Features:**
+- Tracks correct answers.
+- Calculates incorrect answers.
+- Calculates accuracy percentage.
+- Awards stars based on performance.
+- Awards coins for correct answers and stars.
+- Tracks new personal-best results.
+- Unlocks additional levels when requirements are met.
+- Updates the player's saved progress.
+
+**Status:** Race results and reward functionality implemented.
 
 ---
 
-## Current Development Status
+## Mini Games
 
+Math Racer includes additional math-based mini-games outside the main racing experience.
+
+### Mini Games Selection
+
+The Mini Games selection screen allows players to choose between the available mini-games.
+
+**Current Features:**
+- Displays the Mini Games selection interface.
+- Provides navigation to the available mini-games.
+- Allows players to return to the Garage/Main Menu.
+
+**Status:** Implemented.
+
+### Catch the Answer
+
+Catch the Answer is a math-based mini-game where players identify and catch the correct answers.
+
+**Current Features:**
+- Interactive gameplay.
+- Math questions and answer choices.
+- Player input handling.
+- Answer checking.
+- Game progression.
+- Coin reward functionality.
+
+**Status:** Mini-game interface and gameplay implemented.
+
+### Repair Solver
+
+Repair Solver is a math-based mini-game where players solve problems to repair a car.
+
+**Current Features:**
+- Interactive math questions.
+- Answer validation.
+- Health-related gameplay mechanics.
+- Accuracy tracking.
+- Coin rewards.
+- Game completion logic.
+
+**Status:** Mini-game interface and gameplay implemented.
+
+> **Note:** Mini-game functionality has been developed, and additional testing and integration improvements may continue as the project progresses.
+
+---
+
+## Stats Screen
+
+The Stats Screen allows players to view their game progress and achievements.
+
+**Current Features:**
+- Displays the player's coin balance.
+- Displays earned stars.
+- Shows the highest unlocked level.
+- Shows the number of unlocked levels.
+- Includes navigation back to Level Selection.
+
+**Planned Improvements:**
+- Display correct and incorrect answers for each level.
+- Allow players to select a level to view more detailed statistics.
+- Add a question-review screen showing which questions were answered correctly or incorrectly.
+- Expand the information available about player performance.
+
+**Status:** Initial Stats Screen implemented. Additional statistics and question-review functionality are planned.
+
+---
 
 ## Current Development Status
 
 | Component | Status |
 |---|---|
 | Start Screen | Implemented; Space key navigation functional |
-| Garage / Main Menu | Initial UI implemented; LEVELS button functional |
-| Level Selection Screen | Implemented; Level 1 selection and BACK button functional |
-| Level 1 Navigation | Implemented in UI; requests the racing scene |
-| Basic Racing Interface | Developed; integration ongoing |
+| Garage / Main Menu | Implemented; LEVELS and MINI GAMES navigation functional |
+| Level Selection Screen | Implemented |
+| Level Navigation Arrows | Implemented |
+| Locked and Unlocked Levels | Implemented |
+| Racing Level Navigation | Implemented |
+| Basic Racing Interface | Implemented; refinements ongoing |
 | Game Scene Management | Core implementation completed |
 | Game State Management | Core implementation completed |
-| Racing Model | Developed; refinements ongoing |
-| Racing View | Developed; integration ongoing |
-| Racing Controller | Developed; integration ongoing |
-| Math Question Modules | Developed |
-| Car Class | Initial implementation |
-| Shop Screen | Planned for future sprint |
-| Mini Games Selection Screen | Planned for future sprint |
-| Catch The Answer | Planned for future sprint |
-| Problem Solver | Planned for future sprint |
-| Tutorial Screen | Planned for future sprint |
-| Stats Screen | Planned for future sprint |
-| Car Customization Interface | Planned for future sprint; part of Shop |
-| Car Repair Mini Game | Planned for future sprint |
-| Additional Levels | Planned for future sprint |
-| Level Arrow Navigation | Planned for future sprint; clickable left and right arrows |
-| Accuracy-Based Level Unlocking | Planned for future sprint; levels unlock based on accuracy in the previous level |
+| Racing Model | Implemented |
+| Racing View | Implemented |
+| Racing Controller | Implemented |
+| Race Results | Implemented |
+| Math Question Modules | Implemented |
+| Car Class | Core implementation developed |
+| Mini Games Selection Screen | Implemented |
+| Catch the Answer | Gameplay implemented |
+| Repair Solver | Gameplay implemented |
+| Stats Screen | Implemented; improvements planned |
+| Coin and Reward System | Implemented |
+| Player Progress Saving | Implemented |
+| Shop Backend | Purchase functionality developed |
+| Shop Screen | Integration in progress |
+| Car Customization Interface | In development |
+| Car Repair Mini Game | Repair Solver gameplay implemented |
+| Additional Racing Levels | Implemented in game configuration |
+| Accuracy-Based Level Unlocking | Implemented |
+| Individual Question Review | Planned |
+| Tutorial Screen | Planned |
 | Full Game Integration | In progress |
 
-> **Note:** Sprint 1 focuses on the Start Screen, Garage/Main Menu, Level Selection, and basic racing functionality. The Garage currently displays LEVELS, MINI GAMES, and SHOP buttons, but only LEVELS is functional. The Level Selection screen supports Level 1 selection and a working BACK button. Additional screens, levels, and progression features will be implemented in future sprints. Some backend components have been developed but are not yet fully integrated into the playable game.
-
+> **Note:** Math Racer now includes several gameplay screens, mini-games, and progression features beyond the initial Sprint 1 implementation. Some components are still being integrated and refined as development continues.
 
 ---
 
-## Planned Features — Future Sprints
+## Planned Features — Future Development
 
-The following features are planned for upcoming sprints and are **not part of the completed Sprint 1 user interface**.
-
+The following features are planned for upcoming development or require additional integration.
 
 ### Shop
 
-The Shop will allow players to spend earned stars on car upgrades and customization.
+The Shop will allow players to spend earned coins on car upgrades and customization.
+
+**Current Backend Features:**
+- Coin balance management.
+- Spending coins.
+- Tracking purchased items.
+- Purchasing available car skins.
 
 **Planned Features:**
-- Star balance display.
-- Car upgrades to improve performance.
-- Car skins and cosmetic customization.
-- Purchasing items using earned stars.
-- Shop categories for organizing available items.
+- Complete Shop interface.
+- Display available items and prices.
+- Allow players to purchase upgrades and cosmetics.
+- Display owned and equipped items.
+- Improve car customization functionality.
 
-**Status:** Planned for a future sprint. The Shop interface and purchasing functionality have not yet been implemented.
-
+**Status:** Shop backend functionality developed. The complete Shop interface and integration are still in progress.
 
 ### Mini Games
 
-Math Racer will include additional math-based mini games outside the main racing experience.
+Both Catch the Answer and Repair Solver have been developed.
 
-**Catch The Answer**
-- A planned mini game where players identify correct answers and catch them.
-- Gameplay and interface will be developed in a future sprint.
+**Planned Improvements:**
+- Additional gameplay refinement.
+- Improved mini-game integration.
+- Expanded rewards and player feedback.
+- Additional math challenges.
 
-**Problem Solver**
-- A planned mini game focused on solving math problems to fix a car.
-- Gameplay and interface will be developed in a future sprint.
-
-**Status:** Mini Games selection screen and individual mini game interfaces are planned for future development.
+**Status:** Both mini-games implemented, with further improvements planned.
 
 ### Stats Screen
 
-The Stats screen will allow players to view their game progress and performance.
+The Stats Screen currently displays basic player progress and rewards.
 
-**Potential features:**
-- Player progress.
-- Completed levels.
-- Earned stars.
-- Racing performance.
-- Math question performance.
+**Planned Features:**
+- Correct and incorrect answer counts for individual levels.
+- Detailed level performance.
+- Question-by-question review.
+- Additional racing statistics.
 
-**Status:** Planned for a future sprint.
+**Status:** Initial Stats Screen implemented. Expanded statistics are planned.
 
 ### Car Customization and Repair
 
-Future development will expand the Garage with interactive car management features.
+Future development will continue expanding the game's interactive car management features.
 
-**Planned features:**
-- Car skins and cosmetics.
+**Planned Features:**
+- Additional car skins and cosmetics.
 - Engine upgrades.
-- Damage tracking.
-- Car repairs.
+- Improved damage tracking.
+- Expanded repair functionality.
+- Integration with the Shop.
 
-**Status:** Initial car-related backend development has started, but the complete user interface and gameplay are planned for future sprints.
+**Status:** Initial car-related backend functionality and Repair Solver gameplay have been developed. Additional customization and integration are ongoing.
 
 ### Additional Levels
 
-Future sprints will expand the game beyond the initial Level 1 experience.
+The game includes multiple racing levels and progression functionality.
 
-**Planned improvements:**
-- Additional racing levels.
+**Planned Improvements:**
 - Additional racing tracks.
 - Expanded level progression.
 - More gameplay challenges.
 - Improved rewards and progression.
+- Additional racing environments.
+
+**Status:** Core level progression implemented. Additional content and improvements are planned.
 
 ---
 
@@ -237,7 +337,7 @@ Open the local URL displayed in the terminal, usually:
 
 Vite automatically reloads the application when changes are saved.
 
-> **Note:** The development server and screen navigation require the relevant UI changes to be present in your branch. Some game components may still be undergoing integration.
+> **Note:** Some features may still be undergoing integration as development continues.
 
 ---
 
@@ -256,9 +356,10 @@ The project is divided into separate modules to make development, testing, and m
 - Runs the game update loop.
 
 **GameState.ts**
-- Tracks player stars.
+- Tracks player stars and coins.
 - Manages unlocked levels.
-- Stores shop purchases.
+- Records racing results.
+- Manages shop purchases.
 - Saves player progress using browser local storage.
 
 **Scene.ts**
@@ -267,7 +368,7 @@ The project is divided into separate modules to make development, testing, and m
 
 ### User Interface
 
-The Sprint 1 UI is organized into separate TypeScript screen classes.
+The UI is organized into separate TypeScript screen classes.
 
 **StartScreen.ts**
 - Displays the Start Screen.
@@ -275,12 +376,30 @@ The Sprint 1 UI is organized into separate TypeScript screen classes.
 
 **GarageScreen.ts**
 - Displays the Garage/Main Menu.
-- Provides navigation to Level Selection.
+- Provides navigation to Level Selection and Mini Games.
 
 **LevelSelectScreen.ts**
 - Displays the Level Selection interface.
+- Supports arrow navigation.
+- Displays locked and unlocked levels.
+- Allows players to select available levels.
 - Supports back navigation.
-- Requests Level 1 when selected.
+
+**MiniGameSelectScreen.ts**
+- Displays the Mini Games selection interface.
+- Provides navigation to the available mini-games.
+
+**CatchTheAnswer.ts**
+- Implements the Catch the Answer mini-game.
+- Handles player interactions and answer mechanics.
+
+**RepairSolverScreen.ts**
+- Implements the Repair Solver mini-game.
+- Handles math questions and gameplay interactions.
+
+**StatsScreen.ts**
+- Displays player progress and rewards.
+- Provides navigation back to Level Selection.
 
 **ui.css**
 - Handles UI layout and styling.
@@ -295,8 +414,6 @@ The Sprint 1 UI is organized into separate TypeScript screen classes.
 **index.html**
 - Serves as the Vite entry point.
 
-**Additional UI screens will be implemented in future sprints.**
-
 ### Racing System
 
 The racing system follows a **Model-View-Controller (MVC)** approach.
@@ -304,6 +421,7 @@ The racing system follows a **Model-View-Controller (MVC)** approach.
 **Race Model**
 - Tracks changing race information.
 - Maintains race progress and performance data.
+- Tracks correct answers.
 
 **Race View**
 - Renders the racing interface.
@@ -316,6 +434,8 @@ The racing system follows a **Model-View-Controller (MVC)** approach.
 - Handles countdowns and question timers.
 - Processes player answers.
 - Updates the race model and view.
+- Handles race completion.
+- Records results and rewards.
 
 ### Math Question System
 
@@ -332,16 +452,18 @@ Each question includes:
 - A text representation of the expression.
 - The correct answer.
 
+The question system is used to support math-based gameplay throughout the project.
+
 ### Car System
 
-The Car class is being developed to manage attributes such as:
+The Car class manages attributes such as:
 - Skin.
 - Upgrades.
 - Cosmetics.
 - Engine level.
 - Damage.
 
-**Note:** The Car class is part of backend development. The full car customization and repair interfaces are planned for future sprints.
+**Note:** The Car class supports backend car functionality. The complete customization and upgrade interfaces are still being developed.
 
 ---
 
@@ -368,10 +490,14 @@ Automated tests cover functionality such as:
 - UI keyboard interactions.
 - Button navigation.
 - Level selection.
+- Racing model and controller.
+- Math question processing.
+- Car functionality.
+- Stats Screen navigation.
 
 ### UI Navigation Tests
 
-The Sprint 1 UI test suite includes checks that:
+The UI test suite includes checks that:
 
 1. The Start Screen displays correctly.
 2. Pressing Space opens the Garage.
@@ -380,14 +506,14 @@ The Sprint 1 UI test suite includes checks that:
 5. Clicking BACK returns to the Garage.
 6. Clicking LEVEL 1 requests the Race scene with the correct level ID.
 
-**Sprint 1 UI Branch Test Results:**
-- **29 automated tests passing**
-- **6 UI navigation tests added**
-- **Successful CI checks on Node.js 20 and 22**
+**Recent Local Test Results:**
+- **170 automated tests passing**
+- **10 test files passing**
+- **6 UI navigation tests passing**
 
-These results describe the tested UI branch. Test counts may change as new features are merged.
+These results reflect a previous successful local test run. Test counts may change as new features are merged.
 
-> **Note:** The Level 1 navigation test verifies the request to enter the Race scene. It does not independently verify that the complete racing experience is integrated and playable.
+> **Note:** Automated tests verify specific components and functionality. Additional manual testing is still important to confirm that the complete gameplay experience works as expected.
 
 ---
 
@@ -418,7 +544,8 @@ Our team uses GitHub to collaborate and manage development.
 4. Writing automated tests.
 5. Creating pull requests.
 6. Reviewing changes before merging.
-7. Integrating completed components.
+7. Resolving merge conflicts.
+8. Integrating completed components.
 
 We also use standup meetings to communicate progress, discuss upcoming tasks, and identify blockers.
 
@@ -448,14 +575,15 @@ https://github.com/JoseFelix12/CSE110-Team-1-Project/actions
 
 ## Future Development
 
-In upcoming sprints, our team plans to:
+In upcoming development, our team plans to:
 
 - Complete the Shop interface.
-- Develop the Mini Games selection screen.
-- Implement Catch The Answer and Problem Solver.
-- Create the Stats screen.
-- Complete car customization and repair interfaces.
-- Add additional racing levels.
+- Expand car customization and upgrades.
+- Improve the Stats Screen.
+- Add correct and incorrect answer tracking by level.
+- Implement a question-review screen.
+- Improve the Mini Games experience.
+- Expand racing levels and tracks.
 - Improve the racing experience.
 - Connect remaining UI screens to their game functionality.
 - Expand automated test coverage.
@@ -473,7 +601,7 @@ Our goal is to develop Math Racer into a fully integrated educational racing gam
 Math Racer is a collaborative software engineering project developed by:
 
 - Ashley Malaxechevarria
-- Geer Ai 
+- Geer Ai
 - Bradley Chen
 - Jose Felix
 - Mateo Kalafatovich

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RaceClassModel } from './RaceClassModel.ts';
 import {
-    AMOUNT_OF_QUESTIONS_IN_LEVEL_1,
     CORRECT_ANSWERS_FOR_NITRO,
     NITRO_SECONDS,
 } from '../constants.ts';
@@ -13,11 +12,15 @@ function fillNitro(model: RaceClassModel): void {
     }
 }
 
+const QUESTION_COUNT = 4;
+const FULL_HEALTH = 100;
+
 describe('RaceClassModel', () => {
     let model: RaceClassModel;
 
     beforeEach(() => {
         model = new RaceClassModel();
+        model.reset(QUESTION_COUNT);
     });
 
     describe('initial state', () => {
@@ -44,17 +47,24 @@ describe('RaceClassModel', () => {
             expect(model['incorrect_answers']).toBe(1);
             expect(model['correct_answers']).toBe(0);
         });
+
+        it('getIncorrectAnswers returns the incorrect count', () => {
+            model.incrementIncorrect_Answers();
+            model.incrementIncorrect_Answers();
+            expect(model.getIncorrectAnswers()).toBe(2);
+            expect(model.getCorrect_Answers()).toBe(0);
+        });
     });
 
     describe('currentProgess', () => {
         it('counts correct and incorrect answers together', () => {
             model.incrementCorrect_Answers();
             model.incrementIncorrect_Answers();
-            expect(model.currentProgess()).toBe(2 / AMOUNT_OF_QUESTIONS_IN_LEVEL_1);
+            expect(model.currentProgess()).toBe(2 / QUESTION_COUNT);
         });
 
         it('reaches exactly 1 after the last question', () => {
-            for (let i = 0; i < AMOUNT_OF_QUESTIONS_IN_LEVEL_1; i++) {
+            for (let i = 0; i < QUESTION_COUNT; i++) {
                 model.incrementCorrect_Answers();
             }
             expect(model.currentProgess()).toBe(1);
@@ -125,29 +135,36 @@ describe('RaceClassModel', () => {
     });
 
     describe('handleNitro', () => {
+        it('refuses to start nitro at 0 health, even with a full bar', () => {
+            fillNitro(model);
+            expect(model.handleNitro(0)).toBe(false);
+            expect(model.isNitroActive()).toBe(false);
+            expect(model.getNitroLevel()).toBe(1); // charge is not spent
+        });
+        
         it('does nothing and returns false when the bar is not full', () => {
             model.chargeNitro();
-            expect(model.handleNitro()).toBe(false);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(false);
             expect(model.isNitroActive()).toBe(false);
         });
 
         it('activates nitro and returns true when the bar is full', () => {
             fillNitro(model);
-            expect(model.handleNitro()).toBe(true);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(true);
             expect(model.isNitroActive()).toBe(true);
         });
 
         it('spends the charge so the next nitro needs a full bar again', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             expect(model['nitroLevel']).toBe(0);
         });
 
         it('cannot start a second nitro while one is running', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             fillNitro(model);
-            expect(model.handleNitro()).toBe(false);
+            expect(model.handleNitro(FULL_HEALTH)).toBe(false);
         });
     });
 
@@ -160,7 +177,7 @@ describe('RaceClassModel', () => {
 
         it('drains the bar while nitro is active', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             expect(model.getNitroLevel()).toBe(1);
             model.updateNitro(NITRO_SECONDS / 2);
             expect(model.getNitroLevel()).toBeCloseTo(0.5);
@@ -169,7 +186,7 @@ describe('RaceClassModel', () => {
 
         it('ends nitro when the time runs out', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             model.updateNitro(NITRO_SECONDS);
             expect(model.isNitroActive()).toBe(false);
             expect(model.getNitroLevel()).toBe(0);
@@ -177,10 +194,68 @@ describe('RaceClassModel', () => {
 
         it('keeps charge earned during nitro', () => {
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
             model.chargeNitro();
             model.updateNitro(NITRO_SECONDS);
             expect(model.getNitroLevel()).toBeCloseTo(1 / CORRECT_ANSWERS_FOR_NITRO);
+        });
+    });
+
+    describe('opponents', () => {
+        it('has an easy, a medium and a hard bot', () => {
+            expect(model.getOpponents().map((opponent) => opponent.profile.difficulty)).toEqual(['easy', 'medium', 'hard']);
+            expect(model.getRacerCount()).toBe(4);
+        });
+
+        it('puts the player first while tied at the start', () => {
+            expect(model.getPlacement()).toBe(1);
+        });
+
+        it('drops the player back as bots pull ahead', () => {
+            // Far longer than any bot needs to finish
+            model.updateOpponents(1000);
+            expect(model.getPlacement()).toBe(4);
+        });
+
+        it('locks the place in when the player finishes', () => {
+            for (let i = 0; i < QUESTION_COUNT; i++) {
+                model.incrementCorrect_Answers();
+            }
+            model.recordFinish();
+            model.updateOpponents(1000);
+            expect(model.getPlacement()).toBe(1);
+        });
+
+        it('counts bots that finished first as ahead', () => {
+            model.updateOpponents(1000);
+            for (let i = 0; i < QUESTION_COUNT; i++) {
+                model.incrementCorrect_Answers();
+            }
+            model.recordFinish();
+            expect(model.getPlacement()).toBe(4);
+        });
+
+        it('gives the bots the same number of questions as the player', () => {
+            model.reset(15);
+            model.updateOpponents(1000);
+            for (const opponent of model.getOpponents()) {
+                expect(opponent.getAnsweredCount()).toBe(15);
+                expect(opponent.getProgress()).toBe(1);
+            }
+        });
+
+        it('counts how many bots the player beat', () => {
+            expect(model.getOpponentsBeaten()).toBe(3);
+            model.updateOpponents(1000);
+            expect(model.getOpponentsBeaten()).toBe(0);
+        });
+
+        it('reset sends the bots back to the start', () => {
+            model.updateOpponents(1000);
+            model.recordFinish();
+            model.reset(QUESTION_COUNT);
+            expect(model.getOpponents().every((opponent) => opponent.getProgress() === 0)).toBe(true);
+            expect(model.getPlacement()).toBe(1);
         });
     });
 
@@ -192,9 +267,9 @@ describe('RaceClassModel', () => {
                 model.incrementIncorrectStreak();
             }
             fillNitro(model);
-            model.handleNitro();
+            model.handleNitro(FULL_HEALTH);
 
-            model.reset();
+            model.reset(QUESTION_COUNT);
 
             expect(model['correct_answers']).toBe(0);
             expect(model['incorrect_answers']).toBe(0);
@@ -202,6 +277,11 @@ describe('RaceClassModel', () => {
             expect(model.currentProgess()).toBe(0);
             expect(model.getNitroLevel()).toBe(0);
             expect(model.isNitroActive()).toBe(false);
+        });
+
+        it('stores the question count given to reset', () => {
+            model.reset(15);
+            expect(model.getQuestionCount()).toBe(15);
         });
     });
 });

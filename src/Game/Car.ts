@@ -114,6 +114,11 @@ export class Car implements ReadonlyCar {
         this.data.engineLevel++;
     }
 
+    addUpgrade(upgrade: Upgrade): void {
+        if (!this.data.upgrades.includes(upgrade)) {
+            this.data.upgrades.push(upgrade);
+        }
+    }
     /**
      * Update the speed multiplier of the car.
      * Should be called when the engine level changes.

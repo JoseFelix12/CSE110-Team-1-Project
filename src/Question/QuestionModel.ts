@@ -17,7 +17,7 @@ export class AdditionQuestion implements Question {
   operator: "addition" = "addition";
 
   constructor(a: number, b: number) {
-    this.text = `${a} + ${b}?`;
+    this.text = `${a} + ${b} = ?`;
     this.a = a;
     this.b = b;
     this.answer = a + b;
@@ -31,7 +31,7 @@ export class SubtractionQuestion implements Question {
   answer: number;
   operator: "subtraction" = "subtraction";
   constructor(a: number, b: number) {
-    this.text = `${a} - ${b}?`;
+    this.text = `${a} − ${b} = ?`;
     this.a = a;
     this.b = b;
     this.answer = a - b;
@@ -45,7 +45,7 @@ export class MultiplicationQuestion implements Question {
   answer: number;
   operator: "multiplication" = "multiplication";
   constructor(a: number, b: number) {
-    this.text = `${a} x ${b}?`;
+    this.text = `${a} × ${b} = ?`;
     this.a = a;
     this.b = b;
     this.answer = a * b;
@@ -59,7 +59,7 @@ export class DivisionQuestion implements Question {
   answer: number;
   operator: "division" = "division";
     constructor(a: number, b: number){
-        this.text = `${a} ÷ ${b}?`;
+        this.text = `${a} ÷ ${b} = ?`;
         this.a = a;
         this.b = b;
         this.answer = a / b;

@@ -1,7 +1,9 @@
-import { AMOUNT_OF_QUESTIONS_IN_LEVEL_1, CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
+import { CORRECT_ANSWERS_FOR_NITRO, NITRO_SECONDS } from "../constants.ts";
+import { createOpponents } from "./Opponent.ts";
+import type { Opponent } from "./Opponent.ts";
 
 /**
- * RaceClassModel - Manages game state 
+ * RaceClassModel - Manages game state
  */
 export class RaceClassModel {
     private correct_answers = 0;
@@ -10,18 +12,27 @@ export class RaceClassModel {
     private nitroLevel = 0;
     private nitroTimeRemaining = 0;
     private nitroActive = false;
+    private questionCount = 1;
+    private opponents: Opponent[];
+    private finishPlace: number | null = null;
 
+    constructor(random: () => number = Math.random) {
+        this.opponents = createOpponents(this.questionCount, random);
+    }
 
     /**
      * Resets for new race
      */
-    reset(): void {
+    reset(questionCount: number): void {
         this.correct_answers = 0;
         this.incorrect_answers = 0;
         this.incorrectAnswerStreak = 0;
         this.nitroLevel = 0;
         this.nitroTimeRemaining = 0;
         this.nitroActive = false;
+        this.questionCount = questionCount;
+        this.finishPlace = null;
+        this.opponents.forEach((opponent) => opponent.reset(questionCount));
     }
 
     /**
@@ -29,6 +40,26 @@ export class RaceClassModel {
      */
     incrementCorrect_Answers(): void {
         this.correct_answers++;
+    }
+
+    /**
+     * Gets the amount of correct_answers
+     */
+    getCorrect_Answers(): number {
+        return this.correct_answers;
+    }
+    /**
+     * Gets the amount of incorrect_answers
+     */
+    getIncorrectAnswers(): number {
+        return this.incorrect_answers;
+    }
+
+    /**
+     * Gets the amount of questions for the current level
+     */
+    getQuestionCount(): number {
+        return this.questionCount;
     }
 
     /**
@@ -42,7 +73,7 @@ export class RaceClassModel {
      * Gets current progress
      */
     currentProgess(): number {
-        return (this.correct_answers + this.incorrect_answers)/AMOUNT_OF_QUESTIONS_IN_LEVEL_1;
+        return (this.correct_answers + this.incorrect_answers)/this.questionCount;
     }
 
     /**
@@ -90,7 +121,10 @@ export class RaceClassModel {
      * Updates values when nitro is used
      * @returns true if nitro is used, false if not
      */
-    handleNitro(): boolean {
+    handleNitro(health: number): boolean {
+        if(health <= 0){
+            return false;
+        }
         if (this.nitroLevel >= 1 && this.nitroTimeRemaining <= 0) {
             this.nitroTimeRemaining = NITRO_SECONDS;
             this.nitroActive = true;
@@ -133,13 +167,50 @@ export class RaceClassModel {
     isNitroActive(): boolean {
         return this.nitroActive;
     }
-    //Possibility of including placement?
 
-    getCorrectAnswers(): number {
-    return this.correct_answers;
-}
+    // ---------- Opponents ----------
 
-    getIncorrectAnswers(): number {
-    return this.incorrect_answers;
+    /**
+     * Moves every bot along by dt seconds
+     */
+    updateOpponents(dt: number): void {
+        this.opponents.forEach((opponent) => opponent.update(dt));
     }
+
+    getOpponents(): readonly Opponent[] {
+        return this.opponents;
+    }
+
+    /**
+     * Locks in the player's place once they answer the last question.
+     * Bots that finished first are ahead.
+     */
+    recordFinish(): void {
+        if (this.finishPlace === null) {
+            this.finishPlace = 1 + this.opponents.filter((opponent) => opponent.isFinished()).length;
+        }
+    }
+
+    /**
+     * The player's place, 1 = first. During the race, ties go to the player.
+     */
+    getPlacement(): number {
+        if (this.finishPlace !== null) {
+            return this.finishPlace;
+        }
+        const progress = this.currentProgess();
+        return 1 + this.opponents.filter((opponent) => opponent.getProgress() > progress).length;
+    }
+
+    getRacerCount(): number {
+        return this.opponents.length + 1;
+    }
+
+    /**
+     * How many bots the player is ahead of (3 when first, 0 when last)
+     */
+    getOpponentsBeaten(): number {
+        return this.getRacerCount() - this.getPlacement();
+    }
+
 }

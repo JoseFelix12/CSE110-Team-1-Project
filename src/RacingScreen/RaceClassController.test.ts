@@ -3,9 +3,10 @@ import type { Mock } from 'vitest';
 import { GameState } from '../Game/GameState.ts';
 import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
-import { MAX_HEALTH } from '../Game/gameConfig.ts';
+import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
+import type { RaceClassModel } from './RaceClassModel.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
 
 const fake = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ vi.stubGlobal('Audio', class {
     loop = false;
     muted = false;
     currentTime = 0;
+    volume = 1;
     play = vi.fn().mockResolvedValue(undefined);
     pause = vi.fn();
 });
@@ -36,8 +38,13 @@ vi.mock('./RaceClassView.ts', () => ({
         showAnswerFeedback = vi.fn();
         setNitroLevel = vi.fn();
         setNitroActive = vi.fn();
-        constructor(handlers: unknown) {
+        setTheme = vi.fn();
+        setOpponentProgress = vi.fn();
+        setPlacement = vi.fn();
+        options: unknown;
+        constructor(handlers: unknown, options: unknown) {
             this.handlers = handlers;
+            this.options = options;
             fake.view = this as never;
         }
     },
@@ -47,8 +54,7 @@ vi.mock('./RaceClassView.ts', () => ({
 // the bar can be filled within one race
 vi.mock('../constants.ts', async (original) => ({
     ...(await original<typeof import('../constants.ts')>()),
-    AMOUNT_OF_QUESTIONS_IN_LEVEL_1: 4,
-    CORRECT_ANSWERS_FOR_NITRO: 2,
+    CORRECT_ANSWERS_FOR_NITRO: 2, 
 }));
 
 describe('RaceClassController', () => {
@@ -59,8 +65,10 @@ describe('RaceClassController', () => {
     const view = () => fake.view!;
     const lastAnswer = (): string => {
         const text = view().setQuestion.mock.lastCall![0] as string;
-        const [a, b] = text.split(' = ')[0].split(' × ').map(Number);
-        return String(a * b);
+        const [a, symbol, b] = text.split(' = ')[0].split(' ');
+        const [x, y] = [Number(a), Number(b)];
+        const answers: Record<string, number> = { '+': x + y, '−': x - y, '×': x * y, '÷': x / y };
+        return String(answers[symbol]);
     };
     const startRacing = () => {
         controller.enter({ levelId: 1 });
@@ -79,6 +87,11 @@ describe('RaceClassController', () => {
         vi.useFakeTimers();
         switchToScreen = vi.fn<(id: SceneId) => void>();
         gameState = new GameState(null);
+        const realGetLevel = gameState.getLevel.bind(gameState);
+        vi.spyOn(gameState, 'getLevel').mockImplementation((id) => ({
+            ...realGetLevel(id),
+            questionCount: 4,
+        }));
         controller = new RaceClassController({ switchToScreen }, gameState, {
             parent: {} as HTMLElement,
         });
@@ -174,6 +187,15 @@ describe('RaceClassController', () => {
             expect(view().showAnswerFeedback).not.toHaveBeenCalled();
         });
 
+        it('ignores the nitro button when the car has no health left', () => {
+            startRacing();
+            fillNitro();
+            gameState.getMutableCar().inflictDamage(MAX_HEALTH);
+            view().handlers.onNitro();
+            expect(view().setNitroActive).not.toHaveBeenCalled();
+            expect(view().showAnswerFeedback).toHaveBeenCalledTimes(2);
+        });
+
         it('fills nitro from correct answers, then burns it off', () => {
             startRacing();
             fillNitro();
@@ -251,6 +273,124 @@ describe('RaceClassController', () => {
         });
     });
 
+    describe('opponents', () => {
+        it('gives the view a yellow, blue and green bot', () => {
+            expect(view().options).toMatchObject({ opponentColors: ['yellow', 'blue', 'green'] });
+        });
+
+        it('recolors a bot that matches the player skin', () => {
+            gameState.selectSkin('blue'); // blue is a starter skin
+            controller.enter({ levelId: 1 });
+            const options = view().options as unknown as { skin: string; opponentColors: string[] };
+            expect(options.skin).toBe('blue');
+            expect(options.opponentColors).toEqual(['yellow', 'purple', 'green']);
+        });
+
+        it('keeps the bots at the start until GO', () => {
+            controller.enter({ levelId: 1 });
+            controller.update(0.1);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(3000);
+            controller.update(0.1);
+            expect(view().setOpponentProgress).toHaveBeenCalledWith([0, 0, 0]);
+        });
+
+        it('moves the bots forward as time passes, but not while paused', () => {
+            startRacing();
+            // 40 seconds is far longer than even the easy bot needs for 4 questions
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setOpponentProgress).toHaveBeenLastCalledWith([1, 1, 1]);
+            expect(view().setPlacement).toHaveBeenLastCalledWith(4);
+
+            controller.enter({ levelId: 1 });
+            vi.advanceTimersByTime(3000);
+            view().handlers.onPause();
+            view().setOpponentProgress.mockClear();
+            controller.update(5);
+            expect(view().setOpponentProgress).not.toHaveBeenCalled();
+        });
+
+        it('places the player first when they finish before the bots', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) {
+                answerCorrectly();
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
+
+            // The place stays locked while the bots catch up
+            for (let i = 0; i < 400; i++) {
+                controller.update(0.1);
+            }
+            expect(view().setPlacement).toHaveBeenLastCalledWith(1);
+        });
+    });
+
+    it.each([
+        [1, 'dirt'],
+        [2, 'raceTrack'],
+        [3, 'street'],
+    ])('races level %i on the %s theme', (levelId, theme) => {
+        controller.enter({ levelId });
+        expect(view().setTheme).toHaveBeenCalledWith(theme);
+    });
+
+    describe('questions', () => {
+        const questionParts = () => {
+            const text = view().setQuestion.mock.lastCall![0] as string;
+            const [a, symbol, b] = text.split(' = ')[0].split(' ');
+            return { a: Number(a), symbol, b: Number(b) };
+        };
+
+        it('asks level 1 a 2 digit number up to 70 plus a 1 digit number', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) {
+                const { a, symbol, b } = questionParts();
+                expect(symbol).toBe('+');
+                expect(a).toBeGreaterThanOrEqual(10);
+                expect(a).toBeLessThanOrEqual(70);
+                expect(b).toBeGreaterThanOrEqual(1);
+                expect(b).toBeLessThanOrEqual(9);
+                answerCorrectly();
+            }
+        });
+
+        it('asks the operators of the level being raced', () => {
+            controller.enter({ levelId: 4 });
+            vi.advanceTimersByTime(3000);
+            expect(questionParts().symbol).toBe('÷');
+        });
+
+        it('keeps wrong and timed out questions, but not right ones', () => {
+            startRacing();
+            answerCorrectly();
+            const wrong = view().setQuestion.mock.lastCall![0];
+            answerWrong();
+            const timedOut = view().setQuestion.mock.lastCall![0];
+            vi.advanceTimersByTime(10000);
+
+            expect(controller.getWrongQuestions().map((question) => question.text)).toEqual([wrong, timedOut]);
+        });
+
+        it('starts each race with no missed questions', () => {
+            startRacing();
+            answerWrong();
+            controller.enter({ levelId: 1 });
+            expect(controller.getWrongQuestions()).toEqual([]);
+        });
+    });
+
+    it('uses the theme option over the level theme when one is given', () => {
+        controller = new RaceClassController({ switchToScreen }, gameState, {
+            parent: {} as HTMLElement,
+            theme: 'street',
+        });
+        controller.enter({ levelId: 1 });
+        expect(view().setTheme).toHaveBeenCalledWith('street');
+    });
+
     it('quits to the level screen', () => {
         startRacing();
         view().handlers.onQuit();
@@ -264,5 +404,138 @@ describe('RaceClassController', () => {
         view().updateTimer.mockClear();
         vi.advanceTimersByTime(60000);
         expect(view().updateTimer).not.toHaveBeenCalled();
+    });
+
+    describe('coins', () => {
+        it('awards coins and 3 stars for beating every opponent', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+            expect(gameState.getStars(1)).toBe(3);
+        });
+
+        it('gives no stars when every opponent finishes first', () => {
+            startRacing();
+            // Far longer than any bot needs to finish
+            controller.update(1000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getStars(1)).toBe(0);
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER);
+        });
+
+        it('gives 1 star per opponent beaten', () => {
+            startRacing();
+            // Only the hard bot finishes before the player
+            const model = (controller as unknown as { model: RaceClassModel }).model;
+            const [, , hard] = model.getOpponents();
+            expect(hard.profile.difficulty).toBe('hard');
+            hard.update(1000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getStars(1)).toBe(2);
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 2 * COINS_PER_STAR);
+        });
+
+        it('only pays for correct answers', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            // Bots never moved, so the player beat all 3
+            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+        });
+    
+        it('gives nothing if the player quits mid-race', () => {
+            startRacing();
+            answerCorrectly();
+            view().handlers.onQuit();
+            expect(gameState.getCoins()).toBe(0);
+        });
+
+        it('only records the race once if the finish line fires twice', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            view().handlers.onFinishLineCrossed();
+            expect(gameState.getCoins()).toBe(4 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+        });
+
+        it('records the result on the level that was played', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+            controller.exit();
+        
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+            });
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+        
+            expect(gameState.getStars(2)).toBe(3);
+        });
+    });
+    describe('onRaceComplete', () => {
+        let onRaceComplete: Mock<(params: Record<string, unknown>) => void>;
+    
+        beforeEach(() => {
+            onRaceComplete = vi.fn();
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+                onRaceComplete,
+            });
+        });
+    
+        it('reports the race summary instead of switching screens', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({
+                mode: 'race',
+                levelId: 1,
+                correct: 2,
+                incorrect: 2,
+                total: 4,
+                accuracy: 50,
+                placement: 1,
+                opponentsBeaten: 3,
+                stars: 3,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
+            }));
+            expect(switchToScreen).not.toHaveBeenCalled();
+        });
+    
+        it('reports the level that was actually played', () => {
+            gameState.recordRaceResult(1, 4, 3); // earn a star so level 2 unlocks
+            controller.enter({ levelId: 2 });
+            vi.advanceTimersByTime(3000);
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+    
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({ levelId: 2 }));
+        });
+    
+        it('waits for the finish screen delay before reporting', () => {
+            startRacing();
+            for (let i = 0; i < 4; i++) answerCorrectly();
+            view().handlers.onFinishLineCrossed();
+            expect(onRaceComplete).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1500);
+            expect(onRaceComplete).toHaveBeenCalledOnce();
+        });
     });
 });

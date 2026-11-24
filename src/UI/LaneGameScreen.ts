@@ -1,51 +1,55 @@
-
 import type { Game } from "../Game/Game.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
-import { QuestionController } from "../Question/QuestionController.ts";
-import type { Question } from "../Question/QuestionModel.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
-
-type MathQuestion = {
-  text: string;
-  choices: [number, number, number];
-  correct: number;
-  source: Question;
-};
+import type {LaneGameController} from "../LaneGame/LaneGameController.ts"
+import type {LaneGameModel} from "../LaneGame/LaneGameModel.ts"
+import { SceneIds } from "../Game/Scene.ts";
+import { PauseMenu } from "../RacingScreen/view/PauseMenu.ts";
 
 export class CatchTheAnswer implements Scene {
   private game: Game;
-  private questionController = new QuestionController();
   private readonly totalRounds = 10;
-  private correctCount = 0;
-  private currentQuestion: MathQuestion | null = null;
-  private availableLevelCount = 1;
+  private laneGameController: LaneGameController;
+  private laneGameModel: LaneGameModel;
+  private correctSound = new Audio("/sounds/Correct.mp3");
+  private incorrectSound = new Audio("/sounds/Incorrect.mp3");
+  private backgroundMusic = new Audio("/sounds/lane-music.mp3");
+  
+  
 
   private screen: HTMLElement | null = null;
   private car: HTMLImageElement | null = null;
-  private questionText: HTMLDivElement | null = null;
+  private answerText: HTMLDivElement | null = null;
   private scoreText: HTMLDivElement | null = null;
+  private roadLines: HTMLDivElement | null = null;
   private movingDashes: HTMLDivElement[] = [];
 
-  private answers: HTMLDivElement[] = [];
+  private questions: HTMLDivElement[] = [];
 
   // Keep the lane positions that worked!
   private readonly lanePositions = [25, 50, 75];
   private readonly font = '"Press Start 2P", monospace';
 
-  private lane = 1;
-  private score = 0;
+  //private lane = 1;
   private round = 0;
   private answerY = -18;
   private roadOffset = 0;
 
   private active = false;
   private paused = false;
+  private menuPaused = false;
+  private muted = false;
+  private pauseMenu: PauseMenu | null = null;
+  private roundDelayRemaining = 650;
+  private roundDelayStartedAt = 0;
   private lastTime = 0;
   private frameId = 0;
   private pauseTimer: number | null = null;
 
-  constructor(game: Game) {
+  constructor(game: Game, laneGameController: LaneGameController, laneGameModel: LaneGameModel) {
     this.game = game;
+    this.laneGameController = laneGameController;
+    this.laneGameModel = laneGameModel;
   }
 
   enter(_params: SceneParams): void {
@@ -60,12 +64,12 @@ export class CatchTheAnswer implements Scene {
       document.head.appendChild(link);
     }
 
-    this.lane = 1;
-    this.score = 0;
-    this.correctCount = 0;
+    this.laneGameController.startGame();
+    this.backgroundMusic.loop = true;
+    this.backgroundMusic.volume = 0.15;
+    void this.backgroundMusic.play().catch(() => {});
+
     this.round = 0;
-    this.questionController = new QuestionController();
-    this.availableLevelCount = Math.max(1, this.game.state.getLevels().filter(level => level.unlocked).length);
     this.answerY = -18;
     this.roadOffset = 0;
     this.lastTime = 0;
@@ -106,8 +110,8 @@ export class CatchTheAnswer implements Scene {
 
     // Two moving dashed dividers between lanes 25%, 50%, 75%.
     // Individual dashes keep a constant height while they move.
-    const roadLines = document.createElement("div");
-    Object.assign(roadLines.style, {
+    this.roadLines = document.createElement("div");
+    Object.assign(this.roadLines.style, {
       position: "absolute",
       inset: "0",
       pointerEvents: "none",
@@ -131,12 +135,12 @@ export class CatchTheAnswer implements Scene {
         });
         // Each dash has a fixed vertical position within a 120% cycle.
         dash.dataset.index = String(i);
-        roadLines.appendChild(dash);
+        this.roadLines.appendChild(dash);
         this.movingDashes.push(dash);
       }
     }
 
-    screen.appendChild(roadLines);
+    screen.appendChild(this.roadLines);
 
     // Question display
     const question = document.createElement("div");
@@ -164,7 +168,7 @@ export class CatchTheAnswer implements Scene {
     });
 
     screen.appendChild(question);
-    this.questionText = question;
+    this.answerText = question;
 
     // Score panel
     const score = document.createElement("div");
@@ -191,26 +195,130 @@ export class CatchTheAnswer implements Scene {
     screen.appendChild(score);
     this.scoreText = score;
 
-    // Exit button
-    const exitButton = document.createElement("button");
+    // Pause button
+    const pauseButton = document.createElement("button");
+    pauseButton.type = "button";
+    pauseButton.setAttribute("aria-label", "Pause Repair Solver");
+    pauseButton.innerHTML = `
+      <span style="display:flex; gap:5px;" aria-hidden="true">
+        <span style="width:7px; height:20px; background:white;"></span>
+        <span style="width:7px; height:20px; background:white;"></span>
+      </span>
+      <span>PAUSE</span>
+    `;
 
-    Object.assign(exitButton.style, {
+    Object.assign(pauseButton.style, {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "12px",
       position: "absolute",
       top: "5%",
       left: "3%",
       width: "16%",
       height: "12%",
-      backgroundImage: 'url("/images/Group 6.png")',
-      backgroundSize: "100% 100%",
-      backgroundColor: "transparent",
-      border: "none",
+      backgroundColor: "#111111",
+      border: "3px solid white",
+      borderRadius: "8px",
+      color: "white",
+      fontFamily: this.font,
+      fontSize: "clamp(8px, 1.2vw, 16px)",
       cursor: "pointer",
       zIndex: "6",
     });
 
-    exitButton.setAttribute("aria-label", "Exit mini-game");
-    exitButton.onclick = () => this.game.back();
-    screen.appendChild(exitButton);
+    pauseButton.setAttribute("aria-label", "Pause mini-game");
+    pauseButton.onclick = () => this.openPauseMenu();
+
+    screen.appendChild(pauseButton);
+
+    // Reuse the main race pause menu
+    this.pauseMenu = new PauseMenu({
+      onResume: () => this.resumeGame(),
+      onMuteToggle: () => this.toggleMute(),
+      onQuit: () => this.game.back(),
+    });
+
+    this.pauseMenu.setMuted(this.muted);
+    Object.assign(this.pauseMenu.element.style, {
+      position: "absolute",
+      inset: "0",
+      backgroundColor: "rgba(0, 0, 0, 0.55)",
+      backdropFilter: "blur(3px)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "30",
+      display: "none",
+    });
+    
+    // Custom mini-game pause menu styling
+    const pausePanel = this.pauseMenu.element.querySelector<HTMLElement>(
+      ".race-pause__panel"
+    )!;
+
+    Object.assign(pausePanel.style, {
+      background: "#24242c",
+      border: "4px solid white",
+      borderRadius: "14px",
+      padding: "clamp(20px, 3vw, 40px)",
+      width: "40%",
+      display: "flex",
+      flexDirection: "column",
+      gap: "18px",
+      textAlign: "center",
+      fontFamily: this.font,
+      boxSizing: "border-box",
+      boxShadow: "0 8px 0 #111",
+    });
+
+    const pauseTitle = pausePanel.querySelector("h2")!;
+
+    Object.assign(pauseTitle.style, {
+      color: "#ffd32a",
+      fontSize: "clamp(16px, 2.5vw, 30px)",
+      margin: "0 0 15px",
+      lineHeight: "1.6",
+    });
+
+    pausePanel.querySelectorAll("button").forEach((button) => {
+      Object.assign(button.style, {
+        background: "#373740",
+        border: "3px solid white",
+        borderRadius: "8px",
+        padding: "18px 10px",
+        color: "white",
+        fontFamily: this.font,
+        fontSize: "clamp(9px, 1.3vw, 18px)",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        lineHeight: "1.6",
+        width: "100%",
+      });
+
+      button.onmouseenter = () => {
+        button.style.filter = "brightness(1.3)";
+      };
+
+      button.onmouseleave = () => {
+        button.style.filter = "brightness(1)";
+      };
+    });
+
+    const resumeButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__resume"
+    )!;
+
+    resumeButton.style.background = "#244936";
+    resumeButton.style.borderColor = "#89e5a7";
+
+    const quitButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__quit"
+    )!;
+
+    quitButton.style.background = "#b81820";
+
+
+    screen.appendChild(this.pauseMenu.element);
 
     // Three falling answer boxes
     for (let i = 0; i < 3; i++) {
@@ -221,21 +329,21 @@ export class CatchTheAnswer implements Scene {
         left: `${this.lanePositions[i]}%`,
         top: "-18%",
         transform: "translateX(-50%)",
-        width: "11%",
-        aspectRatio: "1 / 1",
+        width: "22%",
+        aspectRatio: "3 / 1",
         backgroundImage: 'url("/images/Rectangle.png")',
         backgroundSize: "100% 100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontFamily: this.font,
-        fontSize: "clamp(12px, 1.8vw, 23px)",
+        fontSize: "clamp(12px, 1.3vw, 20px)",
         color: "#111",
         zIndex: "3",
       });
 
       screen.appendChild(box);
-      this.answers.push(box);
+      this.questions.push(box);
     }
 
     // Player car
@@ -244,7 +352,7 @@ export class CatchTheAnswer implements Scene {
 
     Object.assign(car.style, {
       position: "absolute",
-      width: "12%",
+      width: "25%",
       height: "auto",
       bottom: "5%",
       left: "50%",
@@ -269,7 +377,7 @@ export class CatchTheAnswer implements Scene {
 
   // The unlocked-level rules below follow our planned level progression.
   // Confirm the exact difficulty rules with the team's gameConfig.ts.
-  private generateUnlockedQuestion(): MathQuestion {
+  /* private generateUnlockedQuestion(): Question {
     const unlocked = this.availableLevelCount;
     let type: string;
     let maxOperand: number;
@@ -288,6 +396,7 @@ export class CatchTheAnswer implements Scene {
     }
 
     let question: Question;
+    // Reuse the teammate's generator, rejecting questions that exceed
     // the currently available difficulty. The limit is always reachable.
     do {
       question = this.questionController.generateQuestion(type);
@@ -316,7 +425,61 @@ export class CatchTheAnswer implements Scene {
       choices: shuffled as [number, number, number],
       source: question,
     };
-  }
+  }*/
+
+      private openPauseMenu(): void {
+      if (!this.active || this.menuPaused) return;
+
+      this.menuPaused = true;
+
+      // Preserve the remaining delay between rounds.
+      if (this.pauseTimer !== null) {
+        clearTimeout(this.pauseTimer);
+        this.pauseTimer = null;
+
+        this.roundDelayRemaining = Math.max(
+          0,
+          this.roundDelayRemaining -
+            (Date.now() - this.roundDelayStartedAt)
+        );
+      }
+
+      this.backgroundMusic.pause();
+      this.correctSound.pause();
+      this.incorrectSound.pause();
+
+      if (this.pauseMenu) {
+        this.pauseMenu.element.style.display = "flex";
+        this.pauseMenu.show();
+      }
+    }
+
+    private resumeGame(): void {
+      if (!this.active || !this.menuPaused) return;
+
+      this.menuPaused = false;
+      this.lastTime = 0;
+
+      if (this.pauseMenu) {
+        this.pauseMenu.hide();
+        this.pauseMenu.element.style.display = "none";
+      }
+      void this.backgroundMusic.play().catch(() => {});
+
+      if (this.paused) {
+        this.scheduleNextRound();
+      }
+    }
+
+    private toggleMute(): void {
+      this.muted = !this.muted;
+
+      this.backgroundMusic.muted = this.muted;
+      this.correctSound.muted = this.muted;
+      this.incorrectSound.muted = this.muted;
+
+      this.pauseMenu?.setMuted(this.muted);
+    }
 
   private startRound(): void {
     if (this.round >= this.totalRounds) {
@@ -324,15 +487,22 @@ export class CatchTheAnswer implements Scene {
       return;
     }
 
-    this.currentQuestion = this.generateUnlockedQuestion();
+    console.log("Generating round");
+
+    this.laneGameController.generateRound();
+
+    console.log("Round generated successfully");
+
     this.answerY = -18;
 
-    if (this.questionText) {
-      this.questionText.textContent = this.currentQuestion.text;
+    //Assigns the correct answer to the answer box
+    if (this.answerText) {
+      this.answerText.textContent = String(this.laneGameModel.getTargetAnswer());
     }
 
-    this.answers.forEach((box, i) => {
-      box.textContent = String(this.currentQuestion!.choices[i]);
+    
+    this.questions.forEach((box, i) => {
+      box.textContent = String(this.laneGameModel.getLanes()[i].getQuestion()?.text || "");
       box.style.top = `${this.answerY}%`;
     });
 
@@ -341,6 +511,12 @@ export class CatchTheAnswer implements Scene {
 
   private animate = (time: number): void => {
     if (!this.active) return;
+
+    if (this.menuPaused) {
+      this.lastTime = time;
+      this.frameId = requestAnimationFrame(this.animate);
+      return;
+}
 
     if (this.lastTime === 0) this.lastTime = time;
 
@@ -360,7 +536,7 @@ export class CatchTheAnswer implements Scene {
     if (!this.paused) {
       this.answerY += dt * 20;
 
-      this.answers.forEach((box) => {
+      this.questions.forEach((box) => {
         box.style.top = `${this.answerY}%`;
       });
 
@@ -374,33 +550,36 @@ export class CatchTheAnswer implements Scene {
     }
   };
 
-  private checkAnswer(): void {
+    private checkAnswer(): void {
+    if (!this.active || this.paused || this.menuPaused) return;
+
     this.paused = true;
 
-    if (!this.currentQuestion) return;
-    const selectedAnswer = this.currentQuestion.choices[this.lane];
-    const correct = this.questionController.submitAnswer(String(selectedAnswer));
+    this.laneGameController.handleLaneSelection();
 
-    if (correct) {
-      this.score += 10;
-      this.correctCount++;
-    }
+    this.roundDelayRemaining = 650;
+    this.scheduleNextRound();
+  }
 
-    this.updateScore();
-    this.showFeedback(correct);
+  private scheduleNextRound(): void {
+    this.roundDelayStartedAt = Date.now();
 
     this.pauseTimer = window.setTimeout(() => {
       this.pauseTimer = null;
 
-      if (!this.active) return;
+      if (!this.active || this.menuPaused) return;
 
       this.round++;
       this.startRound();
-    }, 650);
+    }, this.roundDelayRemaining);
   }
 
-  private showFeedback(correct: boolean): void {
+  showFeedback(correct: boolean): void {
     if (!this.screen || !this.car) return;
+    const sound = correct ? this.correctSound : this.incorrectSound;
+    sound.volume = 0.4;
+    sound.currentTime = 0;
+    void sound.play().catch(() => {});
 
     const feedback = document.createElement("div");
     feedback.textContent = correct ? "CORRECT! +10" : "WRONG!";
@@ -477,50 +656,55 @@ export class CatchTheAnswer implements Scene {
     }, 650);
   }
 
-  private updateScore(): void {
+  updateScore(): void {
     if (this.scoreText) {
-      this.scoreText.textContent = String(this.score);
+        this.scoreText.textContent = String(
+            this.laneGameModel.getScore()
+        );
     }
-  }
+}
 
   private updateCarPosition(): void {
     if (!this.car) return;
 
     this.car.style.left =
-      `${this.lanePositions[this.lane]}%`;
+      `${this.lanePositions[this.laneGameModel.getCurrentLane().getLaneNumber() - 1]}%`;
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {
-    if (!this.active || this.paused) return;
+    if (!this.active || this.paused || this.menuPaused) return;
 
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      this.lane = Math.max(0, this.lane - 1);
-      this.updateCarPosition();
-    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
 
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      this.lane = Math.min(2, this.lane + 1);
-      this.updateCarPosition();
+        this.laneGameController.handleCarMovement(event.key);
+
+        this.updateCarPosition();
     }
   };
 
   private finishGame(): void {
     if (!this.active) return;
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
     this.active = false;
+    this.menuPaused = false;
+    this.pauseMenu = null;
+
+    this.correctSound.pause();
+    this.incorrectSound.pause();
     this.paused = true;
     cancelAnimationFrame(this.frameId);
 
-    const coinsEarned = this.correctCount * COINS_PER_CORRECT_ANSWER;
+    const coinsEarned = this.laneGameModel.getCorrectCount() * COINS_PER_CORRECT_ANSWER;
     this.game.state.addCoins(coinsEarned);
 
-    this.answers.forEach((box) => {
+    this.questions.forEach((box) => {
       box.style.display = "none";
     });
 
-    if (this.questionText) {
-      this.questionText.textContent = "";
+    if (this.answerText) {
+      this.answerText.textContent = "";
     }
 
     if (!this.screen) return;
@@ -535,7 +719,7 @@ export class CatchTheAnswer implements Scene {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      gap: "28px",
+      gap: "12px",
       padding: "20px",
       boxSizing: "border-box",
       zIndex: "20",
@@ -553,8 +737,11 @@ export class CatchTheAnswer implements Scene {
       lineHeight: "1.7",
     });
 
+    const finalScoreValue = this.laneGameModel.getScore();
+    const correctCount = this.laneGameModel.getCorrectCount();
+
     const finalScore = document.createElement("div");
-    finalScore.textContent = `SCORE: ${this.score}`;
+    finalScore.textContent = `SCORE: ${finalScoreValue}`;
 
     Object.assign(finalScore.style, {
       fontSize: "clamp(12px, 2vw, 20px)",
@@ -584,7 +771,7 @@ export class CatchTheAnswer implements Scene {
     overlay.appendChild(finalScore);
 
     const details = document.createElement("div");
-    details.textContent = `CORRECT: ${this.correctCount}/${this.totalRounds} | +${coinsEarned} COINS`;
+    details.textContent = `CORRECT: ${correctCount}/${this.totalRounds} | +${coinsEarned} COINS`;
     details.style.fontSize = "clamp(9px, 1.4vw, 15px)";
     details.style.lineHeight = "1.8";
     overlay.appendChild(details);
@@ -594,6 +781,30 @@ export class CatchTheAnswer implements Scene {
     balance.style.fontSize = "clamp(9px, 1.4vw, 15px)";
     overlay.appendChild(balance);
     overlay.appendChild(restart);
+    // Review Wrong Answers button
+    const reviewButton = document.createElement("button");
+
+    reviewButton.textContent = "REVIEW WRONG ANSWERS";
+
+    Object.assign(reviewButton.style, {
+      padding: "12px 18px",
+      backgroundColor: "#244936",
+      color: "#89e5a7",
+      border: "3px solid #89e5a7",
+      borderRadius: "8px",
+      fontFamily: this.font,
+      fontSize: "clamp(8px, 1.2vw, 12px)",
+      cursor: "pointer",
+    });
+
+    reviewButton.onclick = () => {
+      this.game.goTo(SceneIds.WrongAnswers, {
+        wrongAnswers: this.laneGameController.getWrongAnswers(),
+        returnTo: SceneIds.MiniGameSelect,
+      });
+    };
+
+overlay.appendChild(reviewButton);
 
     const back = document.createElement("button");
     back.textContent = "BACK TO MINI GAMES";
@@ -610,6 +821,8 @@ export class CatchTheAnswer implements Scene {
   }
 
   private cleanup(): void {
+    this.backgroundMusic.pause();
+    this.backgroundMusic.currentTime = 0;
     this.active = false;
     cancelAnimationFrame(this.frameId);
 
@@ -623,11 +836,11 @@ export class CatchTheAnswer implements Scene {
     this.screen?.remove();
     this.screen = null;
     this.car = null;
-    this.questionText = null;
+    this.answerText = null;
     this.scoreText = null;
+    this.roadLines = null;
     this.movingDashes = [];
-    this.answers = [];
-    this.currentQuestion = null;
+    this.questions = [];
   }
 
   exit(): void {

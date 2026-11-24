@@ -12,12 +12,16 @@ class MemoryStorage implements StorageLike {
 }
 
 describe("calculateStars", () => {
-    it("maps accuracy to 0-3 stars", () => {
-        expect(calculateStars(0, 10)).toBe(0);
-        expect(calculateStars(5, 10)).toBe(1);
-        expect(calculateStars(7, 10)).toBe(2);
-        expect(calculateStars(9, 10)).toBe(3);
-        expect(calculateStars(0, 0)).toBe(0);
+    it("gives 1 star per opponent beaten", () => {
+        expect(calculateStars(0)).toBe(0);
+        expect(calculateStars(1)).toBe(1);
+        expect(calculateStars(2)).toBe(2);
+        expect(calculateStars(3)).toBe(3);
+    });
+
+    it("keeps stars between 0 and 3", () => {
+        expect(calculateStars(-1)).toBe(0);
+        expect(calculateStars(5)).toBe(3);
     });
 });
 
@@ -41,7 +45,7 @@ describe("GameState", () => {
     });
 
     it("unlocks the next level after earning a star", () => {
-        const result = state.recordRaceResult(1, 15, 15);
+        const result = state.recordRaceResult(1, 15, 3);
         expect(result.stars).toBe(3);
         expect(result.newBest).toBe(true);
         expect(result.unlockedLevelId).toBe(2);
@@ -50,16 +54,16 @@ describe("GameState", () => {
     });
 
     it("does not unlock the next level with zero stars", () => {
-        const result = state.recordRaceResult(1, 2, 15);
+        const result = state.recordRaceResult(1, 15, 0);
         expect(result.stars).toBe(0);
         expect(result.unlockedLevelId).toBeNull();
         expect(state.isLevelUnlocked(2)).toBe(false);
     });
 
     it("keeps the best stars but still awards coins on a worse run", () => {
-        state.recordRaceResult(1, 15, 15);
+        state.recordRaceResult(1, 15, 3);
         const coinsAfterFirst = state.getCoins();
-        const result = state.recordRaceResult(1, 8, 15);
+        const result = state.recordRaceResult(1, 8, 1);
         expect(result.newBest).toBe(false);
         expect(result.unlockedLevelId).toBeNull();
         expect(state.getStars(1)).toBe(3);
@@ -67,18 +71,38 @@ describe("GameState", () => {
     });
 
     it("rejects races on locked or missing levels", () => {
-        expect(() => state.recordRaceResult(3, 10, 10)).toThrow();
-        expect(() => state.recordRaceResult(99, 10, 10)).toThrow();
+        expect(() => state.recordRaceResult(3, 10, 3)).toThrow();
+        expect(() => state.recordRaceResult(99, 10, 3)).toThrow();
     });
 
     it("buys engine upgrades until maxed out", () => {
         state.addCoins(1000);
+
         for (let i = 0; i < ENGINE_UPGRADE_PRICES.length; i++) {
-            expect(state.buyEngineUpgrade()).toBe(true);
+        expect(state.buyEngineUpgrade()).toBe(true);
         }
+
         expect(state.getNextEngineUpgradePrice()).toBeNull();
+
+        const remainingCoins = state.getCoins();
+
         expect(state.buyEngineUpgrade()).toBe(false);
+        expect(state.getCoins()).toBe(remainingCoins);
+
         expect(car.getSpeedMultiplier()).toBeGreaterThan(1);
+    });
+
+    it("buys upgrades", () => {
+        state.addCoins(100);
+
+        expect(state.buyUpgrade("Shield")).toBe(true);
+        expect(state.ownsUpgrade("Shield")).toBe(true);
+
+        const remainingCoins = state.getCoins();
+
+        // Cannot buy the same upgrade twice.
+        expect(state.buyUpgrade("Shield")).toBe(false);
+        expect(state.getCoins()).toBe(remainingCoins);
     });
 
     it("refuses purchases without enough coins", () => {
@@ -89,10 +113,10 @@ describe("GameState", () => {
     });
 
     it("buys, equips and switches skins", () => {
-        state.addCoins(SKIN_PRICES.blue);
-        expect(state.buySkin("blue")).toBe(true);
-        expect(car.getSkin()).toBe("blue");
-        expect(state.buySkin("blue")).toBe(false);
+        state.addCoins(SKIN_PRICES.green);
+        expect(state.buySkin("green")).toBe(true);
+        expect(car.getSkin()).toBe("green");
+        expect(state.buySkin("green")).toBe(false);
         expect(state.selectSkin("red")).toBe(true);
         expect(state.selectSkin("purple")).toBe(false);
         expect(car.getSkin()).toBe("red");
@@ -109,10 +133,16 @@ describe("GameState", () => {
     });
 
     it("saves and reloads progress", () => {
-        state.recordRaceResult(1, 15, 15);
+        state.recordRaceResult(1, 15, 3);
         state.buySkin("blue");
+
+        state.addCoins(100);
+        state.buyUpgrade("Shield");
+
         const reloaded = new GameState(storage);
+
         expect(reloaded.toJSON()).toEqual(state.toJSON());
+        expect(reloaded.ownsUpgrade("Shield")).toBe(true);
     });
 
     it("falls back to defaults on a corrupted save", () => {
@@ -127,7 +157,7 @@ describe("GameState", () => {
     });
 
     it("reset wipes progress", () => {
-        state.recordRaceResult(1, 15, 15);
+        state.recordRaceResult(1, 15, 3);
         state.reset();
         expect(state.getCoins()).toBe(0);
         expect(state.getTotalStars()).toBe(0);

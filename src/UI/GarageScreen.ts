@@ -52,7 +52,28 @@ export class GarageScreen implements Scene {
     miniGamesButton.addEventListener("click", () => {
       this.game.goTo(SceneIds.MiniGameSelect);
     });
+    // TUTORIAL - invisible button over the tutorial area
+    const tutorialButton = document.createElement("button");
 
+    tutorialButton.id = "tutorial-button";
+    tutorialButton.className = "hotspot";
+    tutorialButton.setAttribute("aria-label", "Tutorial");
+
+    Object.assign(tutorialButton.style, {
+      position: "absolute",
+      left: "75%",
+      top: "2%",
+      width: "24%",
+      height: "10%",
+      background: "transparent",
+      border: "none",
+      cursor: "pointer",
+      zIndex: "10",
+    });
+
+    tutorialButton.addEventListener("click", () => {
+      this.game.goTo(SceneIds.Instructions);
+    });
     // SHOP - invisible button over the right garage card
     const shopButton = document.createElement("button");
     shopButton.id = "shop-button";
@@ -80,7 +101,8 @@ export class GarageScreen implements Scene {
       image,
       levelsButton,
       miniGamesButton,
-      shopButton
+      shopButton,
+      tutorialButton
     );
 
     document.getElementById("game")!.appendChild(screen);
