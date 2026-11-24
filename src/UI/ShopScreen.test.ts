@@ -32,12 +32,13 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector("[data-color-name]")?.textContent).toBe("RACING RED");
   });
 
-  it("matches the backend shop categories without a cosmetics tab", () => {
+  it("shows only Car Colors and Upgrades in the shop", () => {
     game.goTo(SceneIds.Shop);
 
     expect(Array.from(document.querySelectorAll<HTMLElement>("[data-shop-tab]"))
-      .map((tab) => tab.dataset.shopTab)).toEqual(["skin", "engine", "upgrade"]);
-    expect(document.querySelector('[data-shop-tab="cosmetics"]')).toBeNull();
+      .map((tab) => tab.dataset.shopTab)).toEqual(["skin", "upgrade"]);
+    expect(Array.from(document.querySelectorAll<HTMLElement>("[data-shop-panel]"))
+      .map((panel) => panel.dataset.shopPanel)).toEqual(["skin", "upgrade"]);
   });
 
   it("shows coins awarded after a completed race and updates while the shop is open", () => {
@@ -120,16 +121,6 @@ describe("ShopScreen prototype", () => {
 
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("0");
     expect(document.querySelector("[data-shop-message]")?.textContent).toBe("NEED 25 MORE COINS!");
-  });
-
-  it("purchases a prototype engine level with coins", () => {
-    game.goTo(SceneIds.Shop);
-
-    document.querySelector<HTMLButtonElement>('[data-shop-tab="engine"]')!.click();
-    document.querySelector<HTMLButtonElement>("[data-buy-engine]")!.click();
-
-    expect(document.querySelector("[data-shop-balance]")?.textContent).toBe("35");
-    expect(document.querySelector("[data-engine-level]")?.textContent).toBe("1/3");
   });
 
   it("purchases a prototype upgrade with coins", () => {

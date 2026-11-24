@@ -2,7 +2,7 @@ import type { Game } from "../Game/Game.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
 
-type ShopTab = "skin" | "engine" | "upgrade";
+type ShopTab = "skin" | "upgrade";
 type ColorId =
   | "red"
   | "blue"
@@ -32,15 +32,12 @@ interface UpgradeOption {
 interface PrototypeShopState {
   equippedColorId: ColorId;
   ownedColorIds: ColorId[];
-  engineLevel: number;
   ownedUpgradeIds: UpgradeId[];
 }
 
 type StoredPrototypeShopState = Partial<PrototypeShopState>;
 
 const COLOR_PRICE = 25;
-// Temporary UI values mirror the backend categories until its Shop API is ready.
-const ENGINE_PRICES = [40, 80, 150] as const;
 const STORAGE_KEY = "mathRacer.prototypeShop";
 
 const COLORS: readonly CarColor[] = [
@@ -88,7 +85,6 @@ const UPGRADES: readonly UpgradeOption[] = [
 const DEFAULT_STATE: PrototypeShopState = {
   equippedColorId: "red",
   ownedColorIds: ["red", "blue", "yellow"],
-  engineLevel: 0,
   ownedUpgradeIds: [],
 };
 
@@ -123,9 +119,6 @@ function loadState(): PrototypeShopState {
     const ownedUpgradeIds = Array.isArray(parsed.ownedUpgradeIds)
       ? parsed.ownedUpgradeIds.filter(isUpgradeId)
       : [...DEFAULT_STATE.ownedUpgradeIds];
-    const engineLevel = typeof parsed.engineLevel === "number" && Number.isInteger(parsed.engineLevel)
-      ? Math.min(Math.max(parsed.engineLevel, 0), ENGINE_PRICES.length)
-      : DEFAULT_STATE.engineLevel;
 
     if (!ownedColorIds.includes(equippedColorId)) {
       ownedColorIds.push(equippedColorId);
@@ -134,7 +127,6 @@ function loadState(): PrototypeShopState {
     return {
       equippedColorId,
       ownedColorIds,
-      engineLevel,
       ownedUpgradeIds,
     };
   } catch {
@@ -175,7 +167,6 @@ export class ShopScreen implements Scene {
 
         <nav class="shop-tabs" aria-label="Shop categories">
           <button class="shop-tab active" type="button" data-shop-tab="skin" aria-pressed="true">▰ CAR COLORS</button>
-          <button class="shop-tab" type="button" data-shop-tab="engine" aria-pressed="false">⚙ ENGINE</button>
           <button class="shop-tab" type="button" data-shop-tab="upgrade" aria-pressed="false">▲ UPGRADES</button>
         </nav>
 
@@ -192,27 +183,6 @@ export class ShopScreen implements Scene {
             <h2 id="owned-colors-title"><span></span> OWNED COLORS <span></span></h2>
             <div class="owned-color-grid" data-owned-color-grid></div>
           </section>
-        </div>
-
-        <div class="shop-panel engine-panel" data-shop-panel="engine" hidden>
-          <section class="engine-card" aria-labelledby="engine-title">
-            <div class="engine-visual" aria-hidden="true">
-              <span class="engine-piston engine-piston-left"></span>
-              <span class="engine-core">V8</span>
-              <span class="engine-piston engine-piston-right"></span>
-            </div>
-            <div class="engine-details">
-              <p class="shop-eyebrow">PERFORMANCE TUNING</p>
-              <h2 id="engine-title">ENGINE LEVEL <span data-engine-level></span></h2>
-              <p>Upgrade the engine to increase the car's maximum racing speed.</p>
-              <div class="engine-level-track" data-engine-level-track aria-label="Engine upgrade progress"></div>
-              <button class="shop-purchase-button" type="button" data-buy-engine></button>
-            </div>
-          </section>
-          <aside class="engine-preview" aria-label="Engine upgrade car preview">
-            <img src="/images/shop/display-platform.png" alt="" aria-hidden="true">
-            <img src="/images/shop/car-red.png" alt="Car ready for an engine upgrade">
-          </aside>
         </div>
 
         <div class="shop-panel upgrade-panel" data-shop-panel="upgrade" hidden>
@@ -259,8 +229,6 @@ export class ShopScreen implements Scene {
       .addEventListener("click", (event) => this.handleColorClick(event, "data-color-id"));
     screen.querySelector<HTMLElement>("[data-owned-color-grid]")!
       .addEventListener("click", (event) => this.handleColorClick(event, "data-owned-color-id"));
-    screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!
-      .addEventListener("click", () => this.buyEngineUpgrade());
     screen.querySelector<HTMLElement>("[data-upgrade-grid]")!
       .addEventListener("click", (event) => this.handleUpgradeClick(event));
     screen.querySelector<HTMLButtonElement>('[data-confirm-action="cancel"]')!
@@ -372,24 +340,6 @@ export class ShopScreen implements Scene {
     }
   }
 
-  private buyEngineUpgrade(): void {
-    const price = ENGINE_PRICES[this.state.engineLevel];
-    if (price === undefined) {
-      this.setMessage("ENGINE IS ALREADY AT MAX LEVEL!");
-      return;
-    }
-    const balance = this.getBalance();
-    if (balance < price) {
-      this.setMessage(`NEED ${price - balance} MORE COINS!`);
-      return;
-    }
-
-    if (!this.game.state.spendCoins(price)) return;
-    this.state.engineLevel += 1;
-    this.saveAndRender();
-    this.setMessage(`ENGINE UPGRADED TO LEVEL ${this.state.engineLevel}!`);
-  }
-
   private handleUpgradeClick(event: Event): void {
     const target = event.target as Element;
     const button = target.closest<HTMLButtonElement>("[data-upgrade-id]");
@@ -445,27 +395,9 @@ export class ShopScreen implements Scene {
     this.screen.querySelector<HTMLElement>("[data-owned-color-grid]")!.innerHTML = this.state.ownedColorIds
       .map((id) => this.ownedColorMarkup(this.getColor(id)))
       .join("");
-    this.renderEnginePanel();
     this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML = UPGRADES
       .map((upgrade) => this.upgradeCardMarkup(upgrade))
       .join("");
-  }
-
-  private renderEnginePanel(): void {
-    if (!this.screen) return;
-
-    const price = ENGINE_PRICES[this.state.engineLevel];
-    this.screen.querySelector<HTMLElement>("[data-engine-level]")!.textContent =
-      `${this.state.engineLevel}/${ENGINE_PRICES.length}`;
-    this.screen.querySelector<HTMLElement>("[data-engine-level-track]")!.innerHTML = ENGINE_PRICES
-      .map((_, index) => `<span class="${index < this.state.engineLevel ? "filled" : ""}"></span>`)
-      .join("");
-
-    const button = this.screen.querySelector<HTMLButtonElement>("[data-buy-engine]")!;
-    button.disabled = price === undefined;
-    button.innerHTML = price === undefined
-      ? "MAX LEVEL"
-      : `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${price}`;
   }
 
   private colorCardMarkup(color: CarColor): string {
