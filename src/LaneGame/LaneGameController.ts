@@ -45,9 +45,10 @@ export class LaneGameController {
         for (const lane of lanes) {
             //Generates a new question for each lane
             let question;
+            //Tracks attempts to avoid infinite loops in case of limited question pool
+
             do {
                 question = this.questionGenerator.generateQuestion(this.state.getCurrentLevelId());
-                
             } while (
                 usedQuestions.has(question.text) ||
                 usedAnswers.has(question.answer)

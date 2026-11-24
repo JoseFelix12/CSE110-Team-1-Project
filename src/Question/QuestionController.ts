@@ -70,28 +70,23 @@ export class QuestionController {
           return new SubtractionQuestion(Math.max(a, b), Math.min(a, b));
         }
       case 2:
-        // Multiplication with factors up to 9.
-        a = Math.floor(Math.random() * 9) + 1;
-        b = Math.floor(Math.random() * 9) + 1;
+        // Multiplication with factors up to 12.
+        a = Math.floor(Math.random() * 12) + 1;
+        b = Math.floor(Math.random() * 12) + 1;
         return new MultiplicationQuestion(a, b);
       case 3: {
-        // Division up to factors up to 9
-        a = Math.floor(Math.random() * 9) + 1;
+        // Division with answers from 1 to 9.
+        const quotient = Math.floor(Math.random() * 9) + 1;
+        const divisor = Math.floor(Math.random() * 9) + 1;
 
-        const factors = [];
-        for (let i = 1; i <= a; i++) {
-          if (a % i === 0) {
-            factors.push(i);
-          }
-        }
-
-        b = factors[Math.floor(Math.random() * factors.length)];
+        a = quotient * divisor;
+        b = divisor;
         return new DivisionQuestion(a, b);
       }
       case 4:
-        //2-digit Multiplication with factors up to 25
-        a = Math.floor(Math.random() * 25) + 1;
-        b = Math.floor(Math.random() * 25) + 1;
+        //2-digit by 1-digit Multiplication with factors from 10 to 50
+        a = Math.floor(Math.random() * 41) + 10;
+        b = Math.floor(Math.random() * 9) + 1;
         return new MultiplicationQuestion(a, b);
       case 5:
         //2-digit division having answers from 1 to 10

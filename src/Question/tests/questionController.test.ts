@@ -62,7 +62,7 @@ describe("QuestionController", () => {
     it("Level three generates a question with numbers within the allowed ranges", () => {
       const question = questionController.generateQuestion(3);
       expect(question.a).toBeGreaterThanOrEqual(1);
-      expect(question.a).toBeLessThanOrEqual(9);
+      expect(question.a).toBeLessThanOrEqual(81);
       expect(question.b).toBeGreaterThanOrEqual(1);
       expect(question.b).toBeLessThanOrEqual(9);
     });
@@ -118,6 +118,7 @@ describe("QuestionController", () => {
         questionController.generateQuestion(10);
       }).toThrow("Invalid Id");
     });
+    
   });
 
   describe("Answer Checking", () => {
