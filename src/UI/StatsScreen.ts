@@ -103,11 +103,11 @@ export class StatsScreen implements Scene {
     reviewButton.textContent = "REVIEW WRONG ANSWERS";
 
     Object.assign(reviewButton.style, {
-      background: "#202020",
-      border: "2px solid #aaa",
+      background: "#ed2028",
+      border: "3px solid white",
       borderRadius: "8px",
       padding: "clamp(10px, 2vw, 22px)",
-      color: "#ffd32a",
+      color: "white",
       fontFamily: "inherit",
       fontSize: "clamp(9px, 1.2vw, 15px)",
       lineHeight: "1.8",
@@ -115,6 +115,14 @@ export class StatsScreen implements Scene {
       minWidth: "0",
       overflowWrap: "anywhere",
     });
+
+    reviewButton.onmouseenter = () => {
+    reviewButton.style.background = "#b81820";
+    };
+
+    reviewButton.onmouseleave = () => {
+    reviewButton.style.background = "#ed2028";
+    };
 
     reviewButton.onclick = () => {
      this.game.goTo(SceneIds.WrongAnswers, params);

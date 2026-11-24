@@ -48,6 +48,7 @@ let audioInstances: FakeAudio[] = [];
 class FakeAudio {
   src: string;
   loop = false;
+  muted = false;
   volume = 1;
   currentTime = 0;
 
@@ -243,5 +244,98 @@ describe("Repair Solver Screen", () => {
     const music = getAudio("/sounds/repair-music.mp3");
 
     expect(music.play).toHaveBeenCalledTimes(2);
+  });
+
+    it("pauses and resumes the game", () => {
+    const music = getAudio("/sounds/repair-music.mp3");
+    music.pause.mockClear();
+
+    clickButton("PAUSE");
+
+    const menu = document.querySelector<HTMLElement>(
+      ".race-pause"
+    )!;
+
+    expect(menu.hidden).toBe(false);
+    expect(music.pause).toHaveBeenCalledTimes(1);
+
+    // Answers cannot be selected while paused.
+    clickAnswer("5");
+
+    expect(getAudio("/sounds/Correct.mp3").play)
+      .not.toHaveBeenCalled();
+
+    clickButton("Resume");
+
+    expect(menu.hidden).toBe(true);
+    expect(music.play).toHaveBeenCalledTimes(2);
+
+    expect(document.body.textContent).toContain(
+      "QUESTION 1/10"
+    );
+
+    // Answers work again after resuming.
+    clickAnswer("5");
+
+    expect(getAudio("/sounds/Correct.mp3").play)
+      .toHaveBeenCalledTimes(1);
+  });
+
+  it("mutes and unmutes all game audio", () => {
+    clickButton("PAUSE");
+    clickButton("Mute Audio");
+
+    expect(getAudio("/sounds/repair-music.mp3").muted)
+      .toBe(true);
+    expect(getAudio("/sounds/Correct.mp3").muted)
+      .toBe(true);
+    expect(getAudio("/sounds/Incorrect.mp3").muted)
+      .toBe(true);
+
+    clickButton("Unmute Audio");
+
+    expect(getAudio("/sounds/repair-music.mp3").muted)
+      .toBe(false);
+    expect(getAudio("/sounds/Correct.mp3").muted)
+      .toBe(false);
+    expect(getAudio("/sounds/Incorrect.mp3").muted)
+      .toBe(false);
+  });
+
+  it("preserves the question delay while paused", () => {
+    clickAnswer("5");
+
+    vi.advanceTimersByTime(200);
+
+    clickButton("PAUSE");
+
+    vi.advanceTimersByTime(10000);
+
+    expect(document.body.textContent).toContain(
+      "QUESTION 1/10"
+    );
+
+    clickButton("Resume");
+
+    vi.advanceTimersByTime(299);
+
+    expect(document.body.textContent).toContain(
+      "QUESTION 1/10"
+    );
+
+    vi.advanceTimersByTime(1);
+
+    expect(document.body.textContent).toContain(
+      "QUESTION 2/10"
+    );
+  });
+
+  it("returns to Mini Games when Quit is clicked", () => {
+    clickButton("PAUSE");
+    clickButton("Quit");
+
+    expect(game.getCurrentSceneId()).toBe(
+      SceneIds.MiniGameSelect
+    );
   });
 });

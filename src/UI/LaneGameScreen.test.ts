@@ -20,9 +20,11 @@ import { CatchTheAnswer } from "./LaneGameScreen.ts";
 // Fake audio so tests don't play actual sounds.
 let audioInstances: FakeAudio[] = [];
 
+
 class FakeAudio {
   src: string;
   loop = false;
+  muted = false;
   volume = 1;
   currentTime = 0;
 
@@ -289,15 +291,91 @@ describe("Catch the Answer Screen", () => {
     ).toHaveLength(1);
   });
 
-  it("returns to the previous screen when Exit is clicked", () => {
-    const exitButton = document.querySelector<HTMLButtonElement>(
-      '[aria-label="Exit mini-game"]'
+  it("returns to the previous screen when Quit is clicked", () => {
+    const pauseButton = document.querySelector<HTMLButtonElement>(
+      '[aria-label="Pause mini-game"]'
     );
 
-    expect(exitButton).not.toBeNull();
+    expect(pauseButton).not.toBeNull();
 
-    exitButton!.click();
+    pauseButton!.click();
+
+    const quitButton = document.querySelector<HTMLButtonElement>(
+      ".race-pause__quit"
+    );
+
+    expect(quitButton).not.toBeNull();
+
+    quitButton!.click();
 
     expect(game.back).toHaveBeenCalledTimes(1);
   });
+
+it("pauses and resumes the game", () => {
+  const music = getAudio("/sounds/lane-music.mp3");
+  music.pause.mockClear();
+
+  getButton("PAUSE").click();
+
+  const menu = document.querySelector<HTMLElement>(".race-pause")!;
+
+  expect(menu.hidden).toBe(false);
+  expect(music.pause).toHaveBeenCalledTimes(1);
+
+  document.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "ArrowLeft" })
+  );
+
+  expect(controller.handleCarMovement).not.toHaveBeenCalled();
+
+  getButton("Resume").click();
+
+  expect(menu.hidden).toBe(true);
+  expect(music.play).toHaveBeenCalledTimes(2);
+
+  document.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "ArrowLeft" })
+  );
+
+  expect(controller.handleCarMovement).toHaveBeenCalledTimes(1);
+});
+
+it("mutes and unmutes all game audio", () => {
+  getButton("PAUSE").click();
+  getButton("Mute Audio").click();
+
+  expect(getAudio("/sounds/lane-music.mp3").muted).toBe(true);
+  expect(getAudio("/sounds/Correct.mp3").muted).toBe(true);
+  expect(getAudio("/sounds/Incorrect.mp3").muted).toBe(true);
+
+  getButton("Unmute Audio").click();
+
+  expect(getAudio("/sounds/lane-music.mp3").muted).toBe(false);
+  expect(getAudio("/sounds/Correct.mp3").muted).toBe(false);
+  expect(getAudio("/sounds/Incorrect.mp3").muted).toBe(false);
+});
+
+it("preserves the round delay while paused", () => {
+  const internals = screen as unknown as {
+    checkAnswer: () => void;
+  };
+
+  internals.checkAnswer();
+  vi.advanceTimersByTime(200);
+
+  getButton("PAUSE").click();
+
+  vi.advanceTimersByTime(10000);
+
+  expect(controller.generateRound).toHaveBeenCalledTimes(1);
+
+  getButton("Resume").click();
+
+  vi.advanceTimersByTime(449);
+  expect(controller.generateRound).toHaveBeenCalledTimes(1);
+
+  vi.advanceTimersByTime(1);
+  expect(controller.generateRound).toHaveBeenCalledTimes(2);
+});
+
 });

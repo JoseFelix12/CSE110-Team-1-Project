@@ -1,10 +1,10 @@
-
 import type { Game } from "../Game/Game.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
 import type {LaneGameController} from "../LaneGame/LaneGameController.ts"
 import type {LaneGameModel} from "../LaneGame/LaneGameModel.ts"
 import { SceneIds } from "../Game/Scene.ts";
+import { PauseMenu } from "../RacingScreen/view/PauseMenu.ts";
 
 export class CatchTheAnswer implements Scene {
   private game: Game;
@@ -14,6 +14,8 @@ export class CatchTheAnswer implements Scene {
   private correctSound = new Audio("/sounds/Correct.mp3");
   private incorrectSound = new Audio("/sounds/Incorrect.mp3");
   private backgroundMusic = new Audio("/sounds/lane-music.mp3");
+  
+  
 
   private screen: HTMLElement | null = null;
   private car: HTMLImageElement | null = null;
@@ -35,6 +37,11 @@ export class CatchTheAnswer implements Scene {
 
   private active = false;
   private paused = false;
+  private menuPaused = false;
+  private muted = false;
+  private pauseMenu: PauseMenu | null = null;
+  private roundDelayRemaining = 650;
+  private roundDelayStartedAt = 0;
   private lastTime = 0;
   private frameId = 0;
   private pauseTimer: number | null = null;
@@ -188,26 +195,130 @@ export class CatchTheAnswer implements Scene {
     screen.appendChild(score);
     this.scoreText = score;
 
-    // Exit button
-    const exitButton = document.createElement("button");
+    // Pause button
+    const pauseButton = document.createElement("button");
+    pauseButton.type = "button";
+    pauseButton.setAttribute("aria-label", "Pause Repair Solver");
+    pauseButton.innerHTML = `
+      <span style="display:flex; gap:5px;" aria-hidden="true">
+        <span style="width:7px; height:20px; background:white;"></span>
+        <span style="width:7px; height:20px; background:white;"></span>
+      </span>
+      <span>PAUSE</span>
+    `;
 
-    Object.assign(exitButton.style, {
+    Object.assign(pauseButton.style, {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "12px",
       position: "absolute",
       top: "5%",
       left: "3%",
       width: "16%",
       height: "12%",
-      backgroundImage: 'url("/images/Group 6.png")',
-      backgroundSize: "100% 100%",
-      backgroundColor: "transparent",
-      border: "none",
+      backgroundColor: "#111111",
+      border: "3px solid white",
+      borderRadius: "8px",
+      color: "white",
+      fontFamily: this.font,
+      fontSize: "clamp(8px, 1.2vw, 16px)",
       cursor: "pointer",
       zIndex: "6",
     });
 
-    exitButton.setAttribute("aria-label", "Exit mini-game");
-    exitButton.onclick = () => this.game.back();
-    screen.appendChild(exitButton);
+    pauseButton.setAttribute("aria-label", "Pause mini-game");
+    pauseButton.onclick = () => this.openPauseMenu();
+
+    screen.appendChild(pauseButton);
+
+    // Reuse the main race pause menu
+    this.pauseMenu = new PauseMenu({
+      onResume: () => this.resumeGame(),
+      onMuteToggle: () => this.toggleMute(),
+      onQuit: () => this.game.back(),
+    });
+
+    this.pauseMenu.setMuted(this.muted);
+    Object.assign(this.pauseMenu.element.style, {
+      position: "absolute",
+      inset: "0",
+      backgroundColor: "rgba(0, 0, 0, 0.55)",
+      backdropFilter: "blur(3px)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "30",
+      display: "none",
+    });
+    
+    // Custom mini-game pause menu styling
+    const pausePanel = this.pauseMenu.element.querySelector<HTMLElement>(
+      ".race-pause__panel"
+    )!;
+
+    Object.assign(pausePanel.style, {
+      background: "#24242c",
+      border: "4px solid white",
+      borderRadius: "14px",
+      padding: "clamp(20px, 3vw, 40px)",
+      width: "40%",
+      display: "flex",
+      flexDirection: "column",
+      gap: "18px",
+      textAlign: "center",
+      fontFamily: this.font,
+      boxSizing: "border-box",
+      boxShadow: "0 8px 0 #111",
+    });
+
+    const pauseTitle = pausePanel.querySelector("h2")!;
+
+    Object.assign(pauseTitle.style, {
+      color: "#ffd32a",
+      fontSize: "clamp(16px, 2.5vw, 30px)",
+      margin: "0 0 15px",
+      lineHeight: "1.6",
+    });
+
+    pausePanel.querySelectorAll("button").forEach((button) => {
+      Object.assign(button.style, {
+        background: "#373740",
+        border: "3px solid white",
+        borderRadius: "8px",
+        padding: "18px 10px",
+        color: "white",
+        fontFamily: this.font,
+        fontSize: "clamp(9px, 1.3vw, 18px)",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        lineHeight: "1.6",
+        width: "100%",
+      });
+
+      button.onmouseenter = () => {
+        button.style.filter = "brightness(1.3)";
+      };
+
+      button.onmouseleave = () => {
+        button.style.filter = "brightness(1)";
+      };
+    });
+
+    const resumeButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__resume"
+    )!;
+
+    resumeButton.style.background = "#244936";
+    resumeButton.style.borderColor = "#89e5a7";
+
+    const quitButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__quit"
+    )!;
+
+    quitButton.style.background = "#b81820";
+
+
+    screen.appendChild(this.pauseMenu.element);
 
     // Three falling answer boxes
     for (let i = 0; i < 3; i++) {
@@ -316,6 +427,60 @@ export class CatchTheAnswer implements Scene {
     };
   }*/
 
+      private openPauseMenu(): void {
+      if (!this.active || this.menuPaused) return;
+
+      this.menuPaused = true;
+
+      // Preserve the remaining delay between rounds.
+      if (this.pauseTimer !== null) {
+        clearTimeout(this.pauseTimer);
+        this.pauseTimer = null;
+
+        this.roundDelayRemaining = Math.max(
+          0,
+          this.roundDelayRemaining -
+            (Date.now() - this.roundDelayStartedAt)
+        );
+      }
+
+      this.backgroundMusic.pause();
+      this.correctSound.pause();
+      this.incorrectSound.pause();
+
+      if (this.pauseMenu) {
+        this.pauseMenu.element.style.display = "flex";
+        this.pauseMenu.show();
+      }
+    }
+
+    private resumeGame(): void {
+      if (!this.active || !this.menuPaused) return;
+
+      this.menuPaused = false;
+      this.lastTime = 0;
+
+      if (this.pauseMenu) {
+        this.pauseMenu.hide();
+        this.pauseMenu.element.style.display = "none";
+      }
+      void this.backgroundMusic.play().catch(() => {});
+
+      if (this.paused) {
+        this.scheduleNextRound();
+      }
+    }
+
+    private toggleMute(): void {
+      this.muted = !this.muted;
+
+      this.backgroundMusic.muted = this.muted;
+      this.correctSound.muted = this.muted;
+      this.incorrectSound.muted = this.muted;
+
+      this.pauseMenu?.setMuted(this.muted);
+    }
+
   private startRound(): void {
     if (this.round >= this.totalRounds) {
       this.finishGame();
@@ -346,6 +511,12 @@ export class CatchTheAnswer implements Scene {
 
   private animate = (time: number): void => {
     if (!this.active) return;
+
+    if (this.menuPaused) {
+      this.lastTime = time;
+      this.frameId = requestAnimationFrame(this.animate);
+      return;
+}
 
     if (this.lastTime === 0) this.lastTime = time;
 
@@ -379,19 +550,28 @@ export class CatchTheAnswer implements Scene {
     }
   };
 
-  private checkAnswer(): void {
+    private checkAnswer(): void {
+    if (!this.active || this.paused || this.menuPaused) return;
+
     this.paused = true;
 
     this.laneGameController.handleLaneSelection();
 
+    this.roundDelayRemaining = 650;
+    this.scheduleNextRound();
+  }
+
+  private scheduleNextRound(): void {
+    this.roundDelayStartedAt = Date.now();
+
     this.pauseTimer = window.setTimeout(() => {
-    this.pauseTimer = null;
+      this.pauseTimer = null;
 
-    if (!this.active) return;
+      if (!this.active || this.menuPaused) return;
 
-    this.round++;
-    this.startRound();
-}, 650);
+      this.round++;
+      this.startRound();
+    }, this.roundDelayRemaining);
   }
 
   showFeedback(correct: boolean): void {
@@ -492,7 +672,7 @@ export class CatchTheAnswer implements Scene {
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {
-    if (!this.active || this.paused) return;
+    if (!this.active || this.paused || this.menuPaused) return;
 
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
@@ -508,6 +688,11 @@ export class CatchTheAnswer implements Scene {
     this.backgroundMusic.pause();
     this.backgroundMusic.currentTime = 0;
     this.active = false;
+    this.menuPaused = false;
+    this.pauseMenu = null;
+
+    this.correctSound.pause();
+    this.incorrectSound.pause();
     this.paused = true;
     cancelAnimationFrame(this.frameId);
 

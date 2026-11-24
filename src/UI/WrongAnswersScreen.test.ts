@@ -64,7 +64,7 @@ describe("Wrong Answers Review Screen", () => {
     expect(text).toContain(question.text);
     expect(text).toContain("12");
     expect(text).toContain("13");
-    expect(text).toContain("8 + 5 = 13");
+    expect(text).toContain("Start at 8 and count forward 5 times: 9, 10, 11, 12, 13.");
   });
 
   it("navigates between missed questions", () => {
@@ -103,8 +103,7 @@ describe("Wrong Answers Review Screen", () => {
     });
 
     expect(document.body.textContent).toContain("TIME OUT");
-    expect(document.body.textContent).toContain("4 + 3 = 7");
-  });
+    expect(document.body.textContent).toContain("Start at 4 and count forward 3 times: 5, 6, 7.");  });
 
   it("displays the correct lane expression when provided", () => {
     const question = new DivisionQuestion(12, 3);

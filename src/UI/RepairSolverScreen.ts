@@ -4,6 +4,7 @@ import { SceneIds } from "../Game/Scene.ts";
 import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RepairMinigame } from "../Game/RepairMinigame.ts";
 import { COINS_PER_CORRECT_ANSWER } from "../Game/gameConfig.ts";
+import { PauseMenu } from "../RacingScreen/view/PauseMenu.ts";
 
 const TOTAL_QUESTIONS = 10;
 const HEALTH_GAIN = 20;
@@ -14,6 +15,7 @@ const FONT = '"Press Start 2P", monospace';
 export class RepairSolverScreen implements Scene {
   private screen: HTMLElement | null = null;
   private timeoutId: number | null = null;
+  private muted = false;
   private correctSound = new Audio("/sounds/Correct.mp3");
   private incorrectSound = new Audio("/sounds/Incorrect.mp3");
   private game: Game;
@@ -85,39 +87,39 @@ export class RepairSolverScreen implements Scene {
       "0%", "0%", "100%", "100%"
     );
 
-    // EXIT artwork
-    const exitButton = document.createElement("button");
-    exitButton.setAttribute("aria-label", "Exit Repair Solver");
+    // Pause button, matching Catch the Answer.
+    const pauseButton = document.createElement("button");
+    pauseButton.type = "button";
+    pauseButton.setAttribute("aria-label", "Pause Repair Solver");
+    pauseButton.innerHTML = `
+      <span style="display:flex; gap:5px;" aria-hidden="true">
+        <span style="width:7px; height:20px; background:white;"></span>
+        <span style="width:7px; height:20px; background:white;"></span>
+      </span>
+      <span>PAUSE</span>
+    `;
 
-    Object.assign(exitButton.style, {
+    Object.assign(pauseButton.style, {
       position: "absolute",
       left: "3%",
       top: "3%",
-      width: "13%",
-      height: "7%",
-      padding: "0",
-      border: "none",
-      background: "transparent",
+      width: "16%",
+      height: "8%",
+      backgroundColor: "#111111",
+      border: "3px solid white",
+      borderRadius: "8px",
+      color: "white",
+      fontFamily: FONT,
+      fontSize: "clamp(8px, 1.2vw, 16px)",
       cursor: "pointer",
       zIndex: "25",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "12px",
     });
 
-    const exitImage = document.createElement("img");
-    exitImage.src = "/images/Group%206.png";
-    exitImage.alt = "EXIT";
-
-    Object.assign(exitImage.style, {
-      width: "100%",
-      height: "100%",
-      objectFit: "contain",
-      pointerEvents: "none",
-    });
-
-    exitButton.appendChild(exitImage);
-    exitButton.onclick = () => {
-      this.game.goTo(SceneIds.MiniGameSelect);
-    };
-    screen.appendChild(exitButton);
+    screen.appendChild(pauseButton);
 
     // Existing repair logic, using the player's car
     const repairGame = new RepairMinigame(
@@ -128,6 +130,10 @@ export class RepairSolverScreen implements Scene {
     let correctCount = 0;
     let incorrectCount = 0;
     let finished = false;
+    let menuPaused = false;
+    let waitingForNextQuestion = false;
+    let delayRemaining = ANSWER_DELAY;
+    let delayStartedAt = 0;
     const wrongAnswers: {
       question: Question;
       playerAnswer: string | null;
@@ -229,6 +235,7 @@ export class RepairSolverScreen implements Scene {
     const showResults = (): void => {
       if (finished || this.screen !== screen) return;
       finished = true;
+      pauseButton.remove();
       this.backgroundMusic.pause();
       this.backgroundMusic.currentTime = 0;
 
@@ -408,8 +415,21 @@ export class RepairSolverScreen implements Scene {
       screen.appendChild(overlay);
     };
 
+    // Preserve the remaining feedback delay if the player pauses.
+    const scheduleNextQuestion = (): void => {
+      delayStartedAt = Date.now();
+      this.timeoutId = window.setTimeout(() => {
+        this.timeoutId = null;
+        if (finished || menuPaused || this.screen !== screen) return;
+
+        waitingForNextQuestion = false;
+        status.style.color = "white";
+        nextQuestion();
+      }, delayRemaining);
+    };
+
     const nextQuestion = (): void => {
-      if (finished || this.screen !== screen) return;
+      if (finished || menuPaused || this.screen !== screen) return;
 
       if (questionNumber >= TOTAL_QUESTIONS) {
         showResults();
@@ -436,6 +456,9 @@ export class RepairSolverScreen implements Scene {
         button.style.opacity = "1";
 
         button.onclick = () => {
+          if (finished || menuPaused || waitingForNextQuestion || this.screen !== screen) return;
+
+          waitingForNextQuestion = true;
           buttons.forEach(b => {
             b.disabled = true;
           });
@@ -468,23 +491,134 @@ export class RepairSolverScreen implements Scene {
             status.style.color = "#FF4B4B";
           }
 
-          this.timeoutId = window.setTimeout(() => {
-            this.timeoutId = null;
-
-            if (this.screen !== screen) return;
-
-            status.style.color = "white";
-
-            if (questionNumber >= TOTAL_QUESTIONS) {
-              showResults();
-            } else {
-              nextQuestion();
-            }
-          }, ANSWER_DELAY);
+          delayRemaining = ANSWER_DELAY;
+          scheduleNextQuestion();
         };
       });
     };
 
+    // Reuse the main race component with our mini-game styling.
+    const pauseMenu = new PauseMenu({
+      onResume: () => {
+        if (!menuPaused || finished || this.screen !== screen) return;
+
+        menuPaused = false;
+        pauseMenu.hide();
+        pauseMenu.element.style.display = "none";
+        void this.backgroundMusic.play().catch(() => {});
+
+        if (waitingForNextQuestion) {
+          scheduleNextQuestion();
+        } else {
+          buttons.forEach(button => { button.disabled = false; });
+        }
+        pauseButton.focus();
+      },
+      onMuteToggle: () => {
+        this.muted = !this.muted;
+        this.backgroundMusic.muted = this.muted;
+        this.correctSound.muted = this.muted;
+        this.incorrectSound.muted = this.muted;
+        pauseMenu.setMuted(this.muted);
+      },
+      onQuit: () => this.game.goTo(SceneIds.MiniGameSelect),
+    });
+
+    pauseMenu.setMuted(this.muted);
+
+    Object.assign(pauseMenu.element.style, {
+      position: "absolute",
+      inset: "0",
+      backgroundColor: "rgba(0, 0, 0, 0.55)",
+      backdropFilter: "blur(3px)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "30",
+      display: "none",
+    });
+
+    const pausePanel = pauseMenu.element.querySelector<HTMLElement>(
+      ".race-pause__panel"
+    )!;
+
+    Object.assign(pausePanel.style, {
+      background: "#24242c",
+      border: "4px solid white",
+      borderRadius: "14px",
+      padding: "clamp(20px, 3vw, 40px)",
+      width: "40%",
+      display: "flex",
+      flexDirection: "column",
+      gap: "18px",
+      textAlign: "center",
+      fontFamily: FONT,
+      boxSizing: "border-box",
+      boxShadow: "0 8px 0 #111",
+    });
+
+    const pauseTitle = pausePanel.querySelector("h2")!;
+
+    Object.assign(pauseTitle.style, {
+      color: "#ffd32a",
+      fontSize: "clamp(16px, 2.5vw, 30px)",
+      margin: "0 0 15px",
+      lineHeight: "1.6",
+    });
+
+    pausePanel.querySelectorAll("button").forEach(button => {
+      Object.assign(button.style, {
+        background: "#373740",
+        border: "3px solid white",
+        borderRadius: "8px",
+        padding: "18px 10px",
+        color: "white",
+        fontFamily: FONT,
+        fontSize: "clamp(9px, 1.3vw, 18px)",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        lineHeight: "1.6",
+        width: "100%",
+      });
+
+      button.onmouseenter = () => {
+        button.style.filter = "brightness(1.3)";
+      };
+      button.onmouseleave = () => {
+        button.style.filter = "brightness(1)";
+      };
+    });
+
+    const resumeButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__resume"
+    )!;
+    resumeButton.style.background = "#244936";
+    resumeButton.style.borderColor = "#89e5a7";
+
+    const quitButton = pausePanel.querySelector<HTMLButtonElement>(
+      ".race-pause__quit"
+    )!;
+    quitButton.style.background = "#b81820";
+
+    pauseButton.onclick = () => {
+      if (menuPaused || finished || this.screen !== screen) return;
+
+      menuPaused = true;
+      buttons.forEach(button => { button.disabled = true; });
+
+      if (this.timeoutId !== null) {
+        window.clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+        delayRemaining = Math.max(0, delayRemaining - (Date.now() - delayStartedAt));
+      }
+
+      this.backgroundMusic.pause();
+      this.correctSound.pause();
+      this.incorrectSound.pause();
+      pauseMenu.element.style.display = "flex";
+      pauseMenu.show();
+    };
+
+    screen.appendChild(pauseMenu.element);
     document.getElementById("game")!.appendChild(screen);
     nextQuestion();
   }
@@ -492,6 +626,8 @@ export class RepairSolverScreen implements Scene {
   exit(): void {
     this.backgroundMusic.pause();
     this.backgroundMusic.currentTime = 0;
+    this.correctSound.pause();
+    this.incorrectSound.pause();
 
     if (this.timeoutId !== null) {
       window.clearTimeout(this.timeoutId);

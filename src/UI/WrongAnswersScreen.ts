@@ -21,12 +21,25 @@ export class WrongAnswersScreen implements Scene {
     const { a, b, operator, answer } = question;
 
     switch (operator) {
-      case "addition":
-        return `${a} + ${b} = ${answer}`;
-      case "subtraction":
-        return `${a} - ${b} = ${answer}`;
+      case "addition": {
+        const steps = b > 0 && b <= 10 && Number.isInteger(b)
+          ? Array.from({ length: b }, (_, i) => a + i + 1).join(", ")
+          : "";
+
+        return `Addition means combining amounts. Start at ${a} and count forward ${b} times${steps ? ": " + steps : ""}. This gives you ${answer}.`;
+      }
+
+      case "subtraction": {
+        const steps = b > 0 && b <= 10 && Number.isInteger(b)
+          ? Array.from({ length: b }, (_, i) => a - i - 1).join(", ")
+          : "";
+
+        return `Subtraction means taking away an amount. Start at ${a} and count backward ${b} times${steps ? ": " + steps : ""}. This gives you ${answer}.`;
+      }
+
       case "multiplication":
         return `${a} groups of ${b} = ${answer}`;
+
       case "division":
         return `${a} divided by ${b} = ${answer}`;
     }
