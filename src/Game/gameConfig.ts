@@ -102,15 +102,16 @@ export const DEFAULT_SKIN: SkinColor = 'red';
 export const STARTER_SKINS: SkinColor[] = [DEFAULT_SKIN];
 
 const PAINT_PRICE = 75;
+const PREMIUM_PAINT_PRICE = 100;
 export const SKIN_PRICES: Record<SkinColor, number> = {
     red: PAINT_PRICE,
     blue: PAINT_PRICE,
     green: PAINT_PRICE,
     purple: PAINT_PRICE,
     pink: PAINT_PRICE,
-    black: PAINT_PRICE,
+    black: PREMIUM_PAINT_PRICE,
     white: PAINT_PRICE,
-    yellow: PAINT_PRICE,
+    yellow: PREMIUM_PAINT_PRICE,
 };
 
 /** Cost of each engine upgrade; index 0 is the price of going from level 0 to 1 */
@@ -121,9 +122,9 @@ export const ENGINE_SPEED_BONUS_PER_LEVEL = 0.1;
 
 /** Price per purchase. Shield can be purchased again up to MAX_SHIELDS. */
 export const UPGRADE_PRICES: Record<Upgrade, number> = {
-  "Speed Boost": 30,
-  "Better Tires": 30,
-  "Shield": 35,
-  "Extra Time": 50,
+  "Speed Boost": 80,
+  "Better Tires": 100,
+  "Shield": 115,
+  "Extra Time": 150,
 };
 

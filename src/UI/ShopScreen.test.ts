@@ -41,10 +41,14 @@ describe("ShopScreen prototype", () => {
     expect([...document.querySelectorAll<HTMLElement>("[data-owned-color-id]")]
       .map((card) => card.dataset.ownedColorId)).toEqual(["red"]);
     expect(Array.from(document.querySelectorAll(".color-card.locked .color-card-state"),
-      (badge) => badge.textContent?.trim())).toEqual(Array(7).fill("▣75"));
+      (badge) => badge.textContent?.trim())).toEqual([
+        "▣75", "▣100", "▣75", "▣75", "▣75", "▣100", "▣75",
+      ]);
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "RACING RED",
     );
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`0/${MAX_SHIELDS} OWNED`);
   });
 
   it("shows only Car Colors and Upgrades in the shop", () => {
@@ -199,6 +203,8 @@ describe("ShopScreen prototype", () => {
     ["better-tires", "Better Tires"],
     ["extra-time", "Extra Time"],
   ] as const)("marks %s as owned after a single purchase", (id, upgrade) => {
+    const balance = 150;
+    game.state.addCoins(balance - game.state.getCoins());
     game.goTo(SceneIds.Shop);
 
     document
@@ -208,7 +214,7 @@ describe("ShopScreen prototype", () => {
     document.querySelector<HTMLButtonElement>(purchaseButton)!.click();
 
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe(
-      String(75 - UPGRADE_PRICES[upgrade]),
+      String(balance - UPGRADE_PRICES[upgrade]),
     );
     const ownedButton = document.querySelector<HTMLButtonElement>(purchaseButton)!;
     expect(ownedButton.textContent).toContain("OWNED");
@@ -249,10 +255,12 @@ describe("ShopScreen prototype", () => {
     expect(shieldButton().textContent?.trim()).toBe(String(price));
     shieldButton().click();
     expect(shieldButton().disabled).toBe(false);
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`${MAX_SHIELDS - 1}/${MAX_SHIELDS} OWNED`);
     shieldButton().click();
     expect(document.querySelector("[data-upgrade-stock]")?.textContent)
-      .toBe(`${MAX_SHIELDS}/${MAX_SHIELDS} IN STOCK`);
-    expect(shieldButton().textContent?.trim()).toBe("MAX STOCK");
+      .toBe(`${MAX_SHIELDS}/${MAX_SHIELDS} OWNED`);
+    expect(shieldButton().textContent?.trim()).toBe("LIMIT REACHED");
     expect(shieldButton().disabled).toBe(true);
     expect(game.state.getCoins()).toBe(price);
   });

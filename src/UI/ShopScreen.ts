@@ -482,7 +482,7 @@ export class ShopScreen implements Scene {
         <h3>${upgrade.name}</h3>
         <p>${upgrade.description}${
           item.inventory
-            ? `<br><strong data-upgrade-stock>${item.inventory.count}/${item.inventory.limit} IN STOCK</strong>`
+            ? `<br><strong data-upgrade-stock>${item.inventory.count}/${item.inventory.limit} OWNED</strong>`
             : ""
         }</p>
         <button class="shop-purchase-button" type="button" data-upgrade-id="${upgrade.id}"
@@ -493,7 +493,7 @@ export class ShopScreen implements Scene {
   }
 
   private priceMarkup(item: ShopItem): string {
-    if (item.inventory && item.inventory.count >= item.inventory.limit) return "MAX STOCK";
+    if (item.inventory && item.inventory.count >= item.inventory.limit) return "LIMIT REACHED";
     if (item.price === null) return item.owned ? "OWNED" : "UNAVAILABLE";
     return `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${item.price}`;
   }
