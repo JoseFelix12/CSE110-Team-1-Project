@@ -5,6 +5,9 @@ import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
 import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, SKIN_PRICES, UPGRADE_PRICES } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK } from '../constants.ts';
+import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, UPGRADE_PRICES } from '../Game/gameConfig.ts';
+import type { Upgrade } from '../Game/gameConfig.ts';
+import { DAMAGE_PER_STREAK, QUESTION_TIMER } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
 import type { RaceClassModel } from './RaceClassModel.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
@@ -82,6 +85,10 @@ describe('RaceClassController', () => {
         answerCorrectly();
         answerCorrectly();
         controller.update(0);
+    };
+    const giveUpgrade = (upgrade: Upgrade) => {
+        gameState.addCoins(UPGRADE_PRICES[upgrade]);
+        expect(gameState.buyUpgrade(upgrade)).toBe(true);
     };
 
     beforeEach(() => {
@@ -302,6 +309,85 @@ describe('RaceClassController', () => {
             startRacing();
             vi.advanceTimersByTime(30000); // three questions time out
             expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
+    });
+
+    describe('shield upgrade', () => {
+        it('blocks the damage from 3 wrong answers in a row', () => {
+            giveUpgrade('Shield');
+            startRacing();
+            answerWrong(); answerWrong(); answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH);
+        });
+    
+        it('is used up by the block', () => {
+            giveUpgrade('Shield');
+            startRacing();
+            answerWrong(); answerWrong(); answerWrong();
+            expect(gameState.ownsUpgrade('Shield')).toBe(false);
+        });
+    
+        it('lets the next hit through once it is used up', () => {
+            giveUpgrade('Shield');
+            startRacing();
+            answerWrong(); answerWrong(); answerWrong();
+            startRacing(); // fresh race, since the first has only 4 questions
+            answerWrong(); answerWrong(); answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
+    
+        it('is not used by wrong answers that do not reach a hit', () => {
+            giveUpgrade('Shield');
+            startRacing();
+            answerWrong(); answerWrong();
+            expect(gameState.ownsUpgrade('Shield')).toBe(true);
+        });
+    
+        it('can be bought again after it is used up', () => {
+            giveUpgrade('Shield');
+            startRacing();
+            answerWrong(); answerWrong(); answerWrong();
+            giveUpgrade('Shield');
+            expect(gameState.ownsUpgrade('Shield')).toBe(true);
+        });
+    });
+    
+    describe('speed boost upgrade', () => {
+        it('fills nitro one answer sooner', () => {
+            giveUpgrade('Speed Boost');
+            startRacing();
+            answerCorrectly();
+            controller.update(0);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(1);
+        });
+    
+        it('charges at the normal rate without it', () => {
+            startRacing();
+            answerCorrectly();
+            controller.update(0);
+            expect(view().setNitroLevel).toHaveBeenLastCalledWith(0.5);
+        });
+    });
+    
+    describe('extra time upgrade', () => {
+        it('gives each question 5 more seconds', () => {
+            giveUpgrade('Extra Time');
+            startRacing();
+            expect(view().updateTimer).toHaveBeenLastCalledWith(QUESTION_TIMER + 5);
+        });
+    
+        it('uses the normal time without it', () => {
+            startRacing();
+            expect(view().updateTimer).toHaveBeenLastCalledWith(QUESTION_TIMER);
+        });
+    
+        it('does not time out until the extra seconds are gone', () => {
+            giveUpgrade('Extra Time');
+            startRacing();
+            vi.advanceTimersByTime((QUESTION_TIMER + 4) * 1000);
+            expect(view().showAnswerFeedback).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(1000);
+            expect(view().showAnswerFeedback).toHaveBeenCalledWith(false);
         });
     });
 
