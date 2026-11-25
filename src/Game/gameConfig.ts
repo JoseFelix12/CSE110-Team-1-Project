@@ -15,79 +15,46 @@ export interface LevelConfig {
     description: string;
     theme: LevelTheme;
     /** Operators the question generator should use for this level */
-    operators: Operator[];
-    /** Largest factor used when building questions (e.g. 10 -> up to 10 x 10) */
-    minFactor: number;
-    maxFactor: number;
-    /** Range for the second number when it differs from the first (e.g. 1-9 for a 1 digit number) */
-    secondMinFactor?: number;
-    secondMaxFactor?: number;
     questionCount: number;
-    format?: QuestionFormat[];
 }
-
-export interface QuestionFormat {
-    operator: Operator;
-    min: number;
-    max: number;
-    secondMin?: number;
-    secondMax?: number;
-  }
 
 // Every level uses Level 1's math for now; each level's own math comes later
 export const LEVELS: LevelConfig[] = [
     {
         id: 1,
         name: 'Desert Dash',
-        description: 'Add a 2 digit number (up to 70) and a 1 digit number.',
+        description: 'Addition/Subtraction.',
         theme: 'dirt',
-        operators: ['+'],
-        minFactor: 10,
-        maxFactor: 70,
-        secondMinFactor: 1,
-        secondMaxFactor: 9,
         questionCount: 15,
     },
     {
         id: 2,
         name: 'Rookie Raceway',
-        description: 'Multiplication with factors up to 6.',
+        description: 'Multiplication with factors up to 12.',
         theme: 'raceTrack',
-        operators: ['*'],
-        minFactor: 1,
-        maxFactor: 6,
         questionCount: 15,
     },
     {
         id: 3,
         name: 'City Streets',
-        description: 'Multiplication with factors up to 12.',
+        description: 'Multiplication outside of 12 by 12.',
         theme: 'street',
-        operators: ['*'],
-        minFactor: 1,
-        maxFactor: 12,
         questionCount: 15,
     },
 
     {
         id: 4,
         name: 'Nascar Runway',
-        description: 'Division with factors up to 6',
+        description: '2 or 1 digit by 1 digit division',
         theme: 'raceTrack',
-        operators: ['/'],
-        minFactor: 1,
-        maxFactor: 6,
         questionCount: 15,
     },
 
     {
         id: 5,
         name: 'Downtown Dash',
-        description: 'Division with factors up to 12',
+        description: 'Multiplication/Division',
         theme: 'street',
-        operators: ['/'],
-        minFactor: 1,
-        maxFactor: 12,
         questionCount: 15,
     },
 ];
