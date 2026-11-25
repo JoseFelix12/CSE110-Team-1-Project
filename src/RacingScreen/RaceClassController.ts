@@ -217,14 +217,17 @@ export class RaceClassController implements Scene {
    * Handles question generation
    */
   private nextQuestion(): void {
-    const { operators, minFactor, maxFactor, secondMinFactor, secondMaxFactor } = this.level;
-    const operator = operators[Math.floor(Math.random() * operators.length)];
+    const format = this.level.format ?? [{
+      operator: this.level.operators[Math.floor(Math.random() * this.level.operators.length)],
+      min: this.level.minFactor,
+      max: this.level.maxFactor,
+      secondMin: this.level.secondMinFactor,
+      secondMax: this.level.secondMaxFactor,
+    }];
+    const questionFormat = format[Math.floor(Math.random() * format.length)];
     this.currentQuestion = this.questions.generateQuestion(
-      QUESTION_TYPES[operator],
-      minFactor,
-      maxFactor,
-      secondMinFactor ?? minFactor,
-      secondMaxFactor ?? maxFactor,
+      QUESTION_TYPES[questionFormat.operator], questionFormat.min, questionFormat.max,
+      questionFormat.secondMin ?? questionFormat.min, questionFormat.secondMax ?? questionFormat.max,
     );
     this.view.setQuestion(this.currentQuestion.text);
     this.startQuestionTimer();

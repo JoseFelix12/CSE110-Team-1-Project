@@ -23,7 +23,16 @@ export interface LevelConfig {
     secondMinFactor?: number;
     secondMaxFactor?: number;
     questionCount: number;
+    format?: QuestionFormat[];
 }
+
+export interface QuestionFormat {
+    operator: Operator;
+    min: number;
+    max: number;
+    secondMin?: number;
+    secondMax?: number;
+  }
 
 // Every level uses Level 1's math for now; each level's own math comes later
 export const LEVELS: LevelConfig[] = [
