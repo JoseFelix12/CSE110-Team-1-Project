@@ -181,6 +181,23 @@ export class QuestionController {
     return userAnswer === question.answer;
   }
 }
+/**
+ * Fills in a word problem template. "{a}" becomes the value of a, and
+ * "{a:singular|plural}" becomes "singular" when a is 1 and "plural" otherwise,
+ * so templates read correctly for any number (e.g. "1 car" vs "3 cars").
+ */
+export function fillTemplate(template: string, values: Record<string, number>): string {
+  return template.replace(
+    /\{(\w+)(?::([^|}]*)\|([^}]*))?\}/g,
+    (match, key: string, singular?: string, plural?: string) => {
+      const n = values[key];
+      if (n === undefined) return match;
+      if (singular === undefined) return String(n);
+      return n === 1 ? singular : plural!;
+    },
+  );
+}
+
 export class WordProblemAdapter extends QuestionController {
   private adaptee: QuestionController;
 
@@ -202,9 +219,7 @@ export class WordProblemAdapter extends QuestionController {
 
     const randomTemplate =
       templates[Math.floor(Math.random() * templates.length)];
-    const wordProblemText = randomTemplate
-      .replace("{a}", a.toString())
-      .replace("{b}", b.toString());
+    const wordProblemText = fillTemplate(randomTemplate, { a, b });
 
     baseQuestion.text = wordProblemText;
 
