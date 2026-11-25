@@ -108,10 +108,10 @@ export const SKIN_PRICES: Record<SkinColor, number> = {
     blue: PAINT_PRICE,
     green: PAINT_PRICE,
     purple: PAINT_PRICE,
-    pink: PAINT_PRICE,
+    pink: PREMIUM_PAINT_PRICE,
     black: PREMIUM_PAINT_PRICE,
     white: PAINT_PRICE,
-    yellow: PREMIUM_PAINT_PRICE,
+    yellow: PAINT_PRICE,
 };
 
 /** Cost of each engine upgrade; index 0 is the price of going from level 0 to 1 */

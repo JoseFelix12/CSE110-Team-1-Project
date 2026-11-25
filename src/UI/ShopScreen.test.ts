@@ -37,18 +37,33 @@ describe("ShopScreen prototype", () => {
   it("renders all colors and the owned inventory", () => {
     game.goTo(SceneIds.Shop);
 
-    expect(document.querySelectorAll("[data-color-id]")).toHaveLength(8);
+    expect(Array.from(document.querySelectorAll<HTMLElement>("[data-color-id]"),
+      (card) => card.dataset.colorId)).toEqual([
+        "red", "blue", "yellow", "green", "purple", "white", "black", "pink",
+      ]);
     expect([...document.querySelectorAll<HTMLElement>("[data-owned-color-id]")]
       .map((card) => card.dataset.ownedColorId)).toEqual(["red"]);
     expect(Array.from(document.querySelectorAll(".color-card.locked .color-card-state"),
       (badge) => badge.textContent?.trim())).toEqual([
-        "▣75", "▣100", "▣75", "▣75", "▣75", "▣100", "▣75",
+        "▣75", "▣75", "▣75", "▣75", "▣75", "▣100", "▣100",
       ]);
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "RACING RED",
     );
     expect(document.querySelector("[data-upgrade-stock]")?.textContent)
       .toBe(`0/${MAX_SHIELDS} OWNED`);
+  });
+
+  it("keeps an owned premium paint in its original price tier", () => {
+    game.state.addCoins(25);
+    game.goTo(SceneIds.Shop);
+
+    previewAndConfirmColor("black");
+
+    const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-color-id]"));
+    expect(cards.slice(-2).map((card) => card.dataset.colorId)).toEqual(["black", "pink"]);
+    expect(cards.at(-2)?.querySelector(".color-card-state")?.textContent).toBe("EQUIPPED");
+    expect(game.state.getCoins()).toBe(0);
   });
 
   it("shows only Car Colors and Upgrades in the shop", () => {
@@ -279,6 +294,7 @@ describe("ShopScreen prototype", () => {
     game.goTo(SceneIds.Shop);
 
     const green = document.querySelector<HTMLButtonElement>('[data-color-id="green"]')!;
+    expect(document.querySelector("[data-color-id]")).toBe(green);
     expect(green.querySelector(".color-card-state")?.textContent?.trim()).toBe("▣61");
     green.click();
     expect(document.querySelector("[data-confirm-price]")?.textContent).toBe("61");

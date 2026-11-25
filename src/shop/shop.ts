@@ -16,6 +16,8 @@ export interface ShopItem {
   category: "engine" | "skin" | "upgrade";
   // Cost to buy, or null when no further purchase is available.
   price: number | null;
+  // Paints retain their list price for sorting after purchase.
+  listPrice?: number;
   owned: boolean;
   // Can be purchased at the current balance and inventory level.
   affordable: boolean;
@@ -83,6 +85,7 @@ export class Shop {
         description: `Change your car to ${skin}.`,
         category: "skin",
         price: owned ? null : price,
+        listPrice: price,
         owned,
         affordable: !owned && balance >= price,
       });

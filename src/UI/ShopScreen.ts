@@ -421,16 +421,20 @@ export class ShopScreen implements Scene {
       previewColor.filter === "none" ? "" : `${previewColor.filter} `;
     previewCar.style.filter = `${paintFilter}drop-shadow(0 5px 5px rgba(0, 0, 0, .8))`;
 
+    const paints = COLORS.flatMap((color) => {
+      const item = catalog.get(`skin:${color.id}`);
+      if (!item) return [];
+      const sortPrice = item.price ?? item.listPrice ?? Number.MAX_SAFE_INTEGER;
+      return [{ color, item, sortPrice }];
+    }).sort((a, b) => a.sortPrice - b.sortPrice);
+
     this.screen.querySelector<HTMLElement>("[data-color-grid]")!.innerHTML =
-      COLORS.map((color) => {
-        const item = catalog.get(`skin:${color.id}`);
-        return item ? this.colorCardMarkup(color, item) : "";
-      }).join("");
+      paints.map(({ color, item }) => this.colorCardMarkup(color, item)).join("");
     this.screen.querySelector<HTMLElement>(
       "[data-owned-color-grid]",
-    )!.innerHTML = COLORS
-      .filter((color) => catalog.get(`skin:${color.id}`)?.owned)
-      .map((color) => this.ownedColorMarkup(color))
+    )!.innerHTML = paints
+      .filter(({ item }) => item.owned)
+      .map(({ color }) => this.ownedColorMarkup(color))
       .join("");
     this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML =
       UPGRADES.map((upgrade) => {
