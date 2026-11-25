@@ -38,7 +38,7 @@ const EXPECTED_OPERATORS: Record<number, string[]> = {
     2: ["multiplication"],
     3: ["division"],
     4: ["multiplication"],
-    5: ["division"],
+    5: ["multiplication", "division"],
 };
 
 describe("RepairMinigame", () => {

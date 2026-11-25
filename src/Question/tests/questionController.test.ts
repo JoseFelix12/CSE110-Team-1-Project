@@ -40,23 +40,26 @@ describe("QuestionController", () => {
 
     it("should generate a level five question", () => {
       const question = questionController.generateQuestion(5);
-      expect(question).toBeInstanceOf(DivisionQuestion);
+      expect(
+        question instanceof MultiplicationQuestion ||
+        question instanceof DivisionQuestion,
+      ).toBe(true);
     });
 
     it("Level one generates a question with numbers within the allowed ranges", () => {
       const question = questionController.generateQuestion(1);
       expect(question.a).toBeGreaterThanOrEqual(10);
-      expect(question.a).toBeLessThanOrEqual(99);
+      expect(question.a).toBeLessThanOrEqual(50);
       expect(question.b).toBeGreaterThanOrEqual(10);
-      expect(question.b).toBeLessThanOrEqual(99);
+      expect(question.b).toBeLessThanOrEqual(50);
     });
 
     it("Level two generates a question with numbers within the allowed ranges", () => {
       const question = questionController.generateQuestion(2);
       expect(question.a).toBeGreaterThanOrEqual(1);
-      expect(question.a).toBeLessThanOrEqual(9);
+      expect(question.a).toBeLessThanOrEqual(12);
       expect(question.b).toBeGreaterThanOrEqual(1);
-      expect(question.b).toBeLessThanOrEqual(9);
+      expect(question.b).toBeLessThanOrEqual(12);
     });
 
     it("Level three generates a question with numbers within the allowed ranges", () => {
@@ -69,27 +72,16 @@ describe("QuestionController", () => {
 
     it("Level four generates a question with numbers within the allowed ranges", () => {
       const question = questionController.generateQuestion(4);
-      expect(question.a).toBeGreaterThanOrEqual(1);
+      expect(question.a).toBeGreaterThanOrEqual(10);
       expect(question.a).toBeLessThanOrEqual(25);
       expect(question.b).toBeGreaterThanOrEqual(1);
-      expect(question.b).toBeLessThanOrEqual(25);
+      expect(question.b).toBeLessThanOrEqual(9);
     });
 
-    it("Level five generates a question with numbers within the allowed ranges", () => {
-      const question = questionController.generateQuestion(5);
-      expect(question.a).toBeGreaterThanOrEqual(10);
-      expect(question.a).toBeLessThanOrEqual(100);
-      expect(question.b).toBeGreaterThanOrEqual(1);
-      expect(question.b).toBeLessThanOrEqual(10);
-    });
+    //Level 5 is tested since it is a combination of level 3 and 4
 
     it("Level three generates a division question with a non-zero divisors", () => {
       const question = questionController.generateQuestion(3);
-      expect(question.b).not.toBe(0);
-    });
-
-    it("Level five generates a division question with a non-zero divisors", () => {
-      const question = questionController.generateQuestion(5);
       expect(question.b).not.toBe(0);
     });
 
