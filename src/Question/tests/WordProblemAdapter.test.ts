@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   QuestionController,
   WordProblemAdapter,
+  fillTemplate,
 } from "../QuestionController.ts";
 import type { Question } from "../QuestionModel.ts";
 import { WORD_PROBLEM_TEMPLATES } from "../../constants.ts";
@@ -77,7 +78,7 @@ describe("WordProblemAdapter", () => {
     const result = adapter.generateWordProblem(1);
 
     const template = WORD_PROBLEM_TEMPLATES.addition[0];
-    const expectedText = template.replace("{a}", "3").replace("{b}", "4");
+    const expectedText = fillTemplate(template, { a: 3, b: 4 });
 
     expect(result.text).toBe(expectedText);
     expect(result.text).not.toContain("{a}");
@@ -92,9 +93,7 @@ describe("WordProblemAdapter", () => {
 
     const result = adapter.generateWordProblem(2);
 
-    const expectedText = WORD_PROBLEM_TEMPLATES.multiplication[0]
-      .replace("{a}", "3")
-      .replace("{b}", "4");
+    const expectedText = fillTemplate(WORD_PROBLEM_TEMPLATES.multiplication[0], { a: 3, b: 4 });
 
     expect(adaptee.generateQuestion).toHaveBeenCalledWith(2);
     expect(result.text).toBe(expectedText);
@@ -162,21 +161,15 @@ describe("WordProblemAdapter", () => {
       expect(results).toHaveLength(3);
 
       expect(results[0].text).toBe(
-        WORD_PROBLEM_TEMPLATES.addition[0]
-          .replace("{a}", "2")
-          .replace("{b}", "3"),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[0], { a: 2, b: 3 }),
       );
 
       expect(results[1].text).toBe(
-        WORD_PROBLEM_TEMPLATES.addition[0]
-          .replace("{a}", "4")
-          .replace("{b}", "5"),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[0], { a: 4, b: 5 }),
       );
 
       expect(results[2].text).toBe(
-        WORD_PROBLEM_TEMPLATES.addition[0]
-          .replace("{a}", "6")
-          .replace("{b}", "7"),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[0], { a: 6, b: 7 }),
       );
     });
 
@@ -193,15 +186,11 @@ describe("WordProblemAdapter", () => {
       expect(results).toHaveLength(2);
 
       expect(results[0].text).toBe(
-        WORD_PROBLEM_TEMPLATES.multiplication[0]
-          .replace("{a}", "3")
-          .replace("{b}", "4"),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.multiplication[0], { a: 3, b: 4 }),
       );
 
       expect(results[1].text).toBe(
-        WORD_PROBLEM_TEMPLATES.multiplication[0]
-          .replace("{a}", "5")
-          .replace("{b}", "6"),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.multiplication[0], { a: 5, b: 6 }),
       );
     });
 
@@ -220,9 +209,7 @@ describe("WordProblemAdapter", () => {
     const result = adapter.generateWordProblem(1);
 
     expect(result.text).toBe(
-      WORD_PROBLEM_TEMPLATES.subtraction[0]
-        .replace("{a}", "8")
-        .replace("{b}", "3"),
+      fillTemplate(WORD_PROBLEM_TEMPLATES.subtraction[0], { a: 8, b: 3 }),
     );
   });
 
@@ -233,9 +220,7 @@ describe("WordProblemAdapter", () => {
     const result = adapter.generateWordProblem(3);
 
     expect(result.text).toBe(
-      WORD_PROBLEM_TEMPLATES.division[0]
-        .replace("{a}", "12")
-        .replace("{b}", "3"),
+      fillTemplate(WORD_PROBLEM_TEMPLATES.division[0], { a: 12, b: 3 }),
     );
   });
 
@@ -263,5 +248,46 @@ describe("WordProblemAdapter", () => {
     });
 
     expect(() => adapter.generateWordProblem(99)).toThrow("Invalid Id");
+  });
+
+  describe("fillTemplate", () => {
+    it("uses the singular form when the number is 1", () => {
+      expect(
+        fillTemplate("{a} {a:liter|liters} among {b} {b:car|cars}", { a: 1, b: 1 }),
+      ).toBe("1 liter among 1 car");
+    });
+
+    it("uses the plural form for any other number, including 0", () => {
+      expect(
+        fillTemplate("{a} {a:liter|liters} among {b} {b:car|cars}", { a: 0, b: 3 }),
+      ).toBe("0 liters among 3 cars");
+    });
+
+    it("handles verb agreement with multi-word forms", () => {
+      expect(fillTemplate("{b} {b:car pulls|cars pull} in", { b: 1 })).toBe("1 car pulls in");
+      expect(fillTemplate("{b} {b:car pulls|cars pull} in", { b: 2 })).toBe("2 cars pull in");
+    });
+
+    it("fills every template with no braces left over, for 1 and for many", () => {
+      for (const templates of Object.values(WORD_PROBLEM_TEMPLATES)) {
+        for (const t of templates) {
+          for (const n of [1, 5]) {
+            const text = fillTemplate(t, { a: n, b: n });
+            expect(text).not.toMatch(/[{}|]/);
+          }
+        }
+      }
+    });
+
+    it("never pairs the number 1 with a plural noun in any template", () => {
+      const pluralAfterOne = /\b1 (?:\w+ )?(?:liters|cars|coins|stickers|kilometers|trophies|laps|boosts|wrenches|cones|tires|shelves|rows|hours|stops|seconds|races|cans|upgrades|bolts)\b/;
+      for (const templates of Object.values(WORD_PROBLEM_TEMPLATES)) {
+        for (const t of templates) {
+          for (const [a, b] of [[1, 1], [1, 7], [7, 1]]) {
+            expect(fillTemplate(t, { a, b })).not.toMatch(pluralAfterOne);
+          }
+        }
+      }
+    });
   });
 });
