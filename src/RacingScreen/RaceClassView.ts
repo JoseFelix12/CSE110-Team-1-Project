@@ -266,6 +266,7 @@ export class RaceClassView {
 
             if (upgrade === 'Shield') {
                 const count = document.createElement('span');
+                count.className = 'race-view__upgrade-count';
                 count.textContent = `×${shieldCount}`;
                 item.append(count);
             }
@@ -721,16 +722,25 @@ const RACE_VIEW_CSS = `
     pointer-events: none;
 }
 .race-view__upgrades li {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    font-weight: bold;
+    position: relative;
 }
 .race-view__upgrades img {
+    display: block;
     width: clamp(20px, 5vw, 32px);
     height: clamp(20px, 5vw, 32px);
     object-fit: contain;
     image-rendering: pixelated;
+}
+.race-view__upgrade-count {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding: 0 1px;
+    background: #17181c;
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
 }
 .race-bar {
     display: grid;

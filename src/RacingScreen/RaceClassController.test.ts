@@ -3,7 +3,7 @@ import type { Mock } from 'vitest';
 import { GameState } from '../Game/GameState.ts';
 import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
-import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH } from '../Game/gameConfig.ts';
+import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, SKIN_PRICES, UPGRADE_PRICES } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
 import type { RaceClassModel } from './RaceClassModel.ts';
@@ -30,6 +30,7 @@ vi.mock('./RaceClassView.ts', () => ({
         destroy = vi.fn();
         update = vi.fn();
         setCar = vi.fn();
+        setUpgrades = vi.fn();
         showCountdown = vi.fn();
         startRace = vi.fn();
         setQuestion = vi.fn();
@@ -242,6 +243,37 @@ describe('RaceClassController', () => {
     });
 
     describe('health', () => {
+        it('uses one Shield per damage event and updates the race badge', () => {
+            gameState.addCoins(2 * UPGRADE_PRICES.Shield);
+            gameState.buyUpgrade('Shield');
+            gameState.buyUpgrade('Shield');
+            vi.mocked(gameState.getLevel).mockReturnValue({
+                ...gameState.getLevel(1),
+                questionCount: 10,
+            });
+            controller = new RaceClassController({ switchToScreen }, gameState, {
+                parent: {} as HTMLElement,
+                showUpgradeHud: true,
+            });
+            startRacing();
+            expect(view().options).toMatchObject({ upgrades: ['Shield', 'Shield'] });
+
+            answerWrong();
+            answerWrong();
+            expect(gameState.getShieldCount()).toBe(2);
+            answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH);
+            expect(view().setUpgrades).toHaveBeenLastCalledWith(['Shield']);
+
+            for (let i = 0; i < 3; i++) answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH);
+            expect(gameState.getShieldCount()).toBe(0);
+            expect(view().setUpgrades).toHaveBeenLastCalledWith([]);
+
+            for (let i = 0; i < 3; i++) answerWrong();
+            expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
+        });
+
         it('does not damage the car before 3 wrong answers in a row', () => {
             startRacing();
             answerWrong();
@@ -279,7 +311,8 @@ describe('RaceClassController', () => {
         });
 
         it('recolors a bot that matches the player skin', () => {
-            gameState.selectSkin('blue'); // blue is a starter skin
+            gameState.addCoins(SKIN_PRICES.blue);
+            gameState.buySkin('blue');
             controller.enter({ levelId: 1 });
             const options = view().options as unknown as { skin: string; opponentColors: string[] };
             expect(options.skin).toBe('blue');

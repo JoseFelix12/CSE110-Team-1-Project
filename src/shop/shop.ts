@@ -1,6 +1,7 @@
 import type { GameState } from "../Game/GameState";
 import {
   ENGINE_UPGRADE_PRICES,
+  MAX_SHIELDS,
   SKIN_PRICES,
   UPGRADE_PRICES,
 } from "../Game/gameConfig";
@@ -13,11 +14,12 @@ export interface ShopItem {
   name: string;
   description: string;
   category: "engine" | "skin" | "upgrade";
-  // Cost to buy, or null once it is owned
+  // Cost to buy, or null when no further purchase is available.
   price: number | null;
   owned: boolean;
-  // Not owned yet and the player has enough coins
+  // Can be purchased at the current balance and inventory level.
   affordable: boolean;
+  inventory?: { count: number; limit: number };
 }
 const SKINS: SkinColor[] = ["red", "blue", "yellow", "white", "black", "pink", "green", "purple"];
 const UPGRADES: Upgrade[] = [
@@ -30,7 +32,7 @@ const UPGRADES: Upgrade[] = [
 export const UPGRADE_DESCRIPTIONS: Record<Upgrade, string> = {
   "Speed Boost": "A burst of speed when you answer correctly.",
   "Better Tires": "Wrong answers slow you down less.",
-  Shield: "Blocks the damage from one wrong answer per race.",
+  Shield: "Blocks one hit of vehicle damage.",
   "Extra Time": "Adds seconds to the question timer.",
 };
 
@@ -88,17 +90,22 @@ export class Shop {
 
     //Upgrades
     for (const upgrade of UPGRADES) {
-      const price = UPGRADE_PRICES[upgrade];
       const owned = this.game.ownsUpgrade(upgrade);
+      const inventory = upgrade === "Shield"
+        ? { count: this.game.getShieldCount(), limit: MAX_SHIELDS }
+        : undefined;
+      const canPurchase = inventory ? inventory.count < inventory.limit : !owned;
+      const price = canPurchase ? UPGRADE_PRICES[upgrade] : null;
 
       items.push({
         id: `upgrade:${upgrade}`,
         name: upgrade,
         description: UPGRADE_DESCRIPTIONS[upgrade],
         category: "upgrade",
-        price: owned ? null : price,
+        price,
         owned,
-        affordable: !owned && balance >= price,
+        affordable: price !== null && balance >= price,
+        ...(inventory && { inventory }),
       });
     }
 

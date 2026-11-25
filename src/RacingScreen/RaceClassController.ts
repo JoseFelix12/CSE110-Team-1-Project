@@ -265,12 +265,22 @@ export class RaceClassController implements Scene {
   }
 
   /**
-   * Decrements health per wrong answer
+   * Applies damage when the wrong-answer streak reaches its threshold.
    */
   private decreasesHealth(): void {
-    if (this.model.shouldDamageCar()) {
-      this.gameState.getMutableCar().inflictDamage(DAMAGE_PER_STREAK);
-      this.model.resetIncorrectStreak();
+    if (!this.model.shouldDamageCar()) return;
+    this.model.resetIncorrectStreak();
+
+    const car = this.gameState.getMutableCar();
+    if (car.getHealth() === 0) return;
+
+    if (!this.gameState.consumeShield()) {
+      car.inflictDamage(DAMAGE_PER_STREAK);
+      return;
+    }
+
+    if (this.showUpgradeHud) {
+      this.view.setUpgrades(car.getUpgrades());
     }
   }
 

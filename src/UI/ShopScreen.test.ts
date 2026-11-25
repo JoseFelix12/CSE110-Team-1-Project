@@ -7,7 +7,7 @@ import { Game } from "../Game/Game.ts";
 import { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import { ShopScreen } from "./ShopScreen.ts";
-import { SKIN_PRICES, UPGRADE_PRICES } from "../Game/gameConfig.ts";
+import { MAX_SHIELDS, SKIN_PRICES, UPGRADE_PRICES } from "../Game/gameConfig.ts";
 import { Shop } from "../shop/shop.ts";
 
 describe("ShopScreen prototype", () => {
@@ -38,7 +38,10 @@ describe("ShopScreen prototype", () => {
     game.goTo(SceneIds.Shop);
 
     expect(document.querySelectorAll("[data-color-id]")).toHaveLength(8);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect([...document.querySelectorAll<HTMLElement>("[data-owned-color-id]")]
+      .map((card) => card.dataset.ownedColorId)).toEqual(["red"]);
+    expect(Array.from(document.querySelectorAll(".color-card.locked .color-card-state"),
+      (badge) => badge.textContent?.trim())).toEqual(Array(7).fill("▣75"));
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "RACING RED",
     );
@@ -68,6 +71,8 @@ describe("ShopScreen prototype", () => {
   });
 
   it("equips an owned color", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
 
     document
@@ -85,6 +90,8 @@ describe("ShopScreen prototype", () => {
   });
 
   it("restores the red preview filter after switching from blue", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
     const previewCar =
       document.querySelector<HTMLImageElement>("[data-preview-car]")!;
@@ -127,7 +134,7 @@ describe("ShopScreen prototype", () => {
     expect(
       document.querySelector("[data-confirm-color-name]")?.textContent,
     ).toBe("NEON GREEN");
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
 
     document
       .querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!
@@ -143,7 +150,7 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "NEON GREEN",
     );
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(4);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(2);
   });
 
   it("cancels a color purchase without spending coins", () => {
@@ -165,7 +172,7 @@ describe("ShopScreen prototype", () => {
     expect(
       document.querySelector<HTMLElement>("[data-color-confirm]")?.hidden,
     ).toBe(true);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
   });
 
   it("uses coin pricing and coin-specific insufficient balance feedback", () => {
@@ -227,6 +234,27 @@ describe("ShopScreen prototype", () => {
     } finally {
       UPGRADE_PRICES["Speed Boost"] = originalPrice;
     }
+  });
+
+  it("keeps Shield purchasable until inventory reaches the cap", () => {
+    const price = UPGRADE_PRICES.Shield;
+    game.state.addCoins((MAX_SHIELDS + 1) * price - game.state.getCoins());
+    for (let count = 0; count < MAX_SHIELDS - 2; count += 1) {
+      game.state.buyUpgrade("Shield");
+    }
+    game.goTo(SceneIds.Shop);
+    document.querySelector<HTMLButtonElement>('[data-shop-tab="upgrade"]')!.click();
+    const shieldButton = () => document.querySelector<HTMLButtonElement>('[data-upgrade-id="shield"]')!;
+
+    expect(shieldButton().textContent?.trim()).toBe(String(price));
+    shieldButton().click();
+    expect(shieldButton().disabled).toBe(false);
+    shieldButton().click();
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`${MAX_SHIELDS}/${MAX_SHIELDS} IN STOCK`);
+    expect(shieldButton().textContent?.trim()).toBe("MAX STOCK");
+    expect(shieldButton().disabled).toBe(true);
+    expect(game.state.getCoins()).toBe(price);
   });
 
   it("takes card prices, confirmation prices, and affordability from the Shop catalog", () => {

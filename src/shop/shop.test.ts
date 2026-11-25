@@ -171,17 +171,17 @@ describe("Shop", () => {
         });
 
         it("should not purchase an upgrade that the player already owns", () => {
-            game.addCoins(UPGRADE_PRICES.Shield);
+            game.addCoins(2 * UPGRADE_PRICES["Speed Boost"]);
 
             // Purchase once.
-            const firstPurchase = shop.purchase("upgrade:Shield");
+            const firstPurchase = shop.purchase("upgrade:Speed Boost");
 
             expect(firstPurchase).toBe(true);
 
             const remainingCoins = game.getCoins();
 
             // Try to purchase it again.
-            const secondPurchase = shop.purchase("upgrade:Shield");
+            const secondPurchase = shop.purchase("upgrade:Speed Boost");
 
             expect(secondPurchase).toBe(false);
             expect(game.getCoins()).toBe(remainingCoins);

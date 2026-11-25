@@ -91,7 +91,7 @@ const UPGRADES: readonly UpgradeOption[] = [
   {
     id: "shield",
     name: "SHIELD",
-    description: "Blocks damage from one wrong answer.",
+    description: "Blocks one hit of vehicle damage.",
   },
   {
     id: "extra-time",
@@ -369,7 +369,7 @@ export class ShopScreen implements Scene {
     const item = this.shop.getCatalog().find((item) => item.id === `upgrade:${gameUpgrade}`);
 
     if (item && this.purchase(item)) {
-      this.setMessage(`${upgrade.name} UNLOCKED!`);
+      this.setMessage(item.inventory ? `${upgrade.name} ADDED!` : `${upgrade.name} UNLOCKED!`);
     }
   }
 
@@ -480,7 +480,11 @@ export class ShopScreen implements Scene {
           <img src="${UPGRADE_ICONS[UPGRADE_BY_ID[upgrade.id]]}" alt="" aria-hidden="true" data-upgrade-sticker="${upgrade.id}">
         </div>
         <h3>${upgrade.name}</h3>
-        <p>${upgrade.description}</p>
+        <p>${upgrade.description}${
+          item.inventory
+            ? `<br><strong data-upgrade-stock>${item.inventory.count}/${item.inventory.limit} IN STOCK</strong>`
+            : ""
+        }</p>
         <button class="shop-purchase-button" type="button" data-upgrade-id="${upgrade.id}"
           ${item.price === null ? "disabled" : ""}>
           ${this.priceMarkup(item)}
@@ -489,6 +493,7 @@ export class ShopScreen implements Scene {
   }
 
   private priceMarkup(item: ShopItem): string {
+    if (item.inventory && item.inventory.count >= item.inventory.limit) return "MAX STOCK";
     if (item.price === null) return item.owned ? "OWNED" : "UNAVAILABLE";
     return `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${item.price}`;
   }
