@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GameState, SAVE_KEY, calculateStars } from "./GameState.ts";
 import type { StorageLike } from "./GameState.ts";
-import { ENGINE_UPGRADE_PRICES, LEVELS, MAX_SHIELDS, SKIN_PRICES, UPGRADE_PRICES } from "./gameConfig.ts";
-import { ENGINE_UPGRADE_PRICES, LEVELS, SKIN_PRICES, UPGRADE_PRICES, type Upgrade } from "./gameConfig.ts";
+import { ENGINE_UPGRADE_PRICES, LEVELS, MAX_SHIELDS, SKIN_PRICES, UPGRADE_PRICES, type Upgrade } from "./gameConfig.ts";
 import type { ReadonlyCar } from "./Car.ts";
 
 class MemoryStorage implements StorageLike {

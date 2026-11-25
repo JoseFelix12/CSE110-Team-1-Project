@@ -4,8 +4,6 @@ import { GameState } from '../Game/GameState.ts';
 import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
 import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, SKIN_PRICES, UPGRADE_PRICES } from '../Game/gameConfig.ts';
-import { DAMAGE_PER_STREAK } from '../constants.ts';
-import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, UPGRADE_PRICES } from '../Game/gameConfig.ts';
 import type { Upgrade } from '../Game/gameConfig.ts';
 import { DAMAGE_PER_STREAK, QUESTION_TIMER } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';

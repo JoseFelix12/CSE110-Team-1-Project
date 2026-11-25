@@ -1,5 +1,5 @@
 import {
-    CORRECT_ANSWERS_FOR_NITRO,
+  CORRECT_ANSWERS_FOR_NITRO,
   COUNTDOWN_SECONDS,
   DAMAGE_PER_STREAK,
   FINISH_SCREEN_MS,
@@ -287,13 +287,7 @@ export class RaceClassController implements Scene {
 
     if (this.showUpgradeHud) {
       this.view.setUpgrades(car.getUpgrades());
-    if (!this.model.shouldDamageCar()) {
-      return;
     }
-      if(!this.gameState.consumeUpgrade("Shield")){
-        this.gameState.getMutableCar().inflictDamage(DAMAGE_PER_STREAK);
-      }
-      this.model.resetIncorrectStreak();
   }
 
   /**
