@@ -303,6 +303,17 @@ export class GameState {
   }
 
   /**
+   * Uses up a consumable upgrade. Returns true if the player had it.
+   */
+  consumeUpgrade(upgrade: Upgrade): boolean {
+    const used = this.car.removeUpgrade(upgrade);
+    if (used) {
+        this.changed();
+    }
+    return used;
+  }
+
+  /**
    * Equips a skin the player already owns. Returns whether it worked.
    */
   selectSkin(skin: SkinColor): boolean {

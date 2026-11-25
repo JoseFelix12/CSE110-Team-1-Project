@@ -1,4 +1,5 @@
 import {
+    CORRECT_ANSWERS_FOR_NITRO,
   COUNTDOWN_SECONDS,
   DAMAGE_PER_STREAK,
   FINISH_SCREEN_MS,
@@ -241,7 +242,12 @@ export class RaceClassController implements Scene {
    * Start the question timer
    */
   private startQuestionTimer(): void {
-    this.questionTimeRemaining = QUESTION_TIMER;
+    if(this.gameState.ownsUpgrade("Extra Time")){
+      this.questionTimeRemaining = QUESTION_TIMER + 5;
+    }
+    else{
+      this.questionTimeRemaining = QUESTION_TIMER;
+    }
     this.view.updateTimer(this.questionTimeRemaining);
     this.runQuestionTimer();
   }
@@ -268,10 +274,13 @@ export class RaceClassController implements Scene {
    * Decrements health per wrong answer
    */
   private decreasesHealth(): void {
-    if (this.model.shouldDamageCar()) {
-      this.gameState.getMutableCar().inflictDamage(DAMAGE_PER_STREAK);
-      this.model.resetIncorrectStreak();
+    if (!this.model.shouldDamageCar()) {
+      return;
     }
+      if(!this.gameState.consumeUpgrade("Shield")){
+        this.gameState.getMutableCar().inflictDamage(DAMAGE_PER_STREAK);
+      }
+      this.model.resetIncorrectStreak();
   }
 
   /**
@@ -324,7 +333,12 @@ export class RaceClassController implements Scene {
       this.model.incrementCorrect_Answers();
       this.model.resetIncorrectStreak();
       if (!usedNitro) {
-        this.model.chargeNitro();
+        if(this.gameState.ownsUpgrade("Speed Boost")){
+          this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO - 1);
+        }
+        else{
+          this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
+        }
       }
     } else {
       this.incorrect.currentTime = 0;
