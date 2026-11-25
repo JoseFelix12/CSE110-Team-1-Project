@@ -17,23 +17,29 @@ function randomInt(min: number, max: number): number {
 export class QuestionController {
   private currentQuestion: Question | null = null;
   private wrong_questions: Question[] = [];
+  private wrong_answers: {
+  question: Question;
+  playerAnswer: string | null;
+}[] = [];
   //private view: QuestionView
 
   //Question generation factory. Takes either a level id (1-5) or a question
   //type such as "addition". With a type, min and max are the smallest and
-  //largest numbers used (e.g. 10 and 99 for 2 digit numbers)
-  generateQuestion(kind: number | string, min = 1, max = 10): Question {
+  //largest numbers used (e.g. 10 and 99 for 2 digit numbers). minB and maxB
+  //give the second number its own range; they default to min and max.
+  generateQuestion(kind: number | string, min = 1, max = 10, minB = min, maxB = max): Question {
     this.currentQuestion =
       typeof kind === "number"
         ? this.questionForLevel(kind)
-        : this.questionOfType(kind, min, max);
+        : this.questionOfType(kind, min, max, minB, maxB);
     return this.currentQuestion;
   }
 
-  //Makes a question of the given type with numbers from min to max
-  private questionOfType(q_type: string, min: number, max: number): Question {
+  //Makes a question of the given type: the first number from min to max,
+  //the second from minB to maxB
+  private questionOfType(q_type: string, min: number, max: number, minB: number, maxB: number): Question {
     let a = randomInt(min, max);
-    let b = randomInt(min, max);
+    let b = randomInt(minB, maxB);
 
     switch (q_type) {
       case 'addition':
@@ -136,6 +142,12 @@ export class QuestionController {
   getWrongQuestions(): Question[] {
     return [...this.wrong_questions];
   }
+  getWrongAnswers(): {
+    question: Question;
+    playerAnswer: string | null;
+  }[] {
+    return [...this.wrong_answers];
+  }
 
   //Checks the answer to the current question and records it if it was wrong
   submitAnswer(answer: string): boolean {
@@ -147,6 +159,11 @@ export class QuestionController {
 
     if (!isCorrect) {
       this.wrong_questions.push(this.currentQuestion);
+
+      this.wrong_answers.push({
+      question: this.currentQuestion,
+      playerAnswer: answer,
+      });
     }
 
     return isCorrect;
@@ -157,6 +174,10 @@ export class QuestionController {
   markWrong(): void {
     if (this.currentQuestion !== null) {
       this.wrong_questions.push(this.currentQuestion);
+      this.wrong_answers.push({
+        question: this.currentQuestion,
+        playerAnswer: null,
+});
     }
   }
 

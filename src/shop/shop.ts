@@ -27,7 +27,6 @@ const UPGRADES: Upgrade[] = [
   "Extra Time",
 ];
 // Descriptions of upgrades for the shop screen
-// Also placeholder
 export const UPGRADE_DESCRIPTIONS: Record<Upgrade, string> = {
   "Speed Boost": "A burst of speed when you answer correctly.",
   "Better Tires": "Wrong answers slow you down less.",

@@ -113,10 +113,10 @@ describe("GameState", () => {
     });
 
     it("buys, equips and switches skins", () => {
-        state.addCoins(SKIN_PRICES.blue);
-        expect(state.buySkin("blue")).toBe(true);
-        expect(car.getSkin()).toBe("blue");
-        expect(state.buySkin("blue")).toBe(false);
+        state.addCoins(SKIN_PRICES.green);
+        expect(state.buySkin("green")).toBe(true);
+        expect(car.getSkin()).toBe("green");
+        expect(state.buySkin("green")).toBe(false);
         expect(state.selectSkin("red")).toBe(true);
         expect(state.selectSkin("purple")).toBe(false);
         expect(car.getSkin()).toBe("red");
