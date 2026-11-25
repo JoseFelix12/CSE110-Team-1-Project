@@ -62,7 +62,7 @@ export class DistractorController {
 
     // 1. Each strategy contributes one distractor before any strategy contributes a second.
     // Each strategy's own candidates are shuffled so e.g. the operation/sign is random.
-    const pools = this.strategies.map(s => this.shuffle(s(question)));
+    const pools = this.strategies.map(s => this.shuffle(s(question, this.rng)));
     let progressed = true;
     while (distractors.size < count && progressed) {
       progressed = false;
