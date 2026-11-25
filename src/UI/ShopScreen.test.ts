@@ -7,7 +7,7 @@ import { Game } from "../Game/Game.ts";
 import { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
 import { ShopScreen } from "./ShopScreen.ts";
-import { SKIN_PRICES, UPGRADE_PRICES } from "../Game/gameConfig.ts";
+import { MAX_SHIELDS, SKIN_PRICES, UPGRADE_PRICES } from "../Game/gameConfig.ts";
 import { Shop } from "../shop/shop.ts";
 
 describe("ShopScreen prototype", () => {
@@ -37,11 +37,33 @@ describe("ShopScreen prototype", () => {
   it("renders all colors and the owned inventory", () => {
     game.goTo(SceneIds.Shop);
 
-    expect(document.querySelectorAll("[data-color-id]")).toHaveLength(8);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(Array.from(document.querySelectorAll<HTMLElement>("[data-color-id]"),
+      (card) => card.dataset.colorId)).toEqual([
+        "red", "blue", "yellow", "green", "purple", "white", "black", "pink",
+      ]);
+    expect([...document.querySelectorAll<HTMLElement>("[data-owned-color-id]")]
+      .map((card) => card.dataset.ownedColorId)).toEqual(["red"]);
+    expect(Array.from(document.querySelectorAll(".color-card.locked .color-card-state"),
+      (badge) => badge.textContent?.trim())).toEqual([
+        "▣75", "▣75", "▣75", "▣75", "▣75", "▣100", "▣100",
+      ]);
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "RACING RED",
     );
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`0/${MAX_SHIELDS} OWNED`);
+  });
+
+  it("keeps an owned premium paint in its original price tier", () => {
+    game.state.addCoins(25);
+    game.goTo(SceneIds.Shop);
+
+    previewAndConfirmColor("black");
+
+    const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-color-id]"));
+    expect(cards.slice(-2).map((card) => card.dataset.colorId)).toEqual(["black", "pink"]);
+    expect(cards.at(-2)?.querySelector(".color-card-state")?.textContent).toBe("EQUIPPED");
+    expect(game.state.getCoins()).toBe(0);
   });
 
   it("shows only Car Colors and Upgrades in the shop", () => {
@@ -68,6 +90,8 @@ describe("ShopScreen prototype", () => {
   });
 
   it("equips an owned color", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
 
     document
@@ -85,6 +109,8 @@ describe("ShopScreen prototype", () => {
   });
 
   it("restores the red preview filter after switching from blue", () => {
+    game.state.buySkin("blue");
+    game.state.selectSkin("red");
     game.goTo(SceneIds.Shop);
     const previewCar =
       document.querySelector<HTMLImageElement>("[data-preview-car]")!;
@@ -127,7 +153,7 @@ describe("ShopScreen prototype", () => {
     expect(
       document.querySelector("[data-confirm-color-name]")?.textContent,
     ).toBe("NEON GREEN");
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
 
     document
       .querySelector<HTMLButtonElement>('[data-confirm-action="buy"]')!
@@ -143,7 +169,7 @@ describe("ShopScreen prototype", () => {
     expect(document.querySelector("[data-color-name]")?.textContent).toBe(
       "NEON GREEN",
     );
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(4);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(2);
   });
 
   it("cancels a color purchase without spending coins", () => {
@@ -165,7 +191,7 @@ describe("ShopScreen prototype", () => {
     expect(
       document.querySelector<HTMLElement>("[data-color-confirm]")?.hidden,
     ).toBe(true);
-    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-owned-color-id]")).toHaveLength(1);
   });
 
   it("uses coin pricing and coin-specific insufficient balance feedback", () => {
@@ -192,6 +218,8 @@ describe("ShopScreen prototype", () => {
     ["better-tires", "Better Tires"],
     ["extra-time", "Extra Time"],
   ] as const)("marks %s as owned after a single purchase", (id, upgrade) => {
+    const balance = 150;
+    game.state.addCoins(balance - game.state.getCoins());
     game.goTo(SceneIds.Shop);
 
     document
@@ -201,7 +229,7 @@ describe("ShopScreen prototype", () => {
     document.querySelector<HTMLButtonElement>(purchaseButton)!.click();
 
     expect(document.querySelector("[data-shop-balance]")?.textContent).toBe(
-      String(75 - UPGRADE_PRICES[upgrade]),
+      String(balance - UPGRADE_PRICES[upgrade]),
     );
     const ownedButton = document.querySelector<HTMLButtonElement>(purchaseButton)!;
     expect(ownedButton.textContent).toContain("OWNED");
@@ -229,6 +257,29 @@ describe("ShopScreen prototype", () => {
     }
   });
 
+  it("keeps Shield purchasable until inventory reaches the cap", () => {
+    const price = UPGRADE_PRICES.Shield;
+    game.state.addCoins((MAX_SHIELDS + 1) * price - game.state.getCoins());
+    for (let count = 0; count < MAX_SHIELDS - 2; count += 1) {
+      game.state.buyUpgrade("Shield");
+    }
+    game.goTo(SceneIds.Shop);
+    document.querySelector<HTMLButtonElement>('[data-shop-tab="upgrade"]')!.click();
+    const shieldButton = () => document.querySelector<HTMLButtonElement>('[data-upgrade-id="shield"]')!;
+
+    expect(shieldButton().textContent?.trim()).toBe(String(price));
+    shieldButton().click();
+    expect(shieldButton().disabled).toBe(false);
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`${MAX_SHIELDS - 1}/${MAX_SHIELDS} OWNED`);
+    shieldButton().click();
+    expect(document.querySelector("[data-upgrade-stock]")?.textContent)
+      .toBe(`${MAX_SHIELDS}/${MAX_SHIELDS} OWNED`);
+    expect(shieldButton().textContent?.trim()).toBe("LIMIT REACHED");
+    expect(shieldButton().disabled).toBe(true);
+    expect(game.state.getCoins()).toBe(price);
+  });
+
   it("takes card prices, confirmation prices, and affordability from the Shop catalog", () => {
     const getCatalog = Shop.prototype.getCatalog;
     let greenPrice = 61;
@@ -243,6 +294,7 @@ describe("ShopScreen prototype", () => {
     game.goTo(SceneIds.Shop);
 
     const green = document.querySelector<HTMLButtonElement>('[data-color-id="green"]')!;
+    expect(document.querySelector("[data-color-id]")).toBe(green);
     expect(green.querySelector(".color-card-state")?.textContent?.trim()).toBe("▣61");
     green.click();
     expect(document.querySelector("[data-confirm-price]")?.textContent).toBe("61");

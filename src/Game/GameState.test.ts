@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GameState, SAVE_KEY, calculateStars } from "./GameState.ts";
 import type { StorageLike } from "./GameState.ts";
-import { ENGINE_UPGRADE_PRICES, LEVELS, SKIN_PRICES, UPGRADE_PRICES, type Upgrade } from "./gameConfig.ts";
+import { ENGINE_UPGRADE_PRICES, LEVELS, MAX_SHIELDS, SKIN_PRICES, UPGRADE_PRICES, type Upgrade } from "./gameConfig.ts";
 import type { ReadonlyCar } from "./Car.ts";
 
 class MemoryStorage implements StorageLike {
@@ -92,17 +92,35 @@ describe("GameState", () => {
         expect(car.getSpeedMultiplier()).toBeGreaterThan(1);
     });
 
-    it("buys upgrades", () => {
+    it("buys permanent upgrades only once", () => {
         state.addCoins(100);
 
-        expect(state.buyUpgrade("Shield")).toBe(true);
-        expect(state.ownsUpgrade("Shield")).toBe(true);
+        expect(state.buyUpgrade("Speed Boost")).toBe(true);
+        expect(state.ownsUpgrade("Speed Boost")).toBe(true);
 
         const remainingCoins = state.getCoins();
 
-        // Cannot buy the same upgrade twice.
-        expect(state.buyUpgrade("Shield")).toBe(false);
+        expect(state.buyUpgrade("Speed Boost")).toBe(false);
         expect(state.getCoins()).toBe(remainingCoins);
+    });
+
+    it("caps Shield purchases and saves the count after consumption", () => {
+        const price = UPGRADE_PRICES.Shield;
+        state.addCoins((MAX_SHIELDS + 1) * price);
+        for (let count = 0; count < MAX_SHIELDS; count += 1) {
+            expect(state.buyUpgrade("Shield")).toBe(true);
+        }
+
+        expect(state.buyUpgrade("Shield")).toBe(false);
+        expect(state.getShieldCount()).toBe(MAX_SHIELDS);
+        expect(state.getCoins()).toBe(price);
+        expect(new GameState(storage).getShieldCount()).toBe(MAX_SHIELDS);
+
+        expect(state.consumeShield()).toBe(true);
+        const reloaded = new GameState(storage);
+        expect(reloaded.getShieldCount()).toBe(MAX_SHIELDS - 1);
+        expect(reloaded.buyUpgrade("Shield")).toBe(true);
+        expect(reloaded.getCoins()).toBe(0);
     });
 
     it("refuses purchases without enough coins", () => {
@@ -142,7 +160,7 @@ describe("GameState", () => {
         const reloaded = new GameState(storage);
 
         expect(reloaded.toJSON()).toEqual(state.toJSON());
-        expect(reloaded.ownsUpgrade("Shield")).toBe(true);
+        expect(reloaded.getShieldCount()).toBe(1);
     });
 
     it("falls back to defaults on a corrupted save", () => {

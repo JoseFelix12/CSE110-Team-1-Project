@@ -1,5 +1,5 @@
 import type { SkinColor, Upgrade } from "./gameConfig.ts";
-import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_HEALTH, SKIN_PRICES } from './gameConfig.ts';
+import { DEFAULT_SKIN, ENGINE_SPEED_BONUS_PER_LEVEL, MAX_HEALTH, MAX_SHIELDS, SKIN_PRICES } from './gameConfig.ts';
 import { HEALTH_REPAIR } from "../constants.ts";
 
 export interface CarData {
@@ -26,6 +26,13 @@ export class Car implements ReadonlyCar {
 
     constructor (data: CarData = Car.defaultData()) {
         this.data = structuredClone(data);
+        // The save already stores a purchased Shield as one upgrade entry.
+        let shieldCount = 0;
+        this.data.upgrades = this.data.upgrades.filter((upgrade) => {
+            if (upgrade !== 'Shield') return true;
+            shieldCount += 1;
+            return shieldCount <= MAX_SHIELDS;
+        });
     }
 
     /**
@@ -73,6 +80,10 @@ export class Car implements ReadonlyCar {
         return [...this.data.upgrades];
     }
 
+    public getShieldCount(): number {
+        return this.data.upgrades.filter((upgrade) => upgrade === 'Shield').length;
+    }
+
     /**
      * Get the cosmetics of the car
      */
@@ -114,10 +125,22 @@ export class Car implements ReadonlyCar {
         this.data.engineLevel++;
     }
 
-    addUpgrade(upgrade: Upgrade): void {
-        if (!this.data.upgrades.includes(upgrade)) {
-            this.data.upgrades.push(upgrade);
-        }
+    addUpgrade(upgrade: Upgrade): boolean {
+        const canAdd = upgrade === 'Shield'
+            ? this.getShieldCount() < MAX_SHIELDS
+            : !this.data.upgrades.includes(upgrade);
+        if (!canAdd) return false;
+
+        this.data.upgrades.push(upgrade);
+        return true;
+    }
+
+    consumeShield(): boolean {
+        const index = this.data.upgrades.indexOf('Shield');
+        if (index === -1) return false;
+
+        this.data.upgrades.splice(index, 1);
+        return true;
     }
 
     /**
