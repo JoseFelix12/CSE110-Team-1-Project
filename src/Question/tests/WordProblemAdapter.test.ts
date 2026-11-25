@@ -165,11 +165,11 @@ describe("WordProblemAdapter", () => {
       );
 
       expect(results[1].text).toBe(
-        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[0], { a: 4, b: 5 }),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[1], { a: 4, b: 5 }),
       );
 
       expect(results[2].text).toBe(
-        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[0], { a: 6, b: 7 }),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.addition[2], { a: 6, b: 7 }),
       );
     });
 
@@ -190,7 +190,7 @@ describe("WordProblemAdapter", () => {
       );
 
       expect(results[1].text).toBe(
-        fillTemplate(WORD_PROBLEM_TEMPLATES.multiplication[0], { a: 5, b: 6 }),
+        fillTemplate(WORD_PROBLEM_TEMPLATES.multiplication[1], { a: 5, b: 6 }),
       );
     });
 
@@ -288,6 +288,93 @@ describe("WordProblemAdapter", () => {
           }
         }
       }
+    });
+  });
+
+  describe("template rotation", () => {
+    const templateIndex = (op: string, text: string, a: number, b: number) =>
+      WORD_PROBLEM_TEMPLATES[op].findIndex(t => fillTemplate(t, { a, b }) === text);
+
+    beforeEach(() => {
+      vi.mocked(Math.random).mockRestore();
+    });
+
+    it.each(["addition", "subtraction", "multiplication", "division"] as const)(
+      "uses every %s template once before any repeats",
+      op => {
+        const n = WORD_PROBLEM_TEMPLATES[op].length;
+        vi.mocked(adaptee.generateQuestion).mockImplementation(() => createQuestion(6, 2, op));
+        const seen = new Set<number>();
+        for (let i = 0; i < n; i++) {
+          seen.add(templateIndex(op, adapter.generateWordProblem(1).text, 6, 2));
+        }
+        expect(seen.size).toBe(n);
+        expect(seen.has(-1)).toBe(false);
+      },
+    );
+
+    it("keeps separate pools for each operator", () => {
+      const n = WORD_PROBLEM_TEMPLATES.addition.length;
+      const seen = new Set<number>();
+      for (let i = 0; i < n; i++) {
+        vi.mocked(adaptee.generateQuestion).mockReturnValueOnce(createQuestion(3, 4, "addition"));
+        seen.add(templateIndex("addition", adapter.generateWordProblem(1).text, 3, 4));
+        // interleave other operators; they must not use up addition templates
+        vi.mocked(adaptee.generateQuestion).mockReturnValueOnce(createQuestion(3, 4, "multiplication"));
+        adapter.generateWordProblem(2);
+      }
+      expect(seen.size).toBe(n);
+    });
+
+    it("never repeats a template back to back, even after the pool refills", () => {
+      vi.mocked(adaptee.generateQuestion).mockImplementation(() => createQuestion(6, 2, "addition"));
+      let prev = -1;
+      for (let i = 0; i < 200; i++) {
+        const idx = templateIndex("addition", adapter.generateWordProblem(1).text, 6, 2);
+        expect(idx).not.toBe(prev);
+        prev = idx;
+      }
+    });
+
+    it("handles 20 division word problems in a row", () => {
+      const templates = WORD_PROBLEM_TEMPLATES.division;
+      const n = templates.length;
+      vi.mocked(adaptee.generateQuestion).mockImplementation(() => createQuestion(6, 2, "division"));
+
+      const picks: number[] = [];
+      for (let i = 0; i < 20; i++) {
+        const q = adapter.generateWordProblem(3);
+        expect(q.answer).toBe(3);
+        picks.push(templateIndex("division", q.text, 6, 2));
+      }
+
+      // every question is a real division template
+      expect(picks).not.toContain(-1);
+      // each full round (first n, next n) uses every template exactly once
+      expect(new Set(picks.slice(0, n)).size).toBe(n);
+      expect(new Set(picks.slice(n, 2 * n)).size).toBe(n);
+      // the partial last round has no repeats either
+      const rest = picks.slice(2 * n);
+      expect(new Set(rest).size).toBe(rest.length);
+      // never the same template twice in a row, including across refills
+      for (let i = 1; i < picks.length; i++) {
+        expect(picks[i]).not.toBe(picks[i - 1]);
+      }
+      // usage stays balanced: no template used more than one extra time
+      const counts = templates.map((_, t) => picks.filter(p => p === t).length);
+      expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    });
+
+    it("a new adapter starts with a fresh pool", () => {
+      vi.mocked(adaptee.generateQuestion).mockImplementation(() => createQuestion(6, 2, "addition"));
+      const n = WORD_PROBLEM_TEMPLATES.addition.length;
+      for (let i = 0; i < n; i++) adapter.generateWordProblem(1);
+      const fresh = new WordProblemAdapter(adaptee);
+      const seen = new Set<number>();
+      for (let i = 0; i < n; i++) {
+        seen.add(templateIndex("addition", fresh.generateWordProblem(1).text, 6, 2));
+      }
+      expect(seen.size).toBe(n);
     });
   });
 });
