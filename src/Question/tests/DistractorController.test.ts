@@ -56,7 +56,7 @@ describe("DistractorController", () => {
       const strategy = vi.fn<DistractorStrategy>(() => [100, 200]);
       const q = new AdditionQuestion(1, 2);
       const result = new DistractorController(constant(0), [strategy]).genIncorrectAnswers(q, 2);
-      expect(strategy).toHaveBeenCalledWith(q);
+      expect(strategy).toHaveBeenCalledWith(q, expect.any(Function));
       expect(result.sort((a, b) => a - b)).toEqual([100, 200]);
     });
   });
@@ -206,6 +206,44 @@ describe("DistractorController", () => {
       const q = new AdditionQuestion(10, 10);
       const result = new DistractorController(seeded(1), [() => [7, 8, 9]]).genIncorrectAnswers(q, 2);
       result.forEach(n => expect([7, 8, 9]).toContain(n));
+    });
+
+    it("takes one distractor from each strategy before reusing any", () => {
+      const q = new AdditionQuestion(10, 10); // answer 20
+      const a: DistractorStrategy = () => [1, 2, 3];
+      const b: DistractorStrategy = () => [4, 5, 6];
+      const c: DistractorStrategy = () => [7, 8, 9];
+      for (let seed = 0; seed < 20; seed++) {
+        const result = new DistractorController(seeded(seed), [a, b, c]).genIncorrectAnswers(q, 3);
+        expect([1, 2, 3]).toContain(result[0]);
+        expect([4, 5, 6]).toContain(result[1]);
+        expect([7, 8, 9]).toContain(result[2]);
+      }
+    });
+
+    it("cycles back to the first strategy when more distractors are needed", () => {
+      const q = new AdditionQuestion(10, 10);
+      const result = new DistractorController(constant(0.9999), [() => [1, 2], () => [3]])
+        .genIncorrectAnswers(q, 3);
+      expect(result).toEqual([1, 3, 2]);
+    });
+
+    it("skips an invalid candidate and tries the strategy's next one", () => {
+      const q = new AdditionQuestion(10, 5); // answer 15
+      const result = new DistractorController(constant(0.9999), [() => [15, -1, 9], () => [4]])
+        .genIncorrectAnswers(q, 2);
+      expect(result).toEqual([9, 4]);
+    });
+
+    it("uses wrongOperation, squared, then offByRandom for 2 x 2", () => {
+      const q = new MultiplicationQuestion(2, 2); // answer 4
+      for (let seed = 0; seed < 50; seed++) {
+        const [wrongOp, sq, off] = new DistractorController(seeded(seed)).genIncorrectAnswers(q, 3);
+        expect([0, 1]).toContain(wrongOp); // 2+2 and 2*2 equal the answer; 2-2=0 or 2/2=1
+        expect(sq).toBe(16);
+        expect([1, 2, 3, 5, 6, 7]).toContain(off);
+        expect([wrongOp, sq]).not.toContain(off);
+      }
     });
 
     it("filters out invalid strategy candidates", () => {
