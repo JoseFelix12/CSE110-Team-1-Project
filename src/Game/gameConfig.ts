@@ -4,7 +4,6 @@
  * is defined in one place.
  */
 
-export type Operator = '*' | '/' | '+' | '-';
 
 /** Road and scenery a level is raced on: dirt = desert, raceTrack = stadium, street = city */
 export type LevelTheme = 'dirt' | 'raceTrack' | 'street';

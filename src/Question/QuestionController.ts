@@ -7,7 +7,6 @@ import {
 } from "./QuestionModel.ts";
 import { WORD_PROBLEM_TEMPLATES } from "../constants.ts";
 
-export type QuestionType = 'addition' | 'subtraction' | 'multiplication' | 'division';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
