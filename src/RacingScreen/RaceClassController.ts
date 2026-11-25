@@ -28,6 +28,7 @@ export interface RaceControllerOptions {
   /** Where the view is added to the page. Defaults to document.body */
   parent?: HTMLElement;
   theme?: RaceTheme;
+  showUpgradeHud?: boolean;
   onRaceComplete?: (params: SceneParams) => void;
 }
 
@@ -49,6 +50,7 @@ export class RaceClassController implements Scene {
   private onRaceComplete?: (params: SceneParams) => void;
   private raceFinished = false;
   private parent: HTMLElement | null;
+  private readonly showUpgradeHud: boolean;
   /** Forces one theme for every level (the demo uses this); otherwise each level picks its own */
   private themeOverride: RaceTheme | undefined;
   /** Makes and checks questions, and keeps the ones missed this race */
@@ -95,6 +97,7 @@ export class RaceClassController implements Scene {
     this.gameState = gameState;
     this.onRaceComplete = options.onRaceComplete;
     this.parent = options.parent ?? null;
+    this.showUpgradeHud = options.showUpgradeHud ?? false;
     this.themeOverride = options.theme;
     this.level = gameState.getLevel(1);
     this.engine.loop = true;
@@ -123,6 +126,7 @@ export class RaceClassController implements Scene {
       {
         skin: car.getSkin(),
         speedMultiplier: car.getSpeedMultiplier(),
+        upgrades: this.showUpgradeHud ? car.getUpgrades() : undefined,
         // The bots are yellow, blue and green, so purple never matches anyone
         opponentColors: this.model.getOpponents().map((o) =>
           o.profile.color === car.getSkin() ? 'purple' : o.profile.color,

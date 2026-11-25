@@ -506,83 +506,11 @@ body {
   background: #1b2b3c;
 }
 
-.shop-screen .engine-panel {
-  min-height: 0;
-  grid-template-columns: 1.55fr 1fr;
-  gap: 1.5%;
-}
-
-.shop-screen .engine-card,
-.shop-screen .engine-preview,
 .shop-screen .upgrade-card {
   border: 2px solid #637f9d;
   border-radius: 7px;
   background: linear-gradient(155deg, rgba(9, 25, 45, 0.98), rgba(4, 12, 24, 0.98));
   box-shadow: inset 0 0 0 2px rgba(30, 55, 79, 0.8), 0 3px #02070c;
-}
-
-.shop-screen .engine-card {
-  display: grid;
-  min-height: 0;
-  grid-template-columns: 0.82fr 1.18fr;
-  align-items: center;
-  gap: 5%;
-  padding: 7%;
-}
-
-.shop-screen .engine-visual {
-  position: relative;
-  display: grid;
-  width: min(100%, 17em);
-  aspect-ratio: 1;
-  place-items: center;
-  justify-self: center;
-  border: 0.8em solid #07101d;
-  background: repeating-linear-gradient(90deg, #435369 0 9%, #202c3b 9% 18%);
-  box-shadow:
-    inset 0 0 0 0.5em #758aa2,
-    0.7em 0.7em #02070c;
-  transform: rotate(45deg);
-}
-
-.shop-screen .engine-core {
-  display: grid;
-  width: 55%;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 0.45em solid #ffb000;
-  color: #fff3bc;
-  background: #a92417;
-  box-shadow: inset 0 0 0 0.35em #4c1010;
-  font-size: 1.5em;
-  transform: rotate(-45deg);
-}
-
-.shop-screen .engine-piston {
-  position: absolute;
-  width: 28%;
-  height: 48%;
-  border: 0.35em solid #0b111a;
-  background: #6f8298;
-  box-shadow: inset 0 0 0 0.3em #303d4d;
-}
-
-.shop-screen .engine-piston-left {
-  top: -16%;
-  left: 2%;
-}
-
-.shop-screen .engine-piston-right {
-  right: 2%;
-  bottom: -16%;
-}
-
-.shop-screen .engine-details {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1.6em;
 }
 
 .shop-screen .shop-eyebrow {
@@ -591,39 +519,10 @@ body {
   font-size: 0.7em;
 }
 
-.shop-screen .engine-details h2,
 .shop-screen .upgrade-heading h2 {
   margin: 0;
   color: #f4f7fb;
   font-size: 1.3em;
-}
-
-.shop-screen .engine-details > p:not(.shop-eyebrow) {
-  margin: 0;
-  color: #a9bdd2;
-  font-family: monospace;
-  font-size: 1.45em;
-  line-height: 1.35;
-}
-
-.shop-screen .engine-level-track {
-  display: flex;
-  width: 100%;
-  gap: 3%;
-}
-
-.shop-screen .engine-level-track span {
-  height: 1.8em;
-  flex: 1;
-  border: 2px solid #59748e;
-  background: #101e2d;
-  box-shadow: inset 0 0 0 2px #06101b;
-}
-
-.shop-screen .engine-level-track span.filled {
-  border-color: #04dcf8;
-  background: linear-gradient(#17d6f6, #087bb3);
-  box-shadow: 0 0 7px rgba(0, 220, 248, 0.58);
 }
 
 .shop-screen .shop-purchase-button {
@@ -646,29 +545,6 @@ body {
   color: #a8b7c6;
   background: #203042;
   cursor: default;
-}
-
-.shop-screen .engine-preview {
-  position: relative;
-  min-height: 0;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 70%, rgba(255, 177, 0, 0.2), transparent 48%), rgba(4, 14, 26, 0.84);
-}
-
-.shop-screen .engine-preview img:first-child {
-  position: absolute;
-  right: -10%;
-  bottom: -4%;
-  width: 120%;
-}
-
-.shop-screen .engine-preview img:last-child {
-  position: absolute;
-  right: -8%;
-  bottom: 12%;
-  z-index: 1;
-  width: 116%;
-  filter: drop-shadow(0 7px 5px rgba(0, 0, 0, 0.85));
 }
 
 .shop-screen .upgrade-panel {

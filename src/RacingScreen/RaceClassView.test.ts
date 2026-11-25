@@ -31,7 +31,7 @@ function fakeContext(): CanvasRenderingContext2D {
     return fake;
 }
 
-describe('RaceClassView nitro ready message', () => {
+describe('RaceClassView', () => {
     let view: RaceClassView;
 
     const nitroMessages = () => drawn.filter((d) => d.text === 'NITRO READY!');
@@ -92,5 +92,25 @@ describe('RaceClassView nitro ready message', () => {
         expect(frame(0.1)).toHaveLength(1);
         view.setNitroActive(true);
         expect(frame(0.1)).toHaveLength(0);
+    });
+
+    it('shows owned upgrades and hides the shield icon when its count reaches zero', () => {
+        const hud = document.querySelector<HTMLUListElement>('.race-view__upgrades')!;
+        expect(hud.hidden).toBe(true);
+
+        view.setUpgrades(['Speed Boost', 'Better Tires', 'Extra Time', 'Shield', 'Shield']);
+
+        expect(hud.hidden).toBe(false);
+        expect(Array.from(hud.querySelectorAll('img'), (icon) => icon.alt))
+            .toEqual(['Speed Boost', 'Better Tires', 'Extra Time', 'Shield']);
+        const shield = hud.querySelector('[title="Shield"]');
+        expect(shield?.textContent).toBe('×2');
+        expect(shield?.querySelector('img')?.getAttribute('src'))
+            .toBe('/images/shop/upgrades/shield.png');
+
+        view.setUpgrades(['Speed Boost', 'Better Tires', 'Extra Time']);
+
+        expect(hud.querySelector('[title="Shield"]')).toBeNull();
+        expect(hud.querySelectorAll('img')).toHaveLength(3);
     });
 });

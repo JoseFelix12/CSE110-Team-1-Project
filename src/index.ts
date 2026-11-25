@@ -45,6 +45,7 @@ game.register(SceneIds.Race, (g) => new RaceClassController(
     { switchToScreen: (id) => g.goTo(id) },
     g.state,
     {
+        showUpgradeHud: true,
         onRaceComplete: (params) => g.goTo(SceneIds.Stats, params)
     }
 ));
