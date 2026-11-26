@@ -3,6 +3,8 @@ export const DAMAGE_PER_STREAK = 4;
 export const COUNTDOWN_SECONDS = 3;
 export const CORRECT_ANSWERS_FOR_NITRO = 5;
 export const NITRO_SECONDS = 2;
+export const WRONG_ANSWERS_TO_STALL = 2; //Wrong answers in a row that stall the car
+export const STALL_SECONDS = 4; //How long a stall blocks answering
 export const FINISH_SCREEN_MS = 1500; //How long FINISH! shows before leaving the race
 export const HEALTH_REPAIR = 10; /** Health repaired per question answered in MG2 */
 /**

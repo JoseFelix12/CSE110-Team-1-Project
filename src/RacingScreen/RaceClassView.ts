@@ -350,6 +350,21 @@ export class RaceClassView {
     }
 
     /**
+     * Shows STALLED! instead of a question and blocks answering. Called each
+     * second with the time left.
+     */
+    showStall(seconds: number): void {
+        this.questionBar.showStall(seconds);
+    }
+
+    /**
+     * Lets the player answer again after a stall
+     */
+    endStall(): void {
+        this.questionBar.setEnabled(true);
+    }
+
+    /**
      * Moves the progress meter, from 0 to 1. At 1 the finish line appears and
      * onFinishLineCrossed fires once the car reaches it.
      */
@@ -753,6 +768,7 @@ const RACE_VIEW_CSS = `
 }
 .race-bar__question-area { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
 .race-bar__question { font-size: 32px; font-weight: bold; min-height: 40px; }
+.race-bar__question--stalled { color: #ff6b61; }
 .race-bar__timer { font-size: 18px; font-weight: bold; color: #c9ccd3; }
 .race-bar__timer--low { color: #ff6b61; }
 .race-bar__input {

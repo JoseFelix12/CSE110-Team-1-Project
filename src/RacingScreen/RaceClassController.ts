@@ -4,6 +4,8 @@ import {
   DAMAGE_PER_STREAK,
   FINISH_SCREEN_MS,
   QUESTION_TIMER,
+  STALL_SECONDS,
+  WRONG_ANSWERS_TO_STALL,
 } from "../constants.ts";
 import { QuestionController } from "../Question/QuestionController.ts";
 import type { Question } from "../Question/QuestionModel.ts";
@@ -52,6 +54,11 @@ export class RaceClassController implements Scene {
   private questionTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private finishTimeout: ReturnType<typeof setTimeout> | null = null;
+  private stallTimer: ReturnType<typeof setInterval> | null = null;
+  /** Seconds left on a stall; above 0 means the player can't answer */
+  private stallRemaining = 0;
+  /** Wrong answers in a row since the last correct answer or stall */
+  private wrongInARow = 0;
   private questionTimeRemaining = 0;
   private countdownRemaining = 0;
   private currentQuestion: Question | null = null;
@@ -167,6 +174,8 @@ export class RaceClassController implements Scene {
         this.lastNitroLevel = -1;
         this.syncNitroView();
         this.currentQuestion = null;
+        this.stallRemaining = 0;
+        this.wrongInARow = 0;
         this.paused = false;
         this.racing = false;
         this.startCountdown();
@@ -253,6 +262,39 @@ export class RaceClassController implements Scene {
     }
   }
 
+  // ---------- Stall ----------
+
+  /**
+   * Stalls the car after too many wrong answers in a row: no question is
+   * shown and the player can't answer until STALL_SECONDS have passed
+   */
+  private startStall(): void {
+    this.wrongInARow = 0;
+    this.stallRemaining = STALL_SECONDS;
+    this.view.showStall(this.stallRemaining);
+    this.runStallTimer();
+  }
+
+  private runStallTimer(): void {
+    this.stallTimer = setInterval(() => {
+      this.stallRemaining -= 1;
+      if (this.stallRemaining > 0) {
+        this.view.showStall(this.stallRemaining);
+      } else {
+        this.stopStallTimer();
+        this.view.endStall();
+        this.nextQuestion();
+      }
+    }, 1000);
+  }
+
+  private stopStallTimer(): void {
+    if (this.stallTimer != null) {
+      clearInterval(this.stallTimer);
+      this.stallTimer = null;
+    }
+  }
+
   /**
    * Applies damage when the wrong-answer streak reaches its threshold.
    */
@@ -322,6 +364,7 @@ export class RaceClassController implements Scene {
       this.correct.play();
       this.model.incrementCorrect_Answers();
       this.model.resetIncorrectStreak();
+      this.wrongInARow = 0;
       if (!usedNitro) {
         if(this.gameState.ownsUpgrade("Speed Boost")){
           this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO - 1);
@@ -338,13 +381,18 @@ export class RaceClassController implements Scene {
       this.model.incrementIncorrectStreak();
       this.model.resetNitro();
       this.decreasesHealth();
+      this.wrongInARow++;
     }
     this.view.showAnswerFeedback(correct);
 
     const progress = this.model.currentProgess();
     this.view.setProgress(progress);
     if (progress < 1) {
-      this.nextQuestion();
+      if (this.wrongInARow >= WRONG_ANSWERS_TO_STALL) {
+        this.startStall();
+      } else {
+        this.nextQuestion();
+      }
     } else {
       this.model.recordFinish();
       this.view.setPlacement(this.model.getPlacement());
@@ -416,6 +464,7 @@ export class RaceClassController implements Scene {
   private stopAllTimers(): void {
     this.stopCountdownTimer();
     this.stopQuestionTimer();
+    this.stopStallTimer();
     if (this.finishTimeout != null) {
       clearTimeout(this.finishTimeout);
       this.finishTimeout = null;
@@ -434,6 +483,7 @@ export class RaceClassController implements Scene {
         this.rev.pause();
         this.stopCountdownTimer();
         this.stopQuestionTimer();
+        this.stopStallTimer();
     }
 
     /**
@@ -449,6 +499,8 @@ export class RaceClassController implements Scene {
             this.engine.play();
             if (this.currentQuestion !== null) {
                 this.runQuestionTimer();
+            } else if (this.stallRemaining > 0) {
+                this.runStallTimer();
             }
         }
     }
