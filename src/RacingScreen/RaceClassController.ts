@@ -275,6 +275,15 @@ export class RaceClassController implements Scene {
     this.runStallTimer();
   }
 
+  /**
+   * Wrong answers in a row that cause a stall. Better Tires allows one more.
+   */
+  private wrongAnswersToStall(): number {
+    return this.gameState.ownsUpgrade("Better Tires")
+      ? WRONG_ANSWERS_TO_STALL + 1
+      : WRONG_ANSWERS_TO_STALL;
+  }
+
   private runStallTimer(): void {
     this.stallTimer = setInterval(() => {
       this.stallRemaining -= 1;
@@ -388,7 +397,7 @@ export class RaceClassController implements Scene {
     const progress = this.model.currentProgess();
     this.view.setProgress(progress);
     if (progress < 1) {
-      if (this.wrongInARow >= WRONG_ANSWERS_TO_STALL) {
+      if (this.wrongInARow >= this.wrongAnswersToStall()) {
         this.startStall();
       } else {
         this.nextQuestion();

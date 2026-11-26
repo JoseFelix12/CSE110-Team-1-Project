@@ -33,7 +33,7 @@ const UPGRADES: Upgrade[] = [
 // Descriptions of upgrades for the shop screen
 export const UPGRADE_DESCRIPTIONS: Record<Upgrade, string> = {
   "Speed Boost": "A burst of speed when you answer correctly.",
-  "Better Tires": "Wrong answers slow you down less.",
+  "Better Tires": "Takes 3 wrong answers in a row to stall instead of 2.",
   Shield: "Blocks one hit of vehicle damage.",
   "Extra Time": "Adds seconds to the question timer.",
 };
