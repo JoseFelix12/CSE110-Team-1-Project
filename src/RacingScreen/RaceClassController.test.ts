@@ -5,7 +5,7 @@ import { SceneIds } from '../Game/Scene.ts';
 import type { SceneId } from '../Game/Scene.ts';
 import { COINS_PER_CORRECT_ANSWER, COINS_PER_STAR, MAX_HEALTH, SKIN_PRICES, UPGRADE_PRICES } from '../Game/gameConfig.ts';
 import type { Upgrade } from '../Game/gameConfig.ts';
-import { DAMAGE_PER_STREAK, QUESTION_TIMER } from '../constants.ts';
+import { DAMAGE_PER_STREAK, QUESTION_TIMER, STALL_SECONDS } from '../constants.ts';
 import { RaceClassController } from './RaceClassController.ts';
 import type { RaceClassModel } from './RaceClassModel.ts';
 import type { RaceViewHandlers } from './RaceClassView.ts';
@@ -43,6 +43,8 @@ vi.mock('./RaceClassView.ts', () => ({
         setTheme = vi.fn();
         setOpponentProgress = vi.fn();
         setPlacement = vi.fn();
+        showStall = vi.fn();
+        endStall = vi.fn();
         options: unknown;
         constructor(handlers: unknown, options: unknown) {
             this.handlers = handlers;
@@ -77,7 +79,16 @@ describe('RaceClassController', () => {
         vi.advanceTimersByTime(3000);
     };
     const answerCorrectly = () => view().handlers.onAnswerSubmit(lastAnswer());
-    const answerWrong = () => view().handlers.onAnswerSubmit('99999');
+    /** Answers wrong without waiting, so a stall (if any) is still going */
+    const submitWrong = () => view().handlers.onAnswerSubmit('99999');
+    /** Answers wrong, then waits out the stall if that answer caused one */
+    const answerWrong = () => {
+        const stallsBefore = view().showStall.mock.calls.length;
+        submitWrong();
+        if (view().showStall.mock.calls.length > stallsBefore) {
+            vi.advanceTimersByTime(STALL_SECONDS * 1000);
+        }
+    };
     /** Fills the nitro bar, then simulates one frame so the view hears about it */
     const fillNitro = () => {
         answerCorrectly();
@@ -247,6 +258,106 @@ describe('RaceClassController', () => {
         });
     });
 
+    describe('stall', () => {
+        it('does not stall after only 1 wrong answer', () => {
+            startRacing();
+            submitWrong();
+            expect(view().showStall).not.toHaveBeenCalled();
+            expect(view().setQuestion).toHaveBeenCalledTimes(2);
+        });
+
+        it('stalls for 4 seconds after 2 wrong answers in a row, hiding the next question', () => {
+            startRacing();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).toHaveBeenLastCalledWith(STALL_SECONDS);
+            // No new question yet
+            expect(view().setQuestion).toHaveBeenCalledTimes(2);
+
+            vi.advanceTimersByTime(1000);
+            expect(view().showStall).toHaveBeenLastCalledWith(STALL_SECONDS - 1);
+            vi.advanceTimersByTime((STALL_SECONDS - 2) * 1000);
+            expect(view().setQuestion).toHaveBeenCalledTimes(2);
+            expect(view().endStall).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(1000);
+            expect(view().endStall).toHaveBeenCalledOnce();
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+            expect(view().updateTimer).toHaveBeenLastCalledWith(QUESTION_TIMER);
+        });
+
+        it('ignores answers and nitro during the stall', () => {
+            startRacing();
+            fillNitro();
+            submitWrong();
+            submitWrong();
+            const feedback = view().showAnswerFeedback.mock.calls.length;
+            view().handlers.onAnswerSubmit('1');
+            view().handlers.onNitro();
+            expect(view().showAnswerFeedback).toHaveBeenCalledTimes(feedback);
+        });
+
+        it('a correct answer in between prevents the stall', () => {
+            startRacing();
+            submitWrong();
+            answerCorrectly();
+            submitWrong();
+            expect(view().showStall).not.toHaveBeenCalled();
+        });
+
+        it('needs 2 more wrong answers to stall again', () => {
+            vi.mocked(gameState.getLevel).mockReturnValue({
+                ...gameState.getLevel(1),
+                questionCount: 10,
+            });
+            startRacing();
+            answerWrong();
+            answerWrong(); // stall 1, waited out
+            submitWrong();
+            expect(view().showStall).toHaveBeenCalledTimes(STALL_SECONDS);
+            submitWrong();
+            expect(view().showStall).toHaveBeenCalledTimes(STALL_SECONDS + 1);
+        });
+
+        it('counts timed out questions toward the stall', () => {
+            startRacing();
+            vi.advanceTimersByTime(2 * QUESTION_TIMER * 1000);
+            expect(view().showStall).toHaveBeenCalledWith(STALL_SECONDS);
+        });
+
+        it('freezes the stall while paused', () => {
+            startRacing();
+            submitWrong();
+            submitWrong();
+            view().handlers.onPause();
+            vi.advanceTimersByTime(60000);
+            expect(view().setQuestion).toHaveBeenCalledTimes(2);
+
+            view().handlers.onResume();
+            vi.advanceTimersByTime(STALL_SECONDS * 1000);
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+        });
+
+        it('does not stall on the last question', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).not.toHaveBeenCalled();
+            expect(view().setProgress).toHaveBeenLastCalledWith(1);
+        });
+
+        it('stops the stall timer on exit', () => {
+            startRacing();
+            submitWrong();
+            submitWrong();
+            controller.exit();
+            vi.advanceTimersByTime(60000);
+            expect(view().setQuestion).toHaveBeenCalledTimes(2);
+        });
+    });
+
     describe('health', () => {
         it('uses one Shield per damage event and updates the race badge', () => {
             gameState.addCoins(2 * UPGRADE_PRICES.Shield);
@@ -305,7 +416,8 @@ describe('RaceClassController', () => {
 
         it('counts timed out questions toward the streak', () => {
             startRacing();
-            vi.advanceTimersByTime(30000); // three questions time out
+            // Three questions time out, with a stall after the second
+            vi.advanceTimersByTime(3 * QUESTION_TIMER * 1000 + STALL_SECONDS * 1000);
             expect(gameState.getCar().getHealth()).toBe(MAX_HEALTH - DAMAGE_PER_STREAK);
         });
     });
@@ -350,6 +462,38 @@ describe('RaceClassController', () => {
         });
     });
     
+    describe('better tires upgrade', () => {
+        it('does not stall after only 2 wrong answers in a row', () => {
+            giveUpgrade('Better Tires');
+            startRacing();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).not.toHaveBeenCalled();
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+        });
+
+        it('stalls after 3 wrong answers in a row', () => {
+            giveUpgrade('Better Tires');
+            vi.mocked(gameState.getLevel).mockReturnValue({
+                ...gameState.getLevel(1),
+                questionCount: 10,
+            });
+            startRacing();
+            submitWrong();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).toHaveBeenLastCalledWith(STALL_SECONDS);
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+        });
+
+        it('stalls after 2 wrong answers in a row without it', () => {
+            startRacing();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).toHaveBeenCalled();
+        });
+    });
+
     describe('speed boost upgrade', () => {
         it('fills nitro one answer sooner', () => {
             giveUpgrade('Speed Boost');
@@ -455,30 +599,6 @@ describe('RaceClassController', () => {
     });
 
     describe('questions', () => {
-        const questionParts = () => {
-            const text = view().setQuestion.mock.lastCall![0] as string;
-            const [a, symbol, b] = text.split(' = ')[0].split(' ');
-            return { a: Number(a), symbol, b: Number(b) };
-        };
-
-        it('asks level 1 a 2 digit number up to 70 plus a 1 digit number', () => {
-            startRacing();
-            for (let i = 0; i < 4; i++) {
-                const { a, symbol, b } = questionParts();
-                expect(symbol).toBe('+');
-                expect(a).toBeGreaterThanOrEqual(10);
-                expect(a).toBeLessThanOrEqual(70);
-                expect(b).toBeGreaterThanOrEqual(1);
-                expect(b).toBeLessThanOrEqual(9);
-                answerCorrectly();
-            }
-        });
-
-        it('asks the operators of the level being raced', () => {
-            controller.enter({ levelId: 4 });
-            vi.advanceTimersByTime(3000);
-            expect(questionParts().symbol).toBe('÷');
-        });
 
         it('keeps wrong and timed out questions, but not right ones', () => {
             startRacing();
@@ -562,8 +682,8 @@ describe('RaceClassController', () => {
             answerWrong();
             answerWrong();
             view().handlers.onFinishLineCrossed();
-            // Bots never moved, so the player beat all 3
-            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR);
+            // Beat all 3 bots, but 50% accuracy earns no stars
+            expect(gameState.getCoins()).toBe(2 * COINS_PER_CORRECT_ANSWER);
         });
     
         it('gives nothing if the player quits mid-race', () => {
@@ -629,14 +749,31 @@ describe('RaceClassController', () => {
                 accuracy: 50,
                 placement: 1,
                 opponentsBeaten: 3,
-                stars: 3,
-                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
+                // 50% accuracy is below 75%, so no stars
+                stars: 0,
+                coinsEarned: 2 * COINS_PER_CORRECT_ANSWER,
             }));
             expect(switchToScreen).not.toHaveBeenCalled();
         });
+
+        it('gives stars at 75% accuracy', () => {
+            startRacing();
+            answerCorrectly();
+            answerCorrectly();
+            answerCorrectly();
+            answerWrong();
+            view().handlers.onFinishLineCrossed();
+            vi.advanceTimersByTime(1500);
+
+            expect(onRaceComplete).toHaveBeenCalledWith(expect.objectContaining({
+                accuracy: 75,
+                stars: 3,
+                coinsEarned: 3 * COINS_PER_CORRECT_ANSWER + 3 * COINS_PER_STAR,
+            }));
+        });
     
         it('reports the level that was actually played', () => {
-            gameState.recordRaceResult(1, 4, 3); // earn a star so level 2 unlocks
+            gameState.recordRaceResult(1, 4, 3, 4); // earn stars so level 2 unlocks
             controller.enter({ levelId: 2 });
             vi.advanceTimersByTime(3000);
             for (let i = 0; i < 4; i++) answerCorrectly();

@@ -23,6 +23,11 @@ describe("calculateStars", () => {
         expect(calculateStars(-1)).toBe(0);
         expect(calculateStars(5)).toBe(3);
     });
+
+    it("gives no stars below 75% accuracy", () => {
+        expect(calculateStars(3, 0.75)).toBe(3);
+        expect(calculateStars(3, 0.74)).toBe(0);
+    });
 });
 
 describe("GameState", () => {
@@ -44,7 +49,33 @@ describe("GameState", () => {
         expect(state.getCurrentLevelId()).toBe(1);
     });
 
-    it("unlocks the next level after earning a star", () => {
+    it("does not unlock the next level with only 1 star", () => {
+        const result = state.recordRaceResult(1, 15, 1);
+        expect(result.stars).toBe(1);
+        expect(result.unlockedLevelId).toBeNull();
+        expect(state.isLevelUnlocked(2)).toBe(false);
+    });
+
+    it("unlocks the next level with 2 stars at 75% accuracy", () => {
+        // 12 of 15 is 80%
+        const result = state.recordRaceResult(1, 12, 2);
+        expect(result.stars).toBe(2);
+        expect(result.unlockedLevelId).toBe(2);
+    });
+
+    it("gives no stars and no unlock below 75% accuracy", () => {
+        // 11 of 15 is 73%
+        const result = state.recordRaceResult(1, 11, 3);
+        expect(result.stars).toBe(0);
+        expect(result.unlockedLevelId).toBeNull();
+        expect(state.isLevelUnlocked(2)).toBe(false);
+    });
+
+    it("uses the race's question total when given", () => {
+        expect(state.recordRaceResult(1, 3, 3, 4).stars).toBe(3); // 75%
+    });
+
+    it("unlocks the next level after earning 3 stars", () => {
         const result = state.recordRaceResult(1, 15, 3);
         expect(result.stars).toBe(3);
         expect(result.newBest).toBe(true);

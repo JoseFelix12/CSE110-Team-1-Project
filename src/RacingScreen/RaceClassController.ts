@@ -4,11 +4,12 @@ import {
   DAMAGE_PER_STREAK,
   FINISH_SCREEN_MS,
   QUESTION_TIMER,
+  STALL_SECONDS,
+  WRONG_ANSWERS_TO_STALL,
 } from "../constants.ts";
 import { QuestionController } from "../Question/QuestionController.ts";
-import type { QuestionType } from "../Question/QuestionController.ts";
 import type { Question } from "../Question/QuestionModel.ts";
-import type { LevelConfig, Operator } from "../Game/gameConfig.ts";
+import type { LevelConfig } from "../Game/gameConfig.ts";
 import type { screenSwitcher } from "../Game/Game.ts";
 import type { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
@@ -16,14 +17,6 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
-
-/** Which QuestionController question type each level operator asks */
-const QUESTION_TYPES: Record<Operator, QuestionType> = {
-  "+": "addition",
-  "-": "subtraction",
-  "*": "multiplication",
-  "/": "division",
-};
 
 export interface RaceControllerOptions {
   /** Where the view is added to the page. Defaults to document.body */
@@ -61,6 +54,11 @@ export class RaceClassController implements Scene {
   private questionTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private finishTimeout: ReturnType<typeof setTimeout> | null = null;
+  private stallTimer: ReturnType<typeof setInterval> | null = null;
+  /** Seconds left on a stall; above 0 means the player can't answer */
+  private stallRemaining = 0;
+  /** Wrong answers in a row since the last correct answer or stall */
+  private wrongInARow = 0;
   private questionTimeRemaining = 0;
   private countdownRemaining = 0;
   private currentQuestion: Question | null = null;
@@ -176,6 +174,8 @@ export class RaceClassController implements Scene {
         this.lastNitroLevel = -1;
         this.syncNitroView();
         this.currentQuestion = null;
+        this.stallRemaining = 0;
+        this.wrongInARow = 0;
         this.paused = false;
         this.racing = false;
         this.startCountdown();
@@ -218,15 +218,7 @@ export class RaceClassController implements Scene {
    * Handles question generation
    */
   private nextQuestion(): void {
-    const { operators, minFactor, maxFactor, secondMinFactor, secondMaxFactor } = this.level;
-    const operator = operators[Math.floor(Math.random() * operators.length)];
-    this.currentQuestion = this.questions.generateQuestion(
-      QUESTION_TYPES[operator],
-      minFactor,
-      maxFactor,
-      secondMinFactor ?? minFactor,
-      secondMaxFactor ?? maxFactor,
-    );
+    this.currentQuestion = this.questions.generateQuestion(this.levelId);
     this.view.setQuestion(this.currentQuestion.text);
     this.startQuestionTimer();
   }
@@ -267,6 +259,48 @@ export class RaceClassController implements Scene {
     if (this.questionTimer != null) {
       clearInterval(this.questionTimer);
       this.questionTimer = null;
+    }
+  }
+
+  // ---------- Stall ----------
+
+  /**
+   * Stalls the car after too many wrong answers in a row: no question is
+   * shown and the player can't answer until STALL_SECONDS have passed
+   */
+  private startStall(): void {
+    this.wrongInARow = 0;
+    this.stallRemaining = STALL_SECONDS;
+    this.view.showStall(this.stallRemaining);
+    this.runStallTimer();
+  }
+
+  /**
+   * Wrong answers in a row that cause a stall. Better Tires allows one more.
+   */
+  private wrongAnswersToStall(): number {
+    return this.gameState.ownsUpgrade("Better Tires")
+      ? WRONG_ANSWERS_TO_STALL + 1
+      : WRONG_ANSWERS_TO_STALL;
+  }
+
+  private runStallTimer(): void {
+    this.stallTimer = setInterval(() => {
+      this.stallRemaining -= 1;
+      if (this.stallRemaining > 0) {
+        this.view.showStall(this.stallRemaining);
+      } else {
+        this.stopStallTimer();
+        this.view.endStall();
+        this.nextQuestion();
+      }
+    }, 1000);
+  }
+
+  private stopStallTimer(): void {
+    if (this.stallTimer != null) {
+      clearInterval(this.stallTimer);
+      this.stallTimer = null;
     }
   }
 
@@ -339,6 +373,7 @@ export class RaceClassController implements Scene {
       this.correct.play();
       this.model.incrementCorrect_Answers();
       this.model.resetIncorrectStreak();
+      this.wrongInARow = 0;
       if (!usedNitro) {
         if(this.gameState.ownsUpgrade("Speed Boost")){
           this.model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO - 1);
@@ -355,13 +390,18 @@ export class RaceClassController implements Scene {
       this.model.incrementIncorrectStreak();
       this.model.resetNitro();
       this.decreasesHealth();
+      this.wrongInARow++;
     }
     this.view.showAnswerFeedback(correct);
 
     const progress = this.model.currentProgess();
     this.view.setProgress(progress);
     if (progress < 1) {
-      this.nextQuestion();
+      if (this.wrongInARow >= this.wrongAnswersToStall()) {
+        this.startStall();
+      } else {
+        this.nextQuestion();
+      }
     } else {
       this.model.recordFinish();
       this.view.setPlacement(this.model.getPlacement());
@@ -403,6 +443,7 @@ export class RaceClassController implements Scene {
       this.levelId,
       correct,
       opponentsBeaten,
+      total,
     );
     this.finishTimeout = setTimeout(() => {
       this.finishTimeout = null;
@@ -432,6 +473,7 @@ export class RaceClassController implements Scene {
   private stopAllTimers(): void {
     this.stopCountdownTimer();
     this.stopQuestionTimer();
+    this.stopStallTimer();
     if (this.finishTimeout != null) {
       clearTimeout(this.finishTimeout);
       this.finishTimeout = null;
@@ -450,6 +492,7 @@ export class RaceClassController implements Scene {
         this.rev.pause();
         this.stopCountdownTimer();
         this.stopQuestionTimer();
+        this.stopStallTimer();
     }
 
     /**
@@ -465,6 +508,8 @@ export class RaceClassController implements Scene {
             this.engine.play();
             if (this.currentQuestion !== null) {
                 this.runQuestionTimer();
+            } else if (this.stallRemaining > 0) {
+                this.runStallTimer();
             }
         }
     }

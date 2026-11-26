@@ -3,33 +3,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { LaneGameController } from "../LaneGameController.ts";
 import type { Game } from "../../Game/Game.ts";
 
-// Mock question generation so tests use predictable answers.
-vi.mock("../../Question/QuestionController.ts", () => {
-    return {
-        QuestionController: class {
-            private count = 0;
-
-            generateQuestion() {
-                const answers = [10, 20, 30];
-                const answer = answers[this.count++ % 3];
-
-                return {
-                    text: `${answer} question`,
-                    a: answer,
-                    b: 0,
-                    answer
-                };
-            }
-        }
-    };
-});
-
 // Mock the game state.
 vi.mock("../../Game/GameState.ts", () => {
     return {
         GameState: class {
             getCurrentLevelId() {
-                return "level1";
+                return 3;
             }
         }
     };
@@ -120,15 +99,35 @@ describe("LaneGameController", () => {
         });
 
         it("should set the target answer to a randomly selected lane's answer", () => {
-            vi.spyOn(Math, "random").mockReturnValue(0.4);
+            let calls = 0;
+            vi.spyOn(Math, "random").mockImplementation(() => (calls++ * 0.137) % 1);
 
             controller.generateRound();
 
-            const lanes = model.getLanes();
+            const answers = model.getLanes().map(lane => lane.getQuestion().answer);
+            expect(answers).toContain(model.getTargetAnswer());
+        });
 
-            expect(model.getTargetAnswer()).toBe(
-                lanes[1].getQuestion().answer
-            );
+        it("should generate unique equations and answers for all three lanes over 100 rounds", () => {
+            for (let i = 0; i < 100; i++) {
+                controller.generateRound();
+
+                const lanes = model.getLanes();
+
+                const equations = lanes.map(
+                    lane => lane.getQuestion()?.text
+                );
+
+                const answers = lanes.map(
+                    lane => lane.getQuestion()?.answer
+                );
+
+                // Check that all three equations are unique
+                expect(new Set(equations).size).toBe(3);
+
+                // Check that all three answers are unique
+                expect(new Set(answers).size).toBe(3);
+            }
         });
     });
 
