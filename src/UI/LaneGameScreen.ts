@@ -60,7 +60,7 @@ export class CatchTheAnswer implements Scene {
       const link = document.createElement("link");
       link.id = "catch-arcade-font";
       link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
+      link.href = "/fonts/press-start-2p/press-start-2p.css";
       document.head.appendChild(link);
     }
 
