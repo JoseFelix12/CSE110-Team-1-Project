@@ -8,7 +8,7 @@ import {
 /** Fills the nitro bar by answering enough questions correctly */
 function fillNitro(model: RaceClassModel): void {
     for (let i = 0; i < CORRECT_ANSWERS_FOR_NITRO; i++) {
-        model.chargeNitro();
+        model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
     }
 }
 
@@ -112,7 +112,7 @@ describe('RaceClassModel', () => {
 
     describe('nitro charging', () => {
         it('chargeNitro adds one step per call', () => {
-            model.chargeNitro();
+            model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
             expect(model.getNitroLevel()).toBeCloseTo(1 / CORRECT_ANSWERS_FOR_NITRO);
         });
 
@@ -123,7 +123,7 @@ describe('RaceClassModel', () => {
 
         it('never goes above 1', () => {
             fillNitro(model);
-            model.chargeNitro();
+            model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
             expect(model.getNitroLevel()).toBe(1);
         });
 
@@ -131,6 +131,21 @@ describe('RaceClassModel', () => {
             fillNitro(model);
             model.resetNitro();
             expect(model.getNitroLevel()).toBe(0);
+        });
+
+        it('needs exactly as many answers as it is told to', () => {
+            for (let i = 0; i < 4; i++) model.chargeNitro(4);
+            expect(model.getNitroLevel()).toBe(1);
+        });
+        
+        it('is not full one answer short', () => {
+            for (let i = 0; i < 3; i++) model.chargeNitro(4);
+            expect(model.getNitroLevel()).toBeLessThan(1);
+        });
+        
+        it('fills in a single answer when told 1 answer is enough', () => {
+            model.chargeNitro(1);
+            expect(model.getNitroLevel()).toBe(1);
         });
     });
 
@@ -143,7 +158,7 @@ describe('RaceClassModel', () => {
         });
         
         it('does nothing and returns false when the bar is not full', () => {
-            model.chargeNitro();
+            model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
             expect(model.handleNitro(FULL_HEALTH)).toBe(false);
             expect(model.isNitroActive()).toBe(false);
         });
@@ -195,7 +210,7 @@ describe('RaceClassModel', () => {
         it('keeps charge earned during nitro', () => {
             fillNitro(model);
             model.handleNitro(FULL_HEALTH);
-            model.chargeNitro();
+            model.chargeNitro(CORRECT_ANSWERS_FOR_NITRO);
             model.updateNitro(NITRO_SECONDS);
             expect(model.getNitroLevel()).toBeCloseTo(1 / CORRECT_ANSWERS_FOR_NITRO);
         });

@@ -71,20 +71,22 @@ export const COINS_PER_STAR = 10;
 export type SkinColor = 'red' | 'blue' | 'green' |'yellow'| 'purple'|'pink'|'white'|'black';
 export type Upgrade = 'Speed Boost' | 'Better Tires' | 'Shield' | 'Extra Time';
 export const MAX_HEALTH = 100;
+export const MAX_SHIELDS = 99;
 
 export const DEFAULT_SKIN: SkinColor = 'red';
-export const STARTER_SKINS: SkinColor[] = [DEFAULT_SKIN, 'blue', 'yellow'];
+export const STARTER_SKINS: SkinColor[] = [DEFAULT_SKIN];
 
+const PAINT_PRICE = 75;
+const PREMIUM_PAINT_PRICE = 100;
 export const SKIN_PRICES: Record<SkinColor, number> = {
-    red: 0,
-    blue: 0,
-    green: 50,
-    purple: 75,
-    pink: 75,
-    black: 75,
-    white: 75,
-    yellow: 0
-
+    red: PAINT_PRICE,
+    blue: PAINT_PRICE,
+    green: PAINT_PRICE,
+    purple: PAINT_PRICE,
+    pink: PREMIUM_PAINT_PRICE,
+    black: PREMIUM_PAINT_PRICE,
+    white: PAINT_PRICE,
+    yellow: PAINT_PRICE,
 };
 
 /** Cost of each engine upgrade; index 0 is the price of going from level 0 to 1 */
@@ -93,12 +95,11 @@ export const ENGINE_UPGRADE_PRICES = [40, 80, 150];
 /** Extra speed per engine level (0.1 = +10%) */
 export const ENGINE_SPEED_BONUS_PER_LEVEL = 0.1;
 
-//These are placeholder prices.
-// Price of each one time upgrade
+/** Price per purchase. Shield can be purchased again up to MAX_SHIELDS. */
 export const UPGRADE_PRICES: Record<Upgrade, number> = {
-  "Speed Boost": 20,
-  "Better Tires": 30,
-  "Shield": 25,
-  "Extra Time": 35,
+  "Speed Boost": 80,
+  "Better Tires": 100,
+  "Shield": 115,
+  "Extra Time": 150,
 };
 

@@ -193,8 +193,29 @@ export class QuestionController {
     return userAnswer === question.answer;
   }
 }
+/**
+ * Fills in a word problem template. "{a}" becomes the value of a, and
+ * "{a:singular|plural}" becomes "singular" when a is 1 and "plural" otherwise,
+ * so templates read correctly for any number (e.g. "1 car" vs "3 cars").
+ */
+export function fillTemplate(template: string, values: Record<string, number>): string {
+  return template.replace(
+    /\{(\w+)(?::([^|}]*)\|([^}]*))?\}/g,
+    (match, key: string, singular?: string, plural?: string) => {
+      const n = values[key];
+      if (n === undefined) return match;
+      if (singular === undefined) return String(n);
+      return n === 1 ? singular : plural!;
+    },
+  );
+}
+
 export class WordProblemAdapter extends QuestionController {
   private adaptee: QuestionController;
+  /** Per operator: indices of templates not used yet in this session */
+  private unusedTemplates: Record<string, number[]> = {};
+  /** Per operator: the index of the template used most recently */
+  private lastTemplate: Record<string, number> = {};
 
   constructor(adaptee: QuestionController) {
     super();
@@ -212,15 +233,32 @@ export class WordProblemAdapter extends QuestionController {
       throw new Error(`No templates available for: ${baseQuestion.operator}`);
     }
 
-    const randomTemplate =
-      templates[Math.floor(Math.random() * templates.length)];
-    const wordProblemText = randomTemplate
-      .replace("{a}", a.toString())
-      .replace("{b}", b.toString());
+    const template = templates[this.pickTemplateIndex(baseQuestion.operator, templates.length)];
+    const wordProblemText = fillTemplate(template, { a, b });
 
     baseQuestion.text = wordProblemText;
 
     return baseQuestion;
+  }
+
+  /**
+   * Picks a random template for the operator that has not been used yet by
+   * this adapter. Once every template has been used, the pool refills with all
+   * of them; the first pick of the new round skips the template just used, so
+   * the same template never shows twice in a row.
+   */
+  private pickTemplateIndex(operator: string, count: number): number {
+    let unused = this.unusedTemplates[operator];
+    if (!unused || unused.length === 0) {
+      unused = [...Array(count).keys()];
+      this.unusedTemplates[operator] = unused;
+    }
+    const last = this.lastTemplate[operator];
+    const candidates = unused.length > 1 ? unused.filter(i => i !== last) : unused;
+    const index = candidates[Math.floor(Math.random() * candidates.length)];
+    unused.splice(unused.indexOf(index), 1);
+    this.lastTemplate[operator] = index;
+    return index;
   }
 
   public generateMultipleWordProblems(

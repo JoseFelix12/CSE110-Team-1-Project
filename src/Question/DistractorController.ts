@@ -60,11 +60,24 @@ export class DistractorController {
   genIncorrectAnswers(question: Question, count: number): number[] {
     const distractors = new Set<number>();
 
-    // 1. Plausible mistakes from the strategies, in random order
-    const candidates = this.shuffle(this.strategies.flatMap(s => s(question)));
-    for (const n of candidates) {
-      if (distractors.size >= count) break;
-      if (isValidDistractor(n, question, distractors)) distractors.add(n);
+    // 1. Each strategy contributes one distractor before any strategy contributes a second.
+    // Each strategy's own candidates are shuffled so e.g. the operation/sign is random.
+    const pools = this.strategies.map(s => this.shuffle(s(question, this.rng)));
+    let progressed = true;
+    while (distractors.size < count && progressed) {
+      progressed = false;
+      for (const pool of pools) {
+        if (distractors.size >= count) break;
+        // Take this strategy's next valid candidate, skipping invalid ones
+        while (pool.length > 0) {
+          const n = pool.shift()!;
+          if (isValidDistractor(n, question, distractors)) {
+            distractors.add(n);
+            progressed = true;
+            break;
+          }
+        }
+      }
     }
 
     // 2. Top up with random nearby values

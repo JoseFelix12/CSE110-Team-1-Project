@@ -275,6 +275,17 @@ export class GameState {
     return this.car.getUpgrades().includes(upgrade);
   }
 
+  getShieldCount(): number {
+    return this.car.getShieldCount();
+  }
+
+  consumeShield(): boolean {
+    if (!this.car.consumeShield()) return false;
+
+    this.changed();
+    return true;
+  }
+
   buySkin(skin: SkinColor): boolean {
     const price = SKIN_PRICES[skin];
     if (price === undefined || this.ownsSkin(skin) || price > this.data.coins) {
@@ -289,17 +300,25 @@ export class GameState {
 
   buyUpgrade(upgrade: Upgrade): boolean {
     const price = UPGRADE_PRICES[upgrade];
-    if (
-      price === undefined ||
-      this.ownsUpgrade(upgrade) ||
-      price > this.data.coins
-    ) {
+    if (price === undefined || price > this.data.coins) {
       return false;
     }
+    if (!this.car.addUpgrade(upgrade)) return false;
+
     this.data.coins -= price;
-    this.car.addUpgrade(upgrade);
     this.changed();
     return true;
+  }
+
+  /**
+   * Uses up a consumable upgrade. Returns true if the player had it.
+   */
+  consumeUpgrade(upgrade: Upgrade): boolean {
+    const used = this.car.removeUpgrade(upgrade);
+    if (used) {
+        this.changed();
+    }
+    return used;
   }
 
   /**

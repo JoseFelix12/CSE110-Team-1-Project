@@ -4,7 +4,7 @@ import { Car } from './Car.ts';
 import { MAX_HEALTH } from './gameConfig.ts';
 import { HEALTH_REPAIR, WORD_PROBLEM_TEMPLATES } from '../constants.ts';
 import { DistractorController } from '../Question/DistractorController.ts';
-import { WordProblemAdapter } from '../Question/QuestionController.ts';
+import { WordProblemAdapter, fillTemplate } from '../Question/QuestionController.ts';
 import type { Question } from '../Question/QuestionModel.ts';
 import {
     AdditionQuestion,
@@ -24,7 +24,7 @@ const seeded = (seed: number) => () => {
 
 /** The text a question would have if template were filled in with its operands */
 const fill = (template: string, q: Question) =>
-    template.replace("{a}", String(q.a)).replace("{b}", String(q.b));
+    fillTemplate(template, { a: q.a, b: q.b });
 
 /** Car at a specific health */
 const carWithHealth = (health: number): Car => {
@@ -177,7 +177,7 @@ describe("RepairMinigame", () => {
 
         it("never leaves {a} or {b} placeholders in the text", () => {
             for (let i = 0; i < 100; i++) {
-                expect(game.generateQuestion().text).not.toMatch(/\{[ab]\}/);
+                expect(game.generateQuestion().text).not.toMatch(/[{}]/);
             }
         });
 

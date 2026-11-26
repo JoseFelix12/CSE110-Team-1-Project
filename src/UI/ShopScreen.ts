@@ -91,7 +91,7 @@ const UPGRADES: readonly UpgradeOption[] = [
   {
     id: "shield",
     name: "SHIELD",
-    description: "Blocks damage from one wrong answer.",
+    description: "Blocks one hit of vehicle damage.",
   },
   {
     id: "extra-time",
@@ -369,7 +369,7 @@ export class ShopScreen implements Scene {
     const item = this.shop.getCatalog().find((item) => item.id === `upgrade:${gameUpgrade}`);
 
     if (item && this.purchase(item)) {
-      this.setMessage(`${upgrade.name} UNLOCKED!`);
+      this.setMessage(item.inventory ? `${upgrade.name} ADDED!` : `${upgrade.name} UNLOCKED!`);
     }
   }
 
@@ -421,16 +421,20 @@ export class ShopScreen implements Scene {
       previewColor.filter === "none" ? "" : `${previewColor.filter} `;
     previewCar.style.filter = `${paintFilter}drop-shadow(0 5px 5px rgba(0, 0, 0, .8))`;
 
+    const paints = COLORS.flatMap((color) => {
+      const item = catalog.get(`skin:${color.id}`);
+      if (!item) return [];
+      const sortPrice = item.price ?? item.listPrice ?? Number.MAX_SAFE_INTEGER;
+      return [{ color, item, sortPrice }];
+    }).sort((a, b) => a.sortPrice - b.sortPrice);
+
     this.screen.querySelector<HTMLElement>("[data-color-grid]")!.innerHTML =
-      COLORS.map((color) => {
-        const item = catalog.get(`skin:${color.id}`);
-        return item ? this.colorCardMarkup(color, item) : "";
-      }).join("");
+      paints.map(({ color, item }) => this.colorCardMarkup(color, item)).join("");
     this.screen.querySelector<HTMLElement>(
       "[data-owned-color-grid]",
-    )!.innerHTML = COLORS
-      .filter((color) => catalog.get(`skin:${color.id}`)?.owned)
-      .map((color) => this.ownedColorMarkup(color))
+    )!.innerHTML = paints
+      .filter(({ item }) => item.owned)
+      .map(({ color }) => this.ownedColorMarkup(color))
       .join("");
     this.screen.querySelector<HTMLElement>("[data-upgrade-grid]")!.innerHTML =
       UPGRADES.map((upgrade) => {
@@ -480,7 +484,11 @@ export class ShopScreen implements Scene {
           <img src="${UPGRADE_ICONS[UPGRADE_BY_ID[upgrade.id]]}" alt="" aria-hidden="true" data-upgrade-sticker="${upgrade.id}">
         </div>
         <h3>${upgrade.name}</h3>
-        <p>${upgrade.description}</p>
+        <p>${upgrade.description}${
+          item.inventory
+            ? `<br><strong data-upgrade-stock>${item.inventory.count}/${item.inventory.limit} OWNED</strong>`
+            : ""
+        }</p>
         <button class="shop-purchase-button" type="button" data-upgrade-id="${upgrade.id}"
           ${item.price === null ? "disabled" : ""}>
           ${this.priceMarkup(item)}
@@ -489,6 +497,7 @@ export class ShopScreen implements Scene {
   }
 
   private priceMarkup(item: ShopItem): string {
+    if (item.inventory && item.inventory.count >= item.inventory.limit) return "LIMIT REACHED";
     if (item.price === null) return item.owned ? "OWNED" : "UNAVAILABLE";
     return `<span class="shop-coin-icon shop-coin-icon--small" aria-hidden="true"></span>${item.price}`;
   }
