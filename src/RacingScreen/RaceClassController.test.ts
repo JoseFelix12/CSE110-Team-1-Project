@@ -462,6 +462,38 @@ describe('RaceClassController', () => {
         });
     });
     
+    describe('better tires upgrade', () => {
+        it('does not stall after only 2 wrong answers in a row', () => {
+            giveUpgrade('Better Tires');
+            startRacing();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).not.toHaveBeenCalled();
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+        });
+
+        it('stalls after 3 wrong answers in a row', () => {
+            giveUpgrade('Better Tires');
+            vi.mocked(gameState.getLevel).mockReturnValue({
+                ...gameState.getLevel(1),
+                questionCount: 10,
+            });
+            startRacing();
+            submitWrong();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).toHaveBeenLastCalledWith(STALL_SECONDS);
+            expect(view().setQuestion).toHaveBeenCalledTimes(3);
+        });
+
+        it('stalls after 2 wrong answers in a row without it', () => {
+            startRacing();
+            submitWrong();
+            submitWrong();
+            expect(view().showStall).toHaveBeenCalled();
+        });
+    });
+
     describe('speed boost upgrade', () => {
         it('fills nitro one answer sooner', () => {
             giveUpgrade('Speed Boost');

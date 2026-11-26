@@ -86,7 +86,7 @@ const UPGRADES: readonly UpgradeOption[] = [
   {
     id: "better-tires",
     name: "BETTER TIRES",
-    description: "Improves acceleration and handling.",
+    description: "Takes 3 wrong answers in a row to stall instead of 2.",
   },
   {
     id: "shield",
