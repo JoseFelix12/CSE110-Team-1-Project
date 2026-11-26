@@ -27,7 +27,7 @@ export class StatsScreen implements Scene {
       const font = document.createElement("link");
       font.id = "stats-arcade-font";
       font.rel = "stylesheet";
-      font.href = "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap";
+      font.href = "/fonts/press-start-2p/press-start-2p.css";
       document.head.appendChild(font);
     }
 
