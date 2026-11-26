@@ -60,9 +60,22 @@ export class QuestionBar {
     }
 
     setQuestion(text: string): void {
+        this.question.classList.remove('race-bar__question--stalled');
         this.question.textContent = text;
         this.input.value = '';
         this.focus();
+    }
+
+    /**
+     * Hides the question and locks the textbox while the car is stalled,
+     * showing the seconds left
+     */
+    showStall(seconds: number): void {
+        this.question.classList.add('race-bar__question--stalled');
+        this.question.textContent = 'STALLED!';
+        this.input.value = '';
+        this.setTimer(seconds);
+        this.setEnabled(false);
     }
 
     /**
@@ -110,6 +123,7 @@ export class QuestionBar {
      * Empties the bar and locks the textbox until the next race starts
      */
     reset(): void {
+        this.question.classList.remove('race-bar__question--stalled');
         this.question.textContent = '';
         this.timer.textContent = '';
         this.timer.classList.remove('race-bar__timer--low');
