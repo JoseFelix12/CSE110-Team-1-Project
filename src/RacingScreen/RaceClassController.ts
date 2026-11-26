@@ -6,9 +6,8 @@ import {
   QUESTION_TIMER,
 } from "../constants.ts";
 import { QuestionController } from "../Question/QuestionController.ts";
-import type { QuestionType } from "../Question/QuestionController.ts";
 import type { Question } from "../Question/QuestionModel.ts";
-import type { LevelConfig, Operator } from "../Game/gameConfig.ts";
+import type { LevelConfig } from "../Game/gameConfig.ts";
 import type { screenSwitcher } from "../Game/Game.ts";
 import type { GameState } from "../Game/GameState.ts";
 import { SceneIds } from "../Game/Scene.ts";
@@ -16,14 +15,6 @@ import type { Scene, SceneParams } from "../Game/Scene.ts";
 import { RaceClassModel } from "./RaceClassModel.ts";
 import { RaceClassView } from "./RaceClassView.ts";
 import type { RaceTheme } from "./RaceClassView.ts";
-
-/** Which QuestionController question type each level operator asks */
-const QUESTION_TYPES: Record<Operator, QuestionType> = {
-  "+": "addition",
-  "-": "subtraction",
-  "*": "multiplication",
-  "/": "division",
-};
 
 export interface RaceControllerOptions {
   /** Where the view is added to the page. Defaults to document.body */
@@ -218,15 +209,7 @@ export class RaceClassController implements Scene {
    * Handles question generation
    */
   private nextQuestion(): void {
-    const { operators, minFactor, maxFactor, secondMinFactor, secondMaxFactor } = this.level;
-    const operator = operators[Math.floor(Math.random() * operators.length)];
-    this.currentQuestion = this.questions.generateQuestion(
-      QUESTION_TYPES[operator],
-      minFactor,
-      maxFactor,
-      secondMinFactor ?? minFactor,
-      secondMaxFactor ?? maxFactor,
-    );
+    this.currentQuestion = this.questions.generateQuestion(this.levelId);
     this.view.setQuestion(this.currentQuestion.text);
     this.startQuestionTimer();
   }

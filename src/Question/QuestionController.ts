@@ -7,7 +7,6 @@ import {
 } from "./QuestionModel.ts";
 import { WORD_PROBLEM_TEMPLATES } from "../constants.ts";
 
-export type QuestionType = 'addition' | 'subtraction' | 'multiplication' | 'division';
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -59,54 +58,67 @@ export class QuestionController {
     }
   }
 
+  private levelOneQuestion(): Question {
+    // 2-digit addition and subtraction.
+    const a = Math.floor(Math.random() * 40) + 10;
+    const b = Math.floor(Math.random() * 40) + 10;
+    if (Math.random() < 0.5) {
+      return new AdditionQuestion(a, b);
+    } else {
+      // Larger number first so answers (and word problems) never go negative
+      return new SubtractionQuestion(Math.max(a, b), Math.min(a, b));
+    }
+  }
+
+
+  private levelTwoQuestion(): Question {
+    // Multiplication with factors up to 12.
+        const a = Math.floor(Math.random() * 12) + 1;
+        const b = Math.floor(Math.random() * 12) + 1;
+        return new MultiplicationQuestion(a, b);
+  }
+
+  private levelThreeQuestion(): Question {
+    // Division with answers from 1 to 9.
+        const quotient = Math.floor(Math.random() * 9) + 1;
+        const divisor = Math.floor(Math.random() * 9) + 1;
+
+        const a = quotient * divisor;
+        const b = divisor;
+        return new DivisionQuestion(a, b);
+  }
+
+  private levelFourQuestion(): Question {
+    // 2-digit by 1-digit multiplication with factors from 10 to 25.
+        const a = Math.floor(Math.random() * 16) + 10; // 10 to 25
+        const b = Math.floor(Math.random() * 9) + 1;   // 1 to 9
+        return new MultiplicationQuestion(a, b);
+  }
+
   //Generates question object based upon current level
   private questionForLevel(levelId: number): Question {
-    let a: number;
-    let b: number;
 
     switch (levelId) {
       case 1:
         // 2-digit addition and subtraction.
-        a = Math.floor(Math.random() * 90) + 10;
-        b = Math.floor(Math.random() * 90) + 10;
-        if (Math.random() < 0.5) {
-          return new AdditionQuestion(a, b);
-        } else {
-          // Larger number first so answers (and word problems) never go negative
-          return new SubtractionQuestion(Math.max(a, b), Math.min(a, b));
-        }
+        return this.levelOneQuestion();
       case 2:
-        // Multiplication with factors up to 9.
-        a = Math.floor(Math.random() * 9) + 1;
-        b = Math.floor(Math.random() * 9) + 1;
-        return new MultiplicationQuestion(a, b);
+        // Multiplication with factors up to 12.
+        return this.levelTwoQuestion();
       case 3: {
-        // Division up to factors up to 9
-        a = Math.floor(Math.random() * 9) + 1;
-
-        const factors = [];
-        for (let i = 1; i <= a; i++) {
-          if (a % i === 0) {
-            factors.push(i);
-          }
-        }
-
-        b = factors[Math.floor(Math.random() * factors.length)];
-        return new DivisionQuestion(a, b);
+        return this.levelThreeQuestion();
       }
       case 4:
-        //2-digit Multiplication with factors up to 25
-        a = Math.floor(Math.random() * 25) + 1;
-        b = Math.floor(Math.random() * 25) + 1;
-        return new MultiplicationQuestion(a, b);
+        //2-digit by 1-digit Multiplication with factors from 10 to 25
+        return this.levelFourQuestion();
       case 5:
-        //2-digit division having answers from 1 to 10
-        do {
-          b = Math.floor(Math.random() * 10) + 1;
-          const multiplier = Math.floor(Math.random() * 10) + 1;
-          a = b * multiplier;
-        } while (a < 10 || a > 99);
-        return new DivisionQuestion(a, b);
+        //Combination of level 3 and 4 
+        
+        if (Math.random() < 0.5) {
+          return this.levelThreeQuestion();
+        } else {
+          return this.levelFourQuestion();
+        }
       default:
         throw new Error("Invalid Id");
     }
