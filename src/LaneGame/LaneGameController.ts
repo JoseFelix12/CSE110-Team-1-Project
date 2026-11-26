@@ -48,14 +48,17 @@ export class LaneGameController {
 
         const usedQuestions = new Set<string>();
         const usedAnswers = new Set<number>();
-
+        const ranLevel = Math.floor(Math.random() * this.state.getCurrentLevelId()) + 1; // Randomly selects a level up to the current level
+        
         for (const lane of lanes) {
             //Generates a new question for each lane
             let question;
-            //Tracks attempts to avoid infinite loops in case of limited question pool
-
+            
+            // Ensures that the generated question is unique and that the answer is also unique
+            // Generates questions up to current level
             do {
-                question = this.questionGenerator.generateQuestion(this.state.getCurrentLevelId());
+
+                question = this.questionGenerator.generateQuestion(ranLevel);
             } while (
                 usedQuestions.has(question.text) ||
                 usedAnswers.has(question.answer)

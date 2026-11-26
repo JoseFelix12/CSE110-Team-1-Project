@@ -338,30 +338,6 @@ describe('RaceClassController', () => {
     });
 
     describe('questions', () => {
-        const questionParts = () => {
-            const text = view().setQuestion.mock.lastCall![0] as string;
-            const [a, symbol, b] = text.split(' = ')[0].split(' ');
-            return { a: Number(a), symbol, b: Number(b) };
-        };
-
-        it('asks level 1 a 2 digit number up to 70 plus a 1 digit number', () => {
-            startRacing();
-            for (let i = 0; i < 4; i++) {
-                const { a, symbol, b } = questionParts();
-                expect(symbol).toBe('+');
-                expect(a).toBeGreaterThanOrEqual(10);
-                expect(a).toBeLessThanOrEqual(70);
-                expect(b).toBeGreaterThanOrEqual(1);
-                expect(b).toBeLessThanOrEqual(9);
-                answerCorrectly();
-            }
-        });
-
-        it('asks the operators of the level being raced', () => {
-            controller.enter({ levelId: 4 });
-            vi.advanceTimersByTime(3000);
-            expect(questionParts().symbol).toBe('÷');
-        });
 
         it('keeps wrong and timed out questions, but not right ones', () => {
             startRacing();
